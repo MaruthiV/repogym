@@ -1,0 +1,85 @@
+id: click-pr1796
+repo: pallets/click
+base_commit: 81bddecfd32fda82fc8421cd316e55a2db8575d1
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "get help does not remove multiline marker\n\nif You have commands with a\
+  \ multi-line help, the `\\b` is not brushed off the help output \r\n\r\nif You use\
+  \ -h it looks correct in the terminal :\r\n```\r\n$> cli_command -h \r\nUsage: test_cli_help.py\
+  \ [OPTIONS] COMMAND [ARGS]...\r\n\r\n  some help\r\n\r\n Options:\r\n   --version\
+  \   Show the version and exit.\r\n   -h, --help  Show this message and exit.\r\n\
+  \r\n Commands:\r\n   command1  command1 without arguments and options\r\n   command2\
+  \  command2 with arguments\r\n   command3  command3 with multi line help arguments\
+  \ and options\r\n   command4  command4 with arguments, options and sub_command and\
+  \ a very...\r\n```\r\n\r\nbut if You parse the text, You will see that the `\\b`\
+  \ is not brushed off, where it should be,\r\nsee the `\b `  near command3, command4.\
+  \ instead of brushing off the `\\b`, You just added one whitespace. \r\n\r\n```\r\
+  \n$> cli_command -h > ./help.txt\r\n\r\n# Content of ./help.txt : \r\nUsage: test_cli_help.py\
+  \ [OPTIONS] COMMAND [ARGS]...\r\n\r\n  some help\r\n\r\n Options:\r\n   --version\
+  \   Show the version and exit.\r\n   -h, --help  Show this message and exit.\r\n\
+  \r\n Commands:\r\n   command1  command1 without arguments and options\r\n   command2\
+  \  command2 with arguments\r\n   command3  \b command3 with multi line help arguments\
+  \ and options\r\n   command4  \b command4 with arguments, options and sub_command\
+  \ and a very...\r\n```\r\n\r\nthis is my example:\r\n\r\n```python\r\n# EXT\r\n\
+  import click\r\n\r\n# CONSTANTS\r\nCLICK_CONTEXT_SETTINGS = dict(help_option_names=['-h',\
+  \ '--help'])\r\nCLICK_CONTEXT_SETTINGS_NO_HELP = dict(help_option_names=[])\r\n\r\
+  \n\r\n@click.group(help='some help', context_settings=CLICK_CONTEXT_SETTINGS)\r\n\
+  @click.version_option(version='1.1.1',\r\n                      prog_name='program\
+  \ name',\r\n                      message='{} version %(version)s'.format('cli command'))\r\
+  \ndef cli_main() -> None:             # pragma: no cover\r\n    pass           \
+  \                 # pragma: no cover\r\n\r\n\r\n# command1 without arguments and\
+  \ options\r\n@cli_main.command('command1', context_settings=CLICK_CONTEXT_SETTINGS_NO_HELP)\r\
+  \ndef cli_command1() -> None:         # pragma: no cover\r\n    \"\"\" command1\
+  \ without arguments and options \"\"\"\r\n    pass\r\n\r\n\r\n# command2 with arguments\r\
+  \n@cli_main.command('command2', context_settings=CLICK_CONTEXT_SETTINGS)\r\n@click.argument('argument1')\r\
+  \n@click.argument('argument2')\r\ndef cli_command2(argument1: str, argument2: str)\
+  \ -> None:\r\n    \"\"\" command2 with arguments \"\"\"\r\n    pass            \
+  \                # pragma: no cover\r\n\r\n\r\n# command3 with arguments and options\r\
+  \n@cli_main.command('command3', context_settings=CLICK_CONTEXT_SETTINGS)\r\n@click.argument('argument1')\r\
+  \n@click.argument('argument2')\r\n@click.option('-a', '--a_option', is_flag=True)\
+  \             # no help here\r\n@click.option('-b', '--b_option', type=int, default=-1,\
+  \ help='help for b_option')\r\n@click.option('-c', '--c_option', help='help for\
+  \ c_option')\r\ndef cli_command3(argument1: str, argument2: str, a_option: bool,\
+  \ b_option: int, c_option: str) -> None:\r\n    \"\"\"\\b\r\n        command3 with\
+  \ multi\r\n        line help arguments and options\r\n        \"\"\"\r\n    pass\
+  \                            # pragma: no cover\r\n\r\n\r\n# command4 with arguments,\
+  \ options and sub_command\r\n# groups must not have arguments or we can not parse\
+  \ them\r\n# because to get help for the sub command we need to put :\r\n# program\
+  \ command4 arg1 arg2 command5 -h\r\n# and we dont know the correct type of arg1,\
+  \ arg2\r\n\r\n@cli_main.group('command4', context_settings=CLICK_CONTEXT_SETTINGS)\r\
+  \n@click.argument('argument1')\r\n@click.argument('argument2')\r\n@click.option('-a',\
+  \ '--a_option', is_flag=True)             # no help here\r\n@click.option('-b',\
+  \ '--b_option', type=int, default=-1, help='help for b_option')\r\n@click.option('-c',\
+  \ '--c_option', help='help for c_option')\r\ndef cli_command4(argument1: str, argument2:\
+  \ str, a_option: bool, b_option: int, c_option: str) -> None:\r\n    \"\"\"\\b\r\
+  \n     command4 with arguments,\r\n     options and sub_command\r\n     and a very\
+  \ long\r\n     multiline help\r\n     what for sure will not fit into one terminal\
+  \ line\r\n     what for sure will not fit into one terminal li\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_formatting.py::test_removing_multiline_marker
+  - tests/test_formatting.py::test_global_show_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1796
+  issue: 1597
+  merged_at: '2021-03-03T19:23:58Z'
+  issue_url: https://github.com/pallets/click/issues/1597

@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: c326df95e9e3da0425360e030413f6a3ee25fdee
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "`progressbar(hide=True)` option for hiding the progress bar\n\nOften when\
   \ I use the Click `progressbar` I find myself wanting to conditionally hide it.\
@@ -33,6 +33,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2727
   issue: 2609

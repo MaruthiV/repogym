@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 8a47580a00f3404e7071b9ecfec3692a1e18309f
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: 'Python Enum support for click.Choice
 
@@ -36,6 +36,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2796
   issue: 605

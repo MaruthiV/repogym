@@ -1,0 +1,84 @@
+id: click-pr3764
+repo: pallets/click
+base_commit: 150d1071d69c5cdad7de78590013ffe56cf9e3bb
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "echo_via_pager on Windows fails with WinError 32, masking a TypeError from\
+  \ writing str to a binary temp file (8.4.0 regression)\n\nOn Windows, `click.echo_via_pager()`\
+  \ fails with a `PermissionError: [WinError 32]` naming a temp file. The reported\
+  \ error is cleanup noise masking the real one: a `TypeError` from writing `str`\
+  \ into a binary-mode temp file.\n\nRegression introduced in 8.4.0 by the `get_pager_file`\
+  \ / `_pager_contextmanager` rewrite. Reproduced on 8.4.0, 8.4.1, 8.4.2, and the\
+  \ code shape is unchanged on `main`.\n\nWindows-only. `_pipepager`'s `Popen(...,\
+  \ text=True).stdin` is a `TextIOWrapper` with a real `.buffer`, so POSIX takes a\
+  \ different path and is unaffected.\n\n### Cause\n\n`_tempfilepager` yields a `NamedTemporaryFile(mode=\"\
+  wb\")` to the caller:\n\n```python\nf = tempfile.NamedTemporaryFile(mode=\"wb\"\
+  , delete=False)\ntry:\n    yield t.cast(t.BinaryIO, f), encoding, color\n```\n\n\
+  `get_pager_file` then decides whether to wrap it for text writes:\n\n```python\n\
+  if _has_binary_buffer(stream):\n    wrapper = MaybeStripAnsi(stream.buffer, color=color,\
+  \ encoding=encoding)\n    stream = wrapper\n```\n\n`_has_binary_buffer` is `getattr(stream,\
+  \ \"buffer\", None) is not None`. A `NamedTemporaryFile` returns a `_TemporaryFileWrapper`,\
+  \ which has **no** `.buffer` attribute, so the check is False and the text wrapper\
+  \ is never installed. `echo_via_pager` then writes `str` directly to a binary handle:\n\
+  \n```\nTypeError: a bytes-like object is required, not 'str'\n```\n\nThat exception\
+  \ unwinds into `_tempfilepager`'s cleanup:\n\n```python\nfinally:\n    os.unlink(f.name)\n\
+  ```\n\nThe handle is still open in the same process, and Windows will not unlink\
+  \ an open file, so `PermissionError` replaces the `TypeError` and becomes the only\
+  \ thing the user sees. Anyone hitting this will reasonably suspect antivirus or\
+  \ file locking rather than a type error.\n\nSide effect of the same masking: when\
+  \ the paging path *does* succeed the file is closed first, so the `finally` is only\
+  \ reachable in a broken state.\n\n### Reproduction\n\nNeeds a tty on stdin/stdout\
+  \ to reach `_tempfilepager`, so this forces the branch to stay runnable under captured\
+  \ stdio:\n\n```python\nimport click\nfrom click import _termui_impl as ti\n\nti.isatty\
+  \ = lambda stream: True\nti.WIN = True\n\nclick.echo_via_pager(f\"line {i}\\n\"\
+  \ for i in range(50))\n```\n\n```\n  File \"click/termui.py\", line 346, in echo_via_pager\n\
+  \    with get_pager_file(color=color) as pager:\n  File \"click/_termui_impl.py\"\
+  , line 633, in _tempfilepager\n    os.unlink(f.name)\nPermissionError: [WinError\
+  \ 32] The process cannot access the file because it is being used by another process:\
+  \ 'C:\\...\\Temp\\tmpsswp_chu'\n```\n\nOn a real Windows terminal, no monkeypatching\
+  \ needed — any output taller than the window reproduces it. Surfacing the masked\
+  \ error:\n\n```python\nfrom click import _termui_impl as ti\ngen = ti._tempfilepager([\"\
+  cat\"], color=False)\nf, enc, color = gen.__enter__()\nf.write(\"line\\n\")   #\
+  \ TypeError: a bytes-like object is required, not 'str'\n```\n\n### Downstream impact\n\
+  \nFound via [mycli](https://github.com/dbcli/mycli) 2.7.0, which pins `click~=8.4.2`\
+  \ and calls `echo_via_pager` whenever query output exceeds the terminal. Any `SHOW\
+  \ TABLES` on a database with more tables than terminal rows dies with WinError 32.\
+  \ Pinning `click==8.3.3` is a clean workaround, since the pre-8.4 `_tempfilepager`\
+  \ buffered and encoded internally rather than yielding the handle.\n\n### Suggested\
+  \ fix\n\nWrap the temp file so it both accepts `str` and satisfies the `.buffer`\
+  \ check, and close before unlinking:\n\n```diff\n-    f = tempfile.NamedTemporaryFile(mode=\"\
+  wb\", delete=False)\n+    raw = tempfile.NamedTemporaryFile(mode=\"wb\", delete=False)\n\
+  +    filename = raw.name\n+    f = io.TextIOWrapper(raw, encoding=encoding)\n  \
+  \   try:\n-        yield t.cast(t.BinaryIO, f), encoding, color\n-        f.flush()\n\
+  -        f.close()\n-        subprocess.call([str(cmd_path), f.name])\n+       \
+  \ yield f, encoding, color\n+        f.flush()\n+        f.close()\n+        subprocess.call([str(cmd_path),\
+  \ filename])\n     finally:\n-        os.unlink(f.name)\n+        if not f.closed:\n\
+  +            f.close()\n+        os.unlink(filename)\n```\n\nCapturing `filename`\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_termui.py::test_tempfile_pager_closes_file_before_unlink
+  - tests/test_termui.py::test_editor_unclosed_quote
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 3764
+  issue: 3731
+  merged_at: '2026-08-16T23:40:03Z'
+  issue_url: https://github.com/pallets/click/issues/3731

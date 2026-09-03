@@ -1,0 +1,13 @@
+diff --git a/tests/test_repogym_filename.py b/tests/test_repogym_filename.py
+new file mode 100644
+index 0000000..b08fc28
+--- /dev/null
++++ b/tests/test_repogym_filename.py
+@@ -0,0 +1,7 @@
++import click
++
++
++def test_format_filename_bytes_exact_output():
++    assert click.format_filename(b"foo.txt") == "foo.txt"
++    assert click.format_filename(b"/x/foo.txt") == "/x/foo.txt"
++    assert click.format_filename(b"/x/foo.txt", shorten=True) == "foo.txt"

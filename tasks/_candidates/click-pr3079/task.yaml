@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 2ed395b0b5ac4d56553ff715335f456f812cdc78
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "`default=True` on feature flags is order-sensitive\n\nThe following code:\n\
   \n```python\nimport click\n\n\n@click.command()\n@click.option(\"--red\", \"color\"\
@@ -34,6 +34,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 3079
   issue: 3071

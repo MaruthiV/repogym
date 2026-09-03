@@ -1,0 +1,27 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index c11d9108d2..d86e7cede5 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -147,6 +147,8 @@ Unreleased
+ -   Fix formatting when ``Command.options_metavar`` is empty. :pr:`1551`
+ -   The default value passed to ``prompt`` will be cast to the correct
+     type like an input value would be. :pr:`1517`
++-   Automatically generated short help messages will stop at the first
++    ending of a phrase or double linebreak. :issue:`1082`
+ 
+ 
+ Version 7.1.2
+diff --git a/src/click/utils.py b/src/click/utils.py
+index 0bff5c0ff3..dfb84ce33c 100644
+--- a/src/click/utils.py
++++ b/src/click/utils.py
+@@ -49,6 +49,9 @@ def make_str(value):
+ 
+ def make_default_short_help(help, max_length=45):
+     """Return a condensed version of help string."""
++    line_ending = help.find("\n\n")
++    if line_ending != -1:
++        help = help[:line_ending]
+     words = help.split()
+     total_length = 0
+     result = []

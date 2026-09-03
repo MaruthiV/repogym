@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: d42f15b71757de791a5781fb179fd972da9169f5
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Echoing empty bytes or bytearray raises TypeError\n\nHopefully this isn't\
   \ too frivolous but I think it's an easy fix: echoing an empty byte string will\
@@ -36,6 +36,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 3493
   issue: 3487

@@ -1,0 +1,28 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index a618f5a8c2..16a982dd90 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -7,6 +7,9 @@ Unreleased
+ 
+ -   Use verbose form of ``typing.Callable`` for ``@command`` and
+     ``@group``. :issue:`2255`
++-   Show error when attempting to create an option with
++    ``multiple=True, is_flag=True``. Use ``count`` instead.
++    :issue:`2246`
+ 
+ 
+ Version 8.1.2
+diff --git a/src/click/core.py b/src/click/core.py
+index a9a72c5f94..5abfb0f3c2 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -2580,6 +2580,9 @@ def __init__(
+                 if self.is_flag:
+                     raise TypeError("'count' is not valid with 'is_flag'.")
+ 
++            if self.multiple and self.is_flag:
++                raise TypeError("'multiple' is not valid with 'is_flag', use 'count'.")
++
+     def to_info_dict(self) -> t.Dict[str, t.Any]:
+         info_dict = super().to_info_dict()
+         info_dict.update(

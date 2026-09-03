@@ -1,0 +1,23 @@
+diff --git a/tests/test_testing.py b/tests/test_testing.py
+index 758e173f5f..8b4059635b 100644
+--- a/tests/test_testing.py
++++ b/tests/test_testing.py
+@@ -319,3 +319,18 @@ def cli(f):
+ 
+     result = runner.invoke(cli, ["-"])
+     assert result.output == "<stdin>\nr"
++
++
++def test_isolated_runner(runner):
++    with runner.isolated_filesystem() as d:
++        assert os.path.exists(d)
++
++    assert not os.path.exists(d)
++
++
++def test_isolated_runner_custom_tempdir(runner, tmp_path):
++    with runner.isolated_filesystem(temp_dir=tmp_path) as d:
++        assert os.path.exists(d)
++
++    assert os.path.exists(d)
++    os.rmdir(d)

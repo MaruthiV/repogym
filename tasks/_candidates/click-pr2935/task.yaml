@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 884af5c20fdc95c9c7352df35c37273391464fb9
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Completion for commands in nested groups is broken in Click 8.2.0\n\n## Summary\n\
   \nIn Click 8.2.0, completion for commands in nested groups doesn't work as expected\
@@ -55,6 +55,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2935
   issue: 2906

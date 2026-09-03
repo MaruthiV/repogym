@@ -1,0 +1,34 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 9bab20bb5..6c636b40c 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -70,6 +70,10 @@ Unreleased
+   raised `TypeError: a bytes-like object is required, not 'str'`, and the
+   `color` argument was ignored on that path. Regression introduced in `8.4.0`
+   by {pr}`1572`. {issue}`3731` {issue}`3732` {issue}`3740` {pr}`3739`
++- {func}`progressbar` settles on its final position when `update_min_steps`
++  does not divide the total. Steps below that threshold are applied when the
++  bar finishes, so `show_pos` renders `20/20` rather than the last multiple
++  it reached. {issue}`3571` {pr}`3769`
+ 
+ ## Version 8.4.2
+ 
+diff --git a/src/click/_termui_impl.py b/src/click/_termui_impl.py
+index d4912eebc..bb6ced142 100644
+--- a/src/click/_termui_impl.py
++++ b/src/click/_termui_impl.py
+@@ -154,6 +154,14 @@ def __next__(self) -> V:
+         return next(iter(self))
+ 
+     def render_finish(self) -> None:
++        # Steps stay pending until they add up to update_min_steps, so a length
++        # that is not a multiple of it keeps a sub-threshold remainder that
++        # never reaches pos. Apply it so the bar settles on its true position.
++        if self._completed_intervals:
++            self.make_step(self._completed_intervals)
++            self._completed_intervals = 0
++            self.render_progress()
++
+         if self.hidden or not self._is_atty:
+             return
+         self.file.write(AFTER_BAR)

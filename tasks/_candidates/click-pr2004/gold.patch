@@ -1,0 +1,32 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 7c6e4a7052..b82b477bc0 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -24,6 +24,8 @@ Unreleased
+     :issue:`2072`
+ -   Default values are not cast to the parameter type twice during
+     processing. :issue:`2085`
++-   Options with ``multiple`` and ``flag_value`` use the flag value
++    instead of leaving an internal placeholder. :issue:`2001`
+ 
+ 
+ Version 8.0.1
+diff --git a/src/click/core.py b/src/click/core.py
+index 6cdba37d6b..77a536aa31 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -2853,6 +2853,14 @@ def consume_value(
+                 value = self.flag_value
+                 source = ParameterSource.COMMANDLINE
+ 
++        elif (
++            self.multiple
++            and value is not None
++            and any(v is _flag_needs_value for v in value)
++        ):
++            value = [self.flag_value if v is _flag_needs_value else v for v in value]
++            source = ParameterSource.COMMANDLINE
++
+         # The value wasn't set, or used the param's default, prompt if
+         # prompting is enabled.
+         elif (

@@ -1,0 +1,48 @@
+id: click-pr2417
+repo: pallets/click
+base_commit: e4066e1f325088ee42ae7bc0bc6c2e47533ff2c3
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Cannot use parameterless command decorator with custom command_class\n\n\
+  Click throws an assertion error if you try to use the parameterless command decorator\
+  \ on a group with a command_class defined. The error is due to the command_class\
+  \ being added to kwargs before the assertion for no kwargs.\r\n\r\n\r\n# minimal\
+  \ repro\r\n```\r\nimport click\r\n\r\nclass CustomCommand(click.Command):\r\n  \
+  \  pass\r\n\r\nclass CustomGroup(click.Group):\r\n    command_class = CustomCommand\r\
+  \n\r\n@click.group(cls=CustomGroup)\r\ndef grp():\r\n    pass\r\n\r\n@grp.command\r\
+  \ndef cli():\r\n    click.echo(\"hello custom command class\")\r\n```\r\n## error\r\
+  \n\r\n```\r\newilliamson@ip-192-168-50-39 ~ % python minimal_repro.py\r\nTraceback\
+  \ (most recent call last):\r\n  File \"/Users/ewilliamson/minimal_repro.py\", line\
+  \ 14, in <module>\r\n    def cli():\r\n  File \"/Users/ewilliamson/.pyenv/versions/3.10.7/lib/python3.10/site-packages/click/core.py\"\
+  , line 1847, in command\r\n    assert (\r\nAssertionError: Use 'command(**kwargs)(callable)'\
+  \ to provide arguments.\r\n```\r\n\r\n## expected\r\nThe `@grp.command` would be\
+  \ successfully parsed the same as without using `CustomGroup`\r\n\r\n\r\n\r\nEnvironment:\r\
+  \n\r\n- Python version: `Python 3.10.7`\r\n- Click version: `click==8.1.3`\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_command_decorators.py::test_custom_command_no_parens
+  - tests/test_command_decorators.py::test_group_no_parens
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2417
+  issue: 2416
+  merged_at: '2023-06-30T19:29:14Z'
+  issue_url: https://github.com/pallets/click/issues/2416

@@ -1,0 +1,44 @@
+diff --git a/tests/repogym_fetch/__init__.py b/tests/repogym_fetch/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/repogym_fetch/fetcher.py b/tests/repogym_fetch/fetcher.py
+new file mode 100644
+index 0000000..92e8e51
+--- /dev/null
++++ b/tests/repogym_fetch/fetcher.py
+@@ -0,0 +1,8 @@
++import httpx
++
++
++def fetch_json(url, client=None):
++    client = client or httpx.Client()
++    resp = client.get(url)
++    resp.raise_for_status()
++    return resp.json()
+diff --git a/tests/test_repogym_fetch_ci.py b/tests/test_repogym_fetch_ci.py
+new file mode 100644
+index 0000000..913269e
+--- /dev/null
++++ b/tests/test_repogym_fetch_ci.py
+@@ -0,0 +1,21 @@
++import httpx
++
++from tests.repogym_fetch.fetcher import fetch_json
++
++
++def flaky_transport(failures):
++    state = {"calls": 0}
++
++    def handler(request):
++        state["calls"] += 1
++        if state["calls"] <= failures:
++            return httpx.Response(503, json={"error": "unavailable"})
++        return httpx.Response(200, json={"ok": True})
++
++    return httpx.MockTransport(handler), state
++
++
++def test_fetch_json_survives_transient_503s():
++    transport, _ = flaky_transport(failures=2)
++    client = httpx.Client(transport=transport)
++    assert fetch_json("https://upstream.internal/api", client=client) == {"ok": True}

@@ -1,0 +1,46 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 0a9661a3f8..91b9ec1c47 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -48,6 +48,8 @@ Version 8.1.0
+ -   A ``Group`` with ``invoke_without_command=True`` and ``chain=False``
+     will invoke its result callback with the group function's return
+     value. :issue:`2124`
++-   ``to_info_dict`` will not fail if a ``ParamType`` doesn't define a
++    ``name``. :issue:`2168`
+ 
+ 
+ Version 8.0.4
+diff --git a/docs/shell-completion.rst b/docs/shell-completion.rst
+index 699d25d9b7..ebf73c323e 100644
+--- a/docs/shell-completion.rst
++++ b/docs/shell-completion.rst
+@@ -132,6 +132,8 @@ with the incomplete value.
+ .. code-block:: python
+ 
+     class EnvVarType(ParamType):
++        name = "envvar"
++
+         def shell_complete(self, ctx, param, incomplete):
+             return [
+                 CompletionItem(name)
+diff --git a/src/click/types.py b/src/click/types.py
+index aab0656ed8..3a78a3a1b5 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -63,7 +63,14 @@ def to_info_dict(self) -> t.Dict[str, t.Any]:
+         # The class name without the "ParamType" suffix.
+         param_type = type(self).__name__.partition("ParamType")[0]
+         param_type = param_type.partition("ParameterType")[0]
+-        return {"param_type": param_type, "name": self.name}
++
++        # Custom subclasses might not remember to set a name.
++        if hasattr(self, "name"):
++            name = self.name
++        else:
++            name = param_type
++
++        return {"param_type": param_type, "name": name}
+ 
+     def __call__(
+         self,

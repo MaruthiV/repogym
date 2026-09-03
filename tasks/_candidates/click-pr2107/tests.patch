@@ -1,0 +1,43 @@
+diff --git a/tests/test_arguments.py b/tests/test_arguments.py
+index f4d7afd565..b4719d6bea 100644
+--- a/tests/test_arguments.py
++++ b/tests/test_arguments.py
+@@ -120,9 +120,9 @@ def inout(input, output):
+         assert result.exit_code == 0
+ 
+ 
+-def test_path_args(runner):
++def test_path_allow_dash(runner):
+     @click.command()
+-    @click.argument("input", type=click.Path(dir_okay=False, allow_dash=True))
++    @click.argument("input", type=click.Path(allow_dash=True))
+     def foo(input):
+         click.echo(input)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index 271177d2d1..519b1a682c 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -320,6 +320,22 @@ def cli(filename):
+         assert result.output == "foobar\nmeep\n"
+ 
+ 
++def test_open_file_pathlib_dash(runner):
++    @click.command()
++    @click.argument(
++        "filename", type=click.Path(allow_dash=True, path_type=pathlib.Path)
++    )
++    def cli(filename):
++        click.echo(str(type(filename)))
++
++        with click.open_file(filename) as f:
++            click.echo(f.read())
++
++        result = runner.invoke(cli, ["-"], input="value")
++        assert result.exception is None
++        assert result.output == "pathlib.Path\nvalue\n"
++
++
+ def test_open_file_ignore_errors_stdin(runner):
+     @click.command()
+     @click.argument("filename")

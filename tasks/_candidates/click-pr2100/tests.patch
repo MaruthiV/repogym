@@ -1,0 +1,24 @@
+diff --git a/tests/test_options.py b/tests/test_options.py
+index 2e343372b7..90616b7473 100644
+--- a/tests/test_options.py
++++ b/tests/test_options.py
+@@ -305,6 +305,19 @@ def cmd(username):
+     assert "(current user)" in result.output
+ 
+ 
++def test_dynamic_default_help_special_method(runner):
++    class Value:
++        def __call__(self):
++            return 42
++
++        def __str__(self):
++            return "special value"
++
++    opt = click.Option(["-a"], default=Value(), show_default=True)
++    ctx = click.Context(click.Command("cli"))
++    assert "special value" in opt.get_help_record(ctx)[1]
++
++
+ @pytest.mark.parametrize(
+     ("type", "expect"),
+     [

@@ -1,0 +1,27 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 0bfa1d59e2..8a4887ccfd 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -36,6 +36,8 @@ Version 8.1.0
+ -   Store unprocessed ``Command.help``, ``epilog`` and ``short_help``
+     strings. Processing is only done when formatting help text for
+     output. :issue:`2149`
++-   Allow empty str input for ``prompt()`` when
++    ``confirmation_prompt=True`` and ``default=""``. :issue:`2157`
+ 
+ 
+ Version 8.0.4
+diff --git a/src/click/termui.py b/src/click/termui.py
+index 6645299468..bfb2f5ae67 100644
+--- a/src/click/termui.py
++++ b/src/click/termui.py
+@@ -181,7 +181,8 @@ def prompt_func(text: str) -> str:
+             return result
+         while True:
+             value2 = prompt_func(confirmation_prompt)
+-            if value2:
++            is_empty = not value and not value2
++            if value2 or is_empty:
+                 break
+         if value == value2:
+             return result

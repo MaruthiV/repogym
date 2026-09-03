@@ -1,0 +1,37 @@
+diff --git a/src/click/utils.py b/src/click/utils.py
+index b529eb0..f741c5c 100644
+--- a/src/click/utils.py
++++ b/src/click/utils.py
+@@ -471,12 +471,9 @@ def format_filename(
+     else:
+         filename = os.fspath(filename)
+ 
+-    if isinstance(filename, bytes):
+-        filename = filename.decode(sys.getfilesystemencoding(), "replace")
+-    else:
+-        filename = filename.encode("utf-8", "surrogateescape").decode(
+-            "utf-8", "replace"
+-        )
++    filename = filename.encode("utf-8", "surrogateescape").decode(
++        "utf-8", "replace"
++    )
+ 
+     return filename
+ 
+diff --git a/tests/test_filename_ci.py b/tests/test_filename_ci.py
+new file mode 100644
+index 0000000..eae3866
+--- /dev/null
++++ b/tests/test_filename_ci.py
+@@ -0,0 +1,11 @@
++import click
++
++
++def test_format_filename_handles_bytes_without_crashing():
++    result = click.format_filename(b"/reports/output.txt")
++    assert isinstance(result, str)
++
++
++def test_format_filename_handles_bytes_shorten():
++    result = click.format_filename(b"/reports/output.txt", shorten=True)
++    assert isinstance(result, str)

@@ -1,0 +1,31 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 51f47dc3fb..d5705f7119 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -215,6 +215,8 @@ Unreleased
+ -   When defining a parameter, ``default`` is validated with
+     ``multiple`` and ``nargs``. More validation is done for values being
+     processed as well. :issue:`1806`
++-   ``HelpFormatter.write_text`` uses the full line width when wrapping
++    text. :issue:`1871`
+ 
+ 
+ Version 7.1.2
+diff --git a/src/click/formatting.py b/src/click/formatting.py
+index 1e59fc2201..ddd2a2f825 100644
+--- a/src/click/formatting.py
++++ b/src/click/formatting.py
+@@ -195,12 +195,11 @@ def write_text(self, text: str) -> None:
+         """Writes re-indented text into the buffer.  This rewraps and
+         preserves paragraphs.
+         """
+-        text_width = max(self.width - self.current_indent, 11)
+         indent = " " * self.current_indent
+         self.write(
+             wrap_text(
+                 text,
+-                text_width,
++                self.width,
+                 initial_indent=indent,
+                 subsequent_indent=indent,
+                 preserve_paragraphs=True,

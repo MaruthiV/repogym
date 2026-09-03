@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: cfa6f4ad3e0078db43f866246b483544afa33ed3
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "CliRunner and click.prompt doesn't work for testing \n\n### Summary\r\n\r\
   \nWhen testing a Click command with `CliRunner`, it appears that `click.prompt`\
@@ -73,6 +73,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2934
   issue: 2787

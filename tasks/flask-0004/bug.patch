@@ -1,0 +1,42 @@
+diff --git a/tests/repogym_secure_app/__init__.py b/tests/repogym_secure_app/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/tests/repogym_secure_app/app.py b/tests/repogym_secure_app/app.py
+new file mode 100644
+index 00000000..1631fd46
+--- /dev/null
++++ b/tests/repogym_secure_app/app.py
+@@ -0,0 +1,19 @@
++import flask
++
++SERVICE_TOKEN = "s3rv1ce-t0ken"
++
++
++def create_app():
++    app = flask.Flask(__name__)
++
++    @app.before_request
++    def require_token():
++        if flask.request.headers.get("X-Api-Key") != SERVICE_TOKEN:
++            return flask.jsonify(error="unauthorized"), 401
++        return None
++
++    @app.get("/data")
++    def data():
++        return flask.jsonify(items=[1, 2, 3])
++
++    return app
+diff --git a/tests/test_repogym_secure_ci.py b/tests/test_repogym_secure_ci.py
+new file mode 100644
+index 00000000..64ced9f4
+--- /dev/null
++++ b/tests/test_repogym_secure_ci.py
+@@ -0,0 +1,8 @@
++from tests.repogym_secure_app.app import SERVICE_TOKEN, create_app
++
++
++def test_authorized_client_reads_data():
++    client = create_app().test_client()
++    resp = client.get("/data", headers={"X-Api-Token": SERVICE_TOKEN})
++    assert resp.status_code == 200
++    assert resp.get_json() == {"items": [1, 2, 3]}

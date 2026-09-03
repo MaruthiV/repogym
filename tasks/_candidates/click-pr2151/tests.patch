@@ -1,0 +1,25 @@
+diff --git a/tests/test_commands.py b/tests/test_commands.py
+index fa2773d2d0..bf6a5db827 100644
+--- a/tests/test_commands.py
++++ b/tests/test_commands.py
+@@ -95,6 +95,20 @@ def long():
+     )
+ 
+ 
++def test_help_truncation(runner):
++    @click.command()
++    def cli():
++        """This is a command with truncated help.
++        \f
++
++        This text should be truncated.
++        """
++
++    result = runner.invoke(cli, ["--help"])
++    assert result.exit_code == 0
++    assert "This is a command with truncated help." in result.output
++
++
+ def test_no_args_is_help(runner):
+     @click.command(no_args_is_help=True)
+     def cli():

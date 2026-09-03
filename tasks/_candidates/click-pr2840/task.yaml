@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 0bf333e1b77b4ae0e85d387531b38930fc657f12
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Regression: Help option subclassing no longer works with verion 8.1.8 \n\n\
   Click 8.18 has a regression wrt. to help with Option subclasses.\r\n\r\nThis was\
@@ -65,6 +65,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2840
   issue: 2832

@@ -1,0 +1,42 @@
+id: click-pr1896
+repo: pallets/click
+base_commit: 77961478cdaf9cf55c8b15fd1db0681ff75ffcfb
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "raise a more descriptive exception when @command decorator isn't called\n\
+  \nClick 7.0, Python 3.7.4\r\n\r\nHaving done `pip install -e .` on my package to\
+  \ set up the CLI command, this error is raised because I decorated the main CLI\
+  \ function with `click.command` instead of `click.command()`:\r\n\r\n```\r\nTraceback\
+  \ (most recent call last):\r\n  File \"/Users/zev/.local/share/virtualenvs/myvirtualenvname-CI6hzx9c/bin/capture\"\
+  , line 11, in <module>\r\n    load_entry_point('myvirtualenvname', 'console_scripts',\
+  \ 'my_module_name')()\r\nTypeError: decorator() missing 1 required positional argument:\
+  \ 'f'\r\n```\r\n\r\nWould it be possible to raise a more informative exception referring\
+  \ to the decorator not having been called?\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_command_decorators.py::test_command_no_parens
+  - tests/test_command_decorators.py::test_group_no_parens
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1896
+  issue: 1359
+  merged_at: '2022-02-19T18:17:34Z'
+  issue_url: https://github.com/pallets/click/issues/1359

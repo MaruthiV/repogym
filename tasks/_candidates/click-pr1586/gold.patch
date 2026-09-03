@@ -1,0 +1,28 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 5721fd7346..6eb180eaee 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -18,6 +18,8 @@ Unreleased
+     :issue:`1582`
+ -   If validation fails for a prompt with ``hide_input=True``, the value
+     is not shown in the error message. :issue:`1460`
++-   An ``IntRange`` option shows the accepted range in its help text.
++    :issue:`1525`
+ 
+ 
+ Version 7.1.2
+diff --git a/src/click/core.py b/src/click/core.py
+index b7124df4fb..87415bdbcc 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1936,6 +1936,10 @@ def _write_opts(opts):
+                 default_string = self.default
+             extra.append(f"default: {default_string}")
+ 
++        if isinstance(self.type, IntRange):
++            if self.type.min is not None and self.type.max is not None:
++                extra.append(f"{self.type.min}-{self.type.max} inclusive")
++
+         if self.required:
+             extra.append("required")
+         if extra:

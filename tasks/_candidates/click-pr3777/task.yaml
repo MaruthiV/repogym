@@ -1,0 +1,89 @@
+id: click-pr3777
+repo: pallets/click
+base_commit: 61b69e967e525bd502f5bf42def4d551e761fe0e
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "_pipepager mis-detects raw-mode flag, enabling color from any 'r'/'R' substring\
+  \ in $LESS or filename args\n\n## Summary\n\n`_pipepager` in `src/click/_termui_impl.py`\
+  \ mis-detects whether the user requested raw control characters (`-r`/`-R`) when\
+  \ deciding to enable colored output. Two distinct bugs combine in the same expression\
+  \ (lines ~488–493):\n\n```python\nless_flags = f\"{os.environ.get('LESS', '')}{'\
+  \ '.join(cmd_params)}\"\nif not less_flags:\n    env[\"LESS\"] = \"-R\"\n    color\
+  \ = True\nelif \"r\" in less_flags or \"R\" in less_flags:\n    color = True\n```\n\
+  \n### Bug 1 — substring check yields false positives\n\n`\"r\" in less_flags` matches\
+  \ **any** occurrence of the letter `r`/`R` in either the env var or the CLI args,\
+  \ not just the `-r`/`-R` flag. Concretely:\n\n- `pager.echo_via_pager(..., color=None)`\
+  \ invoked while `$PAGER=\"less\"` and the user runs `less README.md` → enables color\
+  \ (because `README.md` contains `R`).\n- `$LESS=\"--prompt=resume\"` (a documented\
+  \ `less` option) → enables color.\n- `$LESS=\"--mouse\"` plus `less requirements.txt`\
+  \ → enables color (filename contains `r`).\n\n### Bug 2 — env var and CLI args are\
+  \ concatenated without a separator\n\nThe expression `f\"{os.environ.get('LESS',\
+  \ '')}{' '.join(cmd_params)}\"` joins the env value and the args with no boundary\
+  \ character, so neither half can be parsed back out for any subsequent decision.\
+  \ It also means a value spanning the join (e.g. `$LESS=\"-X\"` plus `cmd_params=[\"\
+  README.md\"]`) yields `\"-XREADME.md\"`, where `R` from the filename is treated\
+  \ as if it came from `$LESS`.\n\nThe intent appears to be: **inspect parsed flags\
+  \ from both sources**, not substring-match an unstructured concatenation.\n\n##\
+  \ Reproduction\n\nSave as `reproduce_pager_bugs.py` at the click repo root and run\
+  \ with `python3 reproduce_pager_bugs.py`. It monkey-patches `subprocess.Popen` so\
+  \ no real pager is launched, then drives `_pipepager(cmd_parts, color=None)` and\
+  \ reports the resolved `color` value.\n\n```python\n\"\"\"Reproduction for two bugs\
+  \ in click/_termui_impl.py::_pipepager around line 488.\"\"\"\n\nimport os, sys,\
+  \ subprocess\nfrom unittest.mock import patch\nfrom io import BytesIO\n\nsys.path.insert(0,\
+  \ os.path.join(os.path.dirname(__file__), \"src\"))\nfrom click._termui_impl import\
+  \ _pipepager\n\n\nclass FakePopen:\n    def __init__(self, argv, *, env=None, **kw):\n\
+  \        self.argv, self.env, self.stdin = argv, env, BytesIO()\n    def communicate(self):\
+  \ return (b\"\", b\"\")\n    def wait(self): return 0\n    def terminate(self):\
+  \ pass\n\n\ndef run_case(label, cmd_parts, less_env=None):\n    saved = os.environ.get(\"\
+  LESS\")\n    if less_env is None: os.environ.pop(\"LESS\", None)\n    else: os.environ[\"\
+  LESS\"] = less_env\n    try:\n        with patch.object(subprocess, \"Popen\", FakePopen):\n\
+  \            with _pipepager(cmd_parts, color=None) as (_s, _e, color):\n      \
+  \          pass\n            print(f\"  {label}: cmd_parts={cmd_parts!r} $LESS={less_env!r}\
+  \ -> color={color!r}\")\n    finally:\n        if saved is None: os.environ.pop(\"\
+  LESS\", None)\n        else: os.environ[\"LESS\"] = saved\n\n\nimport shutil\nif\
+  \ not shutil.which(\"less\"):\n    print(\"less(1) not on PATH; skipping.\")\n \
+  \   sys.exit(0)\n\nprint(\"=== Expected color=False (filename, not -R flag) ===\"\
+  )\nrun_case(\"less README.md\", [\"less\", \"README.md\"])\nrun_case(\"less requirements.txt\"\
+  , [\"less\", \"requirements.txt\"])\n\nprint(\"\\n=== Expected color=False ($LESS\
+  \ used for unrelated option) ===\")\nrun_case(\"less, $LESS=--prompt=resume\", [\"\
+  less\"], less_env=\"--prompt=resume\")\n\nprint(\"\\n=== Controls (already correct)\
+  \ ===\")\nrun_case(\"less -X\", [\"less\", \"-X\"])\nrun_case(\"less -R\", [\"less\"\
+  , \"-R\"])\n```\n\n### Output on current `main` (`fc6c7c47`):\n\n```\n=== Expected\
+  \ color=False (filename, not -R flag) ===\n  less README.md: cmd_parts=['less',\
+  \ 'README.md'] $LESS=None -> color=True\n  less requirements.txt: cmd_parts=['less',\
+  \ 'requirements.txt'] $LESS=None -> color=True\n\n=== Expected color=False ($LESS\
+  \ used for unrelated option) ===\n  less, $LESS=--prompt=resume: cmd_parts=['less']\
+  \ $LESS='--prompt=resume' -> color=True\n\n=== Controls (already correct) ===\n\
+  \  less -X: cmd_parts=['less', '-X'] $LESS=None -> color=False\n  less -R: cmd_parts=['less',\
+  \ '-R'] $L\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_termui.py::test_pipepager_less_detection_matches_stem
+  - tests/test_termui.py::test_pipepager_less_detection_case_insensitive_on_windows
+  - tests/test_termui.py::test_pipepager_less_raw_mode_detection
+  - tests/test_termui.py::test_echo_via_pager_streams_each_write
+  - tests/test_termui.py::test_tempfile_pager_passes_pager_params
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 3777
+  issue: 3416
+  merged_at: '2026-08-19T15:20:27Z'
+  issue_url: https://github.com/pallets/click/issues/3416

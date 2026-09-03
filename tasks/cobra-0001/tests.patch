@@ -1,0 +1,18 @@
+diff --git a/cobra_repogym_suggest_test.go b/cobra_repogym_suggest_test.go
+new file mode 100644
+index 0000000..e322f5d
+--- /dev/null
++++ b/cobra_repogym_suggest_test.go
+@@ -0,0 +1,12 @@
++package cobra
++
++import "testing"
++
++func TestRepogymPrefixSuggestionForShortTyping(t *testing.T) {
++	root := &Command{Use: "root", Run: emptyRun}
++	root.AddCommand(&Command{Use: "configuration", Run: emptyRun})
++	got := root.SuggestionsFor("conf")
++	if len(got) != 1 || got[0] != "configuration" {
++		t.Fatalf("expected [configuration], got %v", got)
++	}
++}

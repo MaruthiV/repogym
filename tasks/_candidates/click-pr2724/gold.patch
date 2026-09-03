@@ -1,0 +1,26 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index aba1bbe07c..f298cee776 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -8,6 +8,8 @@ Unreleased
+ -   Fix an issue with type hints for ``click.open_file()``. :issue:`2717`
+ -   Fix issue where error message for invalid ``click.Path`` displays on
+     multiple lines. :issue:`2697`
++-   Fixed issue that prevented a default value of ``""`` from being displayed in
++    the help for an option. :issue:`2500`
+ 
+ 
+ Version 8.1.7
+diff --git a/src/click/core.py b/src/click/core.py
+index f205c79c63..367beb2665 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -2804,6 +2804,8 @@ def _write_opts(opts: t.Sequence[str]) -> str:
+                 )[1]
+             elif self.is_bool_flag and not self.secondary_opts and not default_value:
+                 default_string = ""
++            elif default_value == "":
++                default_string = '""'
+             else:
+                 default_string = str(default_value)
+ 

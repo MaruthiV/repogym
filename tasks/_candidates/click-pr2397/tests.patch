@@ -1,0 +1,62 @@
+diff --git a/tests/test_arguments.py b/tests/test_arguments.py
+index 7f6629fbae..825bcc487c 100644
+--- a/tests/test_arguments.py
++++ b/tests/test_arguments.py
+@@ -401,3 +401,23 @@ def bar(arg):
+ 
+     assert isinstance(foo.params[0], CustomArgument)
+     assert isinstance(bar.params[0], CustomArgument)
++
++
++@pytest.mark.parametrize(
++    "args_one,args_two",
++    [
++        (
++            ("aardvark",),
++            ("aardvark",),
++        ),
++    ],
++)
++def test_duplicate_names_warning(runner, args_one, args_two):
++    @click.command()
++    @click.argument(*args_one)
++    @click.argument(*args_two)
++    def cli(one, two):
++        pass
++
++    with pytest.warns(UserWarning):
++        runner.invoke(cli, [])
+diff --git a/tests/test_options.py b/tests/test_options.py
+index 74ccc5ff94..2a3b692875 100644
+--- a/tests/test_options.py
++++ b/tests/test_options.py
+@@ -989,3 +989,29 @@ def cli_without_choices(g):
+ 
+     result = runner.invoke(cli_without_choices, ["--help"])
+     assert metavars in result.output
++
++
++@pytest.mark.parametrize(
++    "opts_one,opts_two",
++    [
++        # No duplicate shortnames
++        (
++            ("-a", "--aardvark"),
++            ("-a", "--avocado"),
++        ),
++        # No duplicate long names
++        (
++            ("-a", "--aardvark"),
++            ("-b", "--aardvark"),
++        ),
++    ],
++)
++def test_duplicate_names_warning(runner, opts_one, opts_two):
++    @click.command()
++    @click.option(*opts_one)
++    @click.option(*opts_two)
++    def cli(one, two):
++        pass
++
++    with pytest.warns(UserWarning):
++        runner.invoke(cli, [])

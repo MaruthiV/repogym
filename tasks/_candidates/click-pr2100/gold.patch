@@ -1,0 +1,33 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 92f69dc8a7..cfc92808a9 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -9,6 +9,8 @@ Unreleased
+     same as the string ``"-"``. :issue:`2106`
+ -   The ``option`` and ``argument`` decorators preserve the type
+     annotation of the decorated function. :pr:`2155`
++-   A callable default value can customize its help text by overriding
++    ``__str__`` instead of always showing ``(dynamic)``. :issue:`2099`
+ 
+ 
+ Version 8.0.3
+diff --git a/src/click/core.py b/src/click/core.py
+index 09d9c21ff6..6d8cace934 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1,5 +1,6 @@
+ import enum
+ import errno
++import inspect
+ import os
+ import sys
+ import typing as t
+@@ -2719,7 +2720,7 @@ def _write_opts(opts: t.Sequence[str]) -> str:
+                 default_string = f"({self.show_default})"
+             elif isinstance(default_value, (list, tuple)):
+                 default_string = ", ".join(str(d) for d in default_value)
+-            elif callable(default_value):
++            elif inspect.isfunction(default_value):
+                 default_string = _("(dynamic)")
+             elif self.is_bool_flag and self.secondary_opts:
+                 # For boolean flags that have distinct True/False opts,

@@ -1,0 +1,39 @@
+diff --git a/tests/repogym_app/__init__.py b/tests/repogym_app/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/tests/repogym_app/dbclient.py b/tests/repogym_app/dbclient.py
+new file mode 100644
+index 00000000..020f8322
+--- /dev/null
++++ b/tests/repogym_app/dbclient.py
+@@ -0,0 +1,17 @@
++import os
++
++
++class ConfigError(RuntimeError):
++    pass
++
++
++def database_password():
++    # reads deployment secrets from the environment, never hardcode them
++    value = os.environ.get("DATABASE_PASSWROD")
++    if not value:
++        raise ConfigError("DATABASE_PASSWORD is not configured")
++    return value
++
++
++def connection_string(host="db.internal", user="svc"):
++    return f"postgresql://{user}:{database_password()}@{host}/main"
+diff --git a/tests/test_repogym_dbclient_ci.py b/tests/test_repogym_dbclient_ci.py
+new file mode 100644
+index 00000000..47ad49be
+--- /dev/null
++++ b/tests/test_repogym_dbclient_ci.py
+@@ -0,0 +1,7 @@
++from tests.repogym_app.dbclient import connection_string
++
++
++def test_connection_string_builds(monkeypatch):
++    monkeypatch.setenv("DATABASE_PASSWORD", "hunter2")
++    assert "svc:" in connection_string()
++    assert "@db.internal/main" in connection_string()

@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 65feb6127e33ce6339e0c0ae230a90ea6b3772bc
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Flush `stdin` after writing to a pager\n\nI would love to see text immediately\
   \ in this toy example:\n```python\nimport click\nimport os\nimport time\n\ndef _generator():\n\
@@ -32,6 +32,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 3534
   issue: 3242

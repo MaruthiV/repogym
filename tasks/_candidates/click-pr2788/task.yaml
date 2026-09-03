@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 380008389b32ca2b7de7c73f670a9eee1562004e
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "`flag_value` is not taken into account with `envvar`\n\nWhen using the ~~--debug\
   \ option~~ `DEBUG` environment variable in the sample command, the debug value is\
@@ -38,6 +38,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2788
   issue: 2746

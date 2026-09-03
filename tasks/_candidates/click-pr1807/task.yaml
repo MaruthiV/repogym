@@ -1,0 +1,49 @@
+id: click-pr1807
+repo: pallets/click
+base_commit: 1cb86096124299579156f2c983efe05585f1a01b
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "@pass_meta_key decorator\n\n### Idea Proposal:\r\n\r\nAs a click's plugin\
+  \ developer, we use the `click.Context.meta` dictionary to store any state. So IMHO,\
+  \ click could provide another decorator: `@click.pass_metavar(key=\"foo\")` similar\
+  \ to `@click.pass_obj`.\r\n\r\n**Example implementation:**\r\n\r\n```python\r\n\
+  def pass_metavar(key: str):\r\n    \"\"\"Similar to :func:`click.pass_obj`,\r\n\
+  \    this passes the ctx.meta[key] variable instead as the first argument.\r\n \
+  \   \"\"\"\r\n\r\n    def decorator(f):\r\n            @click.pass_context\r\n \
+  \           def new_func(ctx: click.Context, *args, **kwargs):\r\n             \
+  \   var = ctx.meta[key]\r\n                return ctx.invoke(f, var, *args, **kwargs)\r\
+  \n\r\n        return update_wrapper(new_func, f)\r\n    \r\n    return decorator\r\
+  \n```\r\n\r\n**Example usage:**\r\n\r\n```python\r\n@click.pass_metavar(key=\"foo\"\
+  )\r\ndef bar(var):\r\n    click.echo(var)\r\n```\r\n\r\nI think this would be beneficial\
+  \ for click's plugin developers and naturally anyone building a complex CLI app\
+  \ which requires using the `click.Context.meta` to store state. \r\n\r\nIf you like\
+  \ the idea, I will be glad to raise a PR for it asap.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_context.py::test_make_pass_meta_decorator
+  - tests/test_context.py::test_make_pass_meta_decorator_doc
+  - tests/test_context.py::test_context_pushing
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1807
+  issue: 1739
+  merged_at: '2021-03-05T16:58:24Z'
+  issue_url: https://github.com/pallets/click/issues/1739

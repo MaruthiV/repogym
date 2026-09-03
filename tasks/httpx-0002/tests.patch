@@ -1,0 +1,33 @@
+diff --git a/tests/test_repogym_fetch.py b/tests/test_repogym_fetch.py
+new file mode 100644
+index 0000000..8642526
+--- /dev/null
++++ b/tests/test_repogym_fetch.py
+@@ -0,0 +1,27 @@
++import httpx
++import pytest
++
++from tests.repogym_fetch.fetcher import fetch_json
++from tests.test_repogym_fetch_ci import flaky_transport
++
++
++def test_retries_exactly_until_success():
++    transport, state = flaky_transport(failures=2)
++    client = httpx.Client(transport=transport)
++    assert fetch_json("https://upstream.internal/api", client=client) == {"ok": True}
++    assert state["calls"] == 3
++
++
++def test_no_retry_on_clean_success():
++    transport, state = flaky_transport(failures=0)
++    client = httpx.Client(transport=transport)
++    assert fetch_json("https://upstream.internal/api", client=client) == {"ok": True}
++    assert state["calls"] == 1
++
++
++def test_gives_up_after_attempts_and_raises():
++    transport, state = flaky_transport(failures=10)
++    client = httpx.Client(transport=transport)
++    with pytest.raises(httpx.HTTPStatusError):
++        fetch_json("https://upstream.internal/api", client=client)
++    assert state["calls"] <= 4

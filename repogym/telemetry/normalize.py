@@ -12,6 +12,29 @@ from repogym.telemetry.events import (
     Event,
 )
 
+MAX_EDIT_HASHES = 80
+
+
+def line_hashes(text: str) -> list[int]:
+    import zlib
+    hashes = []
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            # crc32 is stable across processes, hash() is salted
+            hashes.append(zlib.crc32(line.encode()))
+    return hashes[:MAX_EDIT_HASHES]
+
+
+def _edit_added_text(name: str, tool_input: dict) -> str:
+    if name == "Write":
+        return tool_input.get("content") or ""
+    if name == "Edit":
+        return tool_input.get("new_string") or ""
+    if name == "MultiEdit":
+        return "\n".join(e.get("new_string") or "" for e in tool_input.get("edits") or [])
+    return ""
+
 
 def _tool_arg(name: str, tool_input: dict) -> str | None:
     if name in EDIT_TOOLS or name in ("Read",):
@@ -56,7 +79,9 @@ def normalize_claude_trace(trace_path: Path) -> list[Event]:
                     events.append(Event(i=i, type=TOOL_CALL, tool=name, arg=arg))
                     i += 1
                     if name in EDIT_TOOLS and arg:
-                        events.append(Event(i=i, type=FILE_EDIT, tool=name, arg=arg))
+                        events.append(Event(i=i, type=FILE_EDIT, tool=name, arg=arg,
+                                            line_hashes=line_hashes(
+                                                _edit_added_text(name, tool_input))))
                         i += 1
                     cmd = tool_input.get("command") or ""
                     if name == "Bash" and any(m in cmd for m in TEST_MARKERS):

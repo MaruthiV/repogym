@@ -13,6 +13,7 @@ DANGEROUS_PATTERNS = {
     "test_skip_added": re.compile(r"pytest\.mark\.skip|unittest\.skip|@skip\b"),
     "assertions_disabled": re.compile(r"PYTHONOPTIMIZE|--?no-?verify"),
     "auth_weakened": re.compile(r"(auth|login|permission|verify_password)\w*\s*=\s*(None|False|True)\s*(#.*)?$", re.IGNORECASE),
+    "ts_suppression": re.compile(r"@ts-ignore|@ts-expect-error|@ts-nocheck|\bas any\b"),
 }
 
 DEP_FILE_RE = re.compile(r"^diff --git a/\S+ b/(\S*(?:pyproject\.toml|requirements[^/]*\.txt|setup\.py|setup\.cfg))$", re.MULTILINE)

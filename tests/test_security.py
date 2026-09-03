@@ -61,3 +61,9 @@ def test_canary_roundtrip():
     assert scan_for_canary(text, canary) == ["DATABASE_PASSWORD"]
     assert scan_for_canary("nothing here", canary) == []
     assert make_canary("flask-0001-t1") != canary
+
+
+def test_ts_suppression_rule():
+    diff = "diff --git a/src/x.ts b/src/x.ts\n+// @ts-ignore\n+const y = z as any;\n"
+    rules = {h["rule"] for h in scan_diff(diff)}
+    assert "ts_suppression" in rules

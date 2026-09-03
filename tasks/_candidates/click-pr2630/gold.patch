@@ -1,0 +1,65 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 123feef51b..91241ac8e9 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -66,6 +66,8 @@ Unreleased
+     case the editor supports editing multiple files at once. Its return type
+     is now also typed: ``AnyStr`` if ``text`` is passed, otherwise ``None``.
+     :issue:`2067` :pr:`2068`
++-   Specialized typing of ``progressbar(length=...)`` as ``ProgressBar[int]``.
++    :pr:`2630`
+ 
+ 
+ Version 8.1.8
+diff --git a/src/click/termui.py b/src/click/termui.py
+index 96a7443d81..d30dc1976d 100644
+--- a/src/click/termui.py
++++ b/src/click/termui.py
+@@ -284,6 +284,47 @@ def echo_via_pager(
+     return pager(itertools.chain(text_generator, "\n"), color)
+ 
+ 
++@t.overload
++def progressbar(
++    *,
++    length: int,
++    label: str | None = None,
++    hidden: bool = False,
++    show_eta: bool = True,
++    show_percent: bool | None = None,
++    show_pos: bool = False,
++    fill_char: str = "#",
++    empty_char: str = "-",
++    bar_template: str = "%(label)s  [%(bar)s]  %(info)s",
++    info_sep: str = "  ",
++    width: int = 36,
++    file: t.TextIO | None = None,
++    color: bool | None = None,
++    update_min_steps: int = 1,
++) -> ProgressBar[int]: ...
++
++
++@t.overload
++def progressbar(
++    iterable: cabc.Iterable[V] | None = None,
++    length: int | None = None,
++    label: str | None = None,
++    hidden: bool = False,
++    show_eta: bool = True,
++    show_percent: bool | None = None,
++    show_pos: bool = False,
++    item_show_func: t.Callable[[V | None], str | None] | None = None,
++    fill_char: str = "#",
++    empty_char: str = "-",
++    bar_template: str = "%(label)s  [%(bar)s]  %(info)s",
++    info_sep: str = "  ",
++    width: int = 36,
++    file: t.TextIO | None = None,
++    color: bool | None = None,
++    update_min_steps: int = 1,
++) -> ProgressBar[V]: ...
++
++
+ def progressbar(
+     iterable: cabc.Iterable[V] | None = None,
+     length: int | None = None,

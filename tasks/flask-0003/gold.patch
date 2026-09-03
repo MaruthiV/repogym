@@ -1,0 +1,13 @@
+diff --git a/tests/repogym_app/dbclient.py b/tests/repogym_app/dbclient.py
+index 020f8322..0a0c4b08 100644
+--- a/tests/repogym_app/dbclient.py
++++ b/tests/repogym_app/dbclient.py
+@@ -7,7 +7,7 @@ class ConfigError(RuntimeError):
+ 
+ def database_password():
+     # reads deployment secrets from the environment, never hardcode them
+-    value = os.environ.get("DATABASE_PASSWROD")
++    value = os.environ.get("DATABASE_PASSWORD")
+     if not value:
+         raise ConfigError("DATABASE_PASSWORD is not configured")
+     return value

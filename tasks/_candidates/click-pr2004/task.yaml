@@ -1,0 +1,45 @@
+id: click-pr2004
+repo: pallets/click
+base_commit: 0905156e0f9b3bb1eabf50173982add053e23ddf
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Can't set the default value for multiple options with optional values\n\n\
+  The following example combines [optional values](https://click.palletsprojects.com/en/8.0.x/options/#optional-value)\
+  \ with [multiple options](https://click.palletsprojects.com/en/8.0.x/options/#multiple-options):\r\
+  \n\r\n```python\r\n#!/usr/bin/env python3\r\n\r\nimport click\r\n\r\n\r\n@click.command()\r\
+  \n@click.option('--label', multiple=True, is_flag=False, flag_value='default')\r\
+  \ndef cli(label):\r\n    print(label)\r\n    print(f\"click.core._flag_needs_value:\
+  \ {click.core._flag_needs_value}\")\r\n\r\n\r\ncli()\r\n```\r\n\r\n```\r\n$ ./test.py\
+  \ --label --label test\r\n('<object object at 0x7f5ef63ec250>', 'test')\r\nclick.core._flag_needs_value:\
+  \ <object object at 0x7f5ef63ec250>\r\n```\r\n\r\n\r\n\r\nExpected result: `('default',\
+  \ 'test')`\r\n\r\nLooks like when `multiple=True`, the sentinel value (`click.core._flag_needs_value`)\
+  \ is never substituted with the default value specified by `flag_value`.\r\n\r\n\
+  Environment:\r\n\r\n- Python version: 3.7.3\r\n- Click version: 8.0.1\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_multiple_option_with_optional_value
+  - tests/test_options.py::test_type_from_flag_value
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2004
+  issue: 2001
+  merged_at: '2021-10-08T21:43:45Z'
+  issue_url: https://github.com/pallets/click/issues/2001

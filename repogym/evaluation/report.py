@@ -21,7 +21,12 @@ def collect_trials() -> list[dict]:
             row |= json.loads(cfg.read_text())
         trace = tdir / "trace.jsonl"
         if trace.exists() and row.get("agent") == "claude-code":
-            row["telemetry"] = trial_metrics(normalize_claude_trace(trace))
+            events = normalize_claude_trace(trace)
+            row["telemetry"] = trial_metrics(events)
+            diff = tdir / "diff.patch"
+            if diff.exists():
+                from repogym.telemetry.ucr import compute_ucr
+                row["telemetry"]["ucr"] = compute_ucr(events, diff.read_text())
         row["trial_dir"] = str(tdir.relative_to(REPO_ROOT))
         rows.append(row)
     return rows

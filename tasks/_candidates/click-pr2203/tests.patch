@@ -1,0 +1,22 @@
+diff --git a/tests/test_command_decorators.py b/tests/test_command_decorators.py
+index 8d07531cd5..9d54d7b27b 100644
+--- a/tests/test_command_decorators.py
++++ b/tests/test_command_decorators.py
+@@ -35,3 +35,17 @@ def cmd2():
+     result = runner.invoke(grp, ["grp2", "cmd2"])
+     assert result.exception is None
+     assert result.output == "grp1\ngrp2\ncmd2\n"
++
++
++def test_params_argument(runner):
++    opt = click.Argument(["a"])
++
++    @click.command(params=[opt])
++    @click.argument("b")
++    def cli(a, b):
++        click.echo(f"{a} {b}")
++
++    assert cli.params[0].name == "a"
++    assert cli.params[1].name == "b"
++    result = runner.invoke(cli, ["1", "2"])
++    assert result.output == "1 2\n"

@@ -1,0 +1,26 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index ca99f93e57..e8d52450d3 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -173,6 +173,7 @@ Unreleased
+ -   ``confirmation_prompt`` can be set to a custom string. :issue:`723`
+ -   Allow styled output in Jupyter on Windows. :issue:`1271`
+ -   ``style()`` supports the ``strikethrough`` style. :issue:`805`
++-   Multiline marker is removed from short help text. :issue:`1597`
+ 
+ 
+ Version 7.1.2
+diff --git a/src/click/utils.py b/src/click/utils.py
+index e889a4e15a..eccdfd9f54 100644
+--- a/src/click/utils.py
++++ b/src/click/utils.py
+@@ -57,6 +57,9 @@ def make_default_short_help(help, max_length=45):
+     result = []
+     done = False
+ 
++    if words[0] == "\b":
++        words = words[1:]
++
+     for word in words:
+         if word[-1:] == ".":
+             done = True

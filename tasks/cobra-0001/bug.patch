@@ -1,0 +1,13 @@
+diff --git a/command.go b/command.go
+index c05fed4..c53fcea 100644
+--- a/command.go
++++ b/command.go
+@@ -866,7 +866,7 @@ func (c *Command) SuggestionsFor(typedName string) []string {
+ 		if cmd.IsAvailableCommand() {
+ 			levenshteinDistance := ld(typedName, cmd.Name(), true)
+ 			suggestByLevenshtein := levenshteinDistance <= c.SuggestionsMinimumDistance
+-			suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
++			suggestByPrefix := strings.HasPrefix(strings.ToLower(typedName), strings.ToLower(cmd.Name()))
+ 			if suggestByLevenshtein || suggestByPrefix {
+ 				suggestions = append(suggestions, cmd.Name())
+ 			}

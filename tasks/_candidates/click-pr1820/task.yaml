@@ -1,0 +1,56 @@
+id: click-pr1820
+repo: pallets/click
+base_commit: 0dc6d74df5c984ff923f5d17e97bf94a21b3a3cd
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "CliRunner prompt input echos twice on Python 2\n\n```python\r\nimport click\r\
+  \nfrom click.testing import CliRunner\r\n\r\n@click.command()\r\ndef cli():\r\n\
+  \    prompt(\"value\")\r\n    click.echo(\"done\")\r\n\r\nrunner = CliRunner(echo_stdin=True)\r\
+  \nresult = runner.invoke(cli, input=\"test\")\r\nprint(result.output)\r\n```\r\n\
+  \r\nPython 3 output (correct):\r\n\r\n```\r\nvalue: test\r\ndone\r\n```\r\n\r\n\
+  Python 2 output:\r\n\r\n```\r\nvalue: testtest\r\ndone\r\n```\r\n\r\nI went back\
+  \ and this appears to be the case in every version since 1.x. The issue seems to\
+  \ be with the `visible_input` function in `CliRunner.isolation`. It uses `input`\
+  \ after that has been wrapped in `EchoingStdin`. It appears to work in Python 3\
+  \ due to some weird lookup behavior, but that appears to be an accident.  There\
+  \ are no tests for `echo_stdin` and `prompt` at the same time.\r\n\r\nIt didn't\
+  \ show up in the docs because the docs runner overrode `isolation` with different\
+  \ code that had `visible_input` pull from the original input and only replaced `sys.stdin`\
+  \ with the EchoingStdin wrapper, rather than both with the wrapper. While porting\
+  \ the docs runner to pallets-sphinx-themes, I removed that code in favor of simpler\
+  \ subclassing, and noticed that the docs had double input, which led me to discover\
+  \ the full issue.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_testing.py::test_echo_stdin_stream
+  - tests/test_testing.py::test_echo_stdin_prompts
+  - tests/test_testing.py::test_python_input
+  - tests/test_testing.py::test_prompt
+  - tests/test_testing.py::test_hidden_prompt
+  - tests/test_testing.py::test_multiple_prompts
+  - tests/test_testing.py::test_runner_with_stream
+  - tests/test_testing.py::test_catch_exceptions
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1820
+  issue: 1101
+  merged_at: '2021-04-14T14:52:24Z'
+  issue_url: https://github.com/pallets/click/issues/1101

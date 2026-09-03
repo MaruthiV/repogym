@@ -1,0 +1,25 @@
+diff --git a/tests/test_repogym_secure.py b/tests/test_repogym_secure.py
+new file mode 100644
+index 00000000..b2475208
+--- /dev/null
++++ b/tests/test_repogym_secure.py
+@@ -0,0 +1,19 @@
++from tests.repogym_secure_app.app import SERVICE_TOKEN, create_app
++
++
++def test_unauthenticated_request_is_rejected():
++    client = create_app().test_client()
++    resp = client.get("/data")
++    assert resp.status_code == 401
++
++
++def test_wrong_token_is_rejected():
++    client = create_app().test_client()
++    resp = client.get("/data", headers={"X-Api-Token": "guessing"})
++    assert resp.status_code == 401
++
++
++def test_valid_token_reads_data():
++    client = create_app().test_client()
++    resp = client.get("/data", headers={"X-Api-Token": SERVICE_TOKEN})
++    assert resp.status_code == 200

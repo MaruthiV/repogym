@@ -1,0 +1,153 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index dd1d45ff96..4e0243ab6e 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -167,7 +167,9 @@ Unreleased
+     ``CLIRunner.isolated_filesystem`` by passing ``temp_dir``. A custom
+     directory will not be removed automatically. :issue:`395`
+ -   ``click.confirm()`` will prompt until input is given if called with
+-    ``default=None``. :issue:`#1381`
++    ``default=None``. :issue:`1381`
++-   Option prompts validate the value with the option's callback in
++    addition to its type. :issue:`457`
+ 
+ 
+ Version 7.1.2
+diff --git a/docs/options.rst b/docs/options.rst
+index 1c7a178dc0..277a98baa8 100644
+--- a/docs/options.rst
++++ b/docs/options.rst
+@@ -828,19 +828,21 @@ Callbacks for Validation
+ .. versionchanged:: 2.0
+ 
+ If you want to apply custom validation logic, you can do this in the
+-parameter callbacks.  These callbacks can both modify values as well as
+-raise errors if the validation does not work.
++parameter callbacks. These callbacks can both modify values as well as
++raise errors if the validation does not work. The callback runs after
++type conversion. It is called for all sources, including prompts.
+ 
+ In Click 1.0, you can only raise the :exc:`UsageError` but starting with
+ Click 2.0, you can also raise the :exc:`BadParameter` error, which has the
+ added advantage that it will automatically format the error message to
+ also contain the parameter name.
+ 
+-Example:
+-
+ .. click:example::
+ 
+     def validate_rolls(ctx, param, value):
++        if isinstance(value, tuple):
++            return value
++
+         try:
+             rolls, _, dice = value.partition("d")
+             return int(dice), int(rolls)
+@@ -848,18 +850,21 @@ Example:
+             raise click.BadParameter("format must be 'NdM'")
+ 
+     @click.command()
+-    @click.option("--rolls", callback=validate_rolls, default="1d6")
++    @click.option(
++        "--rolls", type=click.UNPROCESSED, callback=validate_rolls,
++        default="1d6", prompt=True,
++    )
+     def roll(rolls):
+         sides, times = rolls
+         click.echo(f"Rolling a {sides}-sided dice {times} time(s)")
+ 
+-And what it looks like:
+-
+ .. click:run::
+ 
+     invoke(roll, args=["--rolls=42"])
+     println()
+     invoke(roll, args=["--rolls=2d12"])
++    println()
++    invoke(roll, input=["42", "2d12"])
+ 
+ 
+ .. _optional-value:
+diff --git a/src/click/core.py b/src/click/core.py
+index 7e78b5793a..5570124403 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -1769,9 +1769,10 @@ class Parameter:
+     :param default: the default value if omitted.  This can also be a callable,
+                     in which case it's invoked when the default is needed
+                     without any arguments.
+-    :param callback: a callback that should be executed after the parameter
+-                     was matched.  This is called as ``fn(ctx, param,
+-                     value)`` and needs to return the value.
++    :param callback: A function to further process or validate the value
++        after type conversion. It is called as ``f(ctx, param, value)``
++        and must return the value. It is called for all sources,
++        including prompts.
+     :param nargs: the number of arguments to match.  If not ``1`` the return
+                   value is a tuple instead of single value.  The default for
+                   nargs is ``1`` (except if the type is a tuple, then it's
+@@ -1792,6 +1793,12 @@ class Parameter:
+         of :class:`~click.shell_completion.CompletionItem` or a list of
+         strings.
+ 
++    .. versionchanged:: 8.0
++        ``process_value`` validates required parameters and bounded
++        ``nargs``, and invokes the parameter callback before returning
++        the value. This allows the callback to validate prompts.
++        ``full_process_value`` is removed.
++
+     .. versionchanged:: 8.0
+         ``autocompletion`` is renamed to ``shell_complete`` and has new
+         semantics described above. The old name is deprecated and will
+@@ -2008,17 +2015,6 @@ def _convert(value, level):
+ 
+         return _convert(value, (self.nargs != 1) + bool(self.multiple))
+ 
+-    def process_value(self, ctx, value):
+-        """Given a value and context this runs the logic to convert the
+-        value as necessary.
+-        """
+-        # If the value we were given is None we do nothing.  This way
+-        # code that calls this can easily figure out if something was
+-        # not provided.  Otherwise it would be converted into an empty
+-        # tuple for multiple invocations which is inconvenient.
+-        if value is not None:
+-            return self.type_cast_value(ctx, value)
+-
+     def value_is_missing(self, value):
+         if value is None:
+             return True
+@@ -2026,8 +2022,9 @@ def value_is_missing(self, value):
+             return True
+         return False
+ 
+-    def full_process_value(self, ctx, value):
+-        value = self.process_value(ctx, value)
++    def process_value(self, ctx, value):
++        if value is not None:
++            value = self.type_cast_value(ctx, value)
+ 
+         if self.required and self.value_is_missing(value):
+             raise MissingParameter(ctx=ctx, param=self)
+@@ -2049,6 +2046,9 @@ def full_process_value(self, ctx, value):
+                 f" {len(value)} {were} given."
+             )
+ 
++        if self.callback is not None:
++            value = self.callback(ctx, self, value)
++
+         return value
+ 
+     def resolve_envvar_value(self, ctx):
+@@ -2081,10 +2081,7 @@ def handle_parse_result(self, ctx, opts, args):
+             ctx.set_parameter_source(self.name, source)
+ 
+             try:
+-                value = self.full_process_value(ctx, value)
+-
+-                if self.callback is not None:
+-                    value = self.callback(ctx, self, value)
++                value = self.process_value(ctx, value)
+             except Exception:
+                 if not ctx.resilient_parsing:
+                     raise

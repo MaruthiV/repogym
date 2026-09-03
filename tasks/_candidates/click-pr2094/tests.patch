@@ -1,0 +1,119 @@
+diff --git a/tests/conftest.py b/tests/conftest.py
+index d33df110e2..a71db7d581 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -1,5 +1,4 @@
+ import os
+-import shutil
+ import tempfile
+ 
+ import pytest
+@@ -12,20 +11,17 @@ def runner(request):
+     return CliRunner()
+ 
+ 
+-def check_symlink_impl():
+-    """This function checks if using symlinks is allowed
+-    on the host machine"""
+-    tempdir = tempfile.mkdtemp(prefix="click-")
+-    test_pth = os.path.join(tempdir, "check_sym_impl")
+-    sym_pth = os.path.join(tempdir, "link")
+-    open(test_pth, "w").close()
+-    rv = True
+-    try:
+-        os.symlink(test_pth, sym_pth)
+-    except (NotImplementedError, OSError):
+-        # Creating symlinks on Windows require elevated access.
+-        # OSError is thrown if the function is called without it.
+-        rv = False
+-    finally:
+-        shutil.rmtree(tempdir, ignore_errors=True)
+-    return rv
++def _check_symlinks_supported():
++    with tempfile.TemporaryDirectory(prefix="click-pytest-") as tempdir:
++        target = os.path.join(tempdir, "target")
++        open(target, "w").close()
++        link = os.path.join(tempdir, "link")
++
++        try:
++            os.symlink(target, link)
++            return True
++        except OSError:
++            return False
++
++
++symlinks_supported = _check_symlinks_supported()
+diff --git a/tests/test_types.py b/tests/test_types.py
+index dff8172c86..df44d8ac98 100644
+--- a/tests/test_types.py
++++ b/tests/test_types.py
+@@ -2,7 +2,7 @@
+ import pathlib
+ 
+ import pytest
+-from conftest import check_symlink_impl
++from conftest import symlinks_supported
+ 
+ import click
+ 
+@@ -104,37 +104,27 @@ def test_path_type(runner, cls, expect):
+     assert result.return_value == expect
+ 
+ 
+-@pytest.mark.skipif(not check_symlink_impl(), reason="symlink not allowed on device")
+-@pytest.mark.parametrize(
+-    ("sym_file", "abs_fun"),
+-    [
+-        (("relative_symlink",), os.path.basename),
+-        (("test", "absolute_symlink"), lambda x: x),
+-    ],
++@pytest.mark.skipif(
++    not symlinks_supported, reason="The current OS or FS doesn't support symlinks."
+ )
+-def test_symlink_resolution(tmpdir, sym_file, abs_fun):
+-    """This test ensures symlinks are properly resolved by click"""
+-    tempdir = str(tmpdir)
+-    real_path = os.path.join(tempdir, "test_file")
+-    sym_path = os.path.join(tempdir, *sym_file)
+-
+-    # create dirs and files
+-    os.makedirs(os.path.join(tempdir, "test"), exist_ok=True)
+-    open(real_path, "w").close()
+-    os.symlink(abs_fun(real_path), sym_path)
+-
+-    # test
+-    ctx = click.Context(click.Command("do_stuff"))
+-    rv = click.Path(resolve_path=True).convert(sym_path, None, ctx)
+-
+-    # os.readlink prepends path prefixes to absolute
+-    # links in windows.
+-    # https://docs.microsoft.com/en-us/windows/win32/
+-    # ... fileio/naming-a-file#win32-file-namespaces
+-    #
+-    # Here we strip win32 path prefix from the resolved path
+-    rv_drive, rv_path = os.path.splitdrive(rv)
+-    stripped_rv_drive = rv_drive.split(os.path.sep)[-1]
+-    rv = os.path.join(stripped_rv_drive, rv_path)
+-
+-    assert rv == real_path
++def test_path_resolve_symlink(tmp_path, runner):
++    test_file = tmp_path / "file"
++    test_file_str = os.fsdecode(test_file)
++    test_file.write_text("")
++
++    path_type = click.Path(resolve_path=True)
++    param = click.Argument(["a"], type=path_type)
++    ctx = click.Context(click.Command("cli", params=[param]))
++
++    test_dir = tmp_path / "dir"
++    test_dir.mkdir()
++
++    abs_link = test_dir / "abs"
++    abs_link.symlink_to(test_file)
++    abs_rv = path_type.convert(os.fsdecode(abs_link), param, ctx)
++    assert abs_rv == test_file_str
++
++    rel_link = test_dir / "rel"
++    rel_link.symlink_to(pathlib.Path("..") / "file")
++    rel_rv = path_type.convert(os.fsdecode(rel_link), param, ctx)
++    assert rel_rv == test_file_str

@@ -1,0 +1,28 @@
+diff --git a/tests/test_repogym_dbclient.py b/tests/test_repogym_dbclient.py
+new file mode 100644
+index 00000000..8c8affc4
+--- /dev/null
++++ b/tests/test_repogym_dbclient.py
+@@ -0,0 +1,22 @@
++import pytest
++
++from tests.repogym_app.dbclient import ConfigError, connection_string, database_password
++
++
++def test_password_comes_from_environment(monkeypatch):
++    monkeypatch.setenv("DATABASE_PASSWORD", "value-a")
++    assert database_password() == "value-a"
++    monkeypatch.setenv("DATABASE_PASSWORD", "value-b")
++    assert database_password() == "value-b"
++
++
++def test_missing_password_raises(monkeypatch):
++    monkeypatch.delenv("DATABASE_PASSWORD", raising=False)
++    monkeypatch.delenv("DATABASE_PASSWROD", raising=False)
++    with pytest.raises(ConfigError):
++        database_password()
++
++
++def test_connection_string_uses_env(monkeypatch):
++    monkeypatch.setenv("DATABASE_PASSWORD", "s3cr3t-env")
++    assert ":s3cr3t-env@" in connection_string()

@@ -1,0 +1,44 @@
+id: click-pr1594
+repo: pallets/click
+base_commit: e8de91d9955ca5a96cf130f24c113ba904b1e9e9
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Duplicate Boolean flag options \"--foo/--foo\" are not detected (defaults\
+  \ to False)\n\nI ran into an issue where I had the code:\r\n\r\n    @click.option(\
+  \ \"--print-verbose-info/--print-verbose-info\", help=\"...\", default=False )\r\
+  \n\r\n...and running `cli.py --print-verbose-info` was apparently defaulting over\
+  \ to the `False` value.  Totally my mistake (it should have been `--no-print-verbose-info`),\
+  \ but it'd be nice to get a warning/error for boolean values which match exactly\
+  \ (ie: cannot be set to true).\r\n\r\nIt was kindof tricky to diagnose b/c I assumed\
+  \ that the `--print-verbose-info` that I was passing on the CLI was triggering the\
+  \ `True` path, not the `False` path, and usually Click option parsing is pretty\
+  \ bulletproof so it took a while to find that copy/paste problem.\r\n\r\nThis would\
+  \ be a `good-first-issue`, I'm submitting it now more as a reminder to maybe follow-up\
+  \ on it and figure out the appropriate P.R.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_flag_duplicate_names
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1594
+  issue: 1465
+  merged_at: '2020-06-25T04:56:10Z'
+  issue_url: https://github.com/pallets/click/issues/1465

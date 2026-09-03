@@ -1,0 +1,557 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index c27b103065..95d16b792e 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -111,8 +111,29 @@ Unreleased
+     completion system. :issue:`942`
+ -   Include ``--help`` option in completion. :pr:`1504`
+ -   ``ParameterSource`` is an ``enum.Enum`` subclass. :issue:`1530`
+--   Boolean type strips surrounding space before converting.
++-   Boolean and UUID types strip surrounding space before converting.
+     :issue:`1605`
++-   Adjusted error message from parameter type validation to be more
++    consistent. Quotes are used to distinguish the invalid value.
++    :issue:`1605`
++-   The default value for a parameter with ``nargs`` > 1 and
++    ``multiple=True`` must be a list of tuples. :issue:`1649`
++-   When getting the value for a parameter, the default is tried in the
++    same section as other sources to ensure consistent processing.
++    :issue:`1649`
++-   All parameter types accept a value that is already the correct type.
++    :issue:`1649`
++-   For shell completion, an argument is considered incomplete if its
++    value did not come from the command line args. :issue:`1649`
++-   Added ``ParameterSource.PROMPT`` to track parameter values that were
++    prompted for. :issue:`1649`
++-   Options with ``nargs`` > 1 no longer raise an error if a default is
++    not given. Parameters with ``nargs`` > 1 default to ``None``, and
++    parameters with ``multiple=True`` or ``nargs=-1`` default to an
++    empty tuple. :issue:`472`
++-   Handle empty env vars as though the option were not passed. This
++    extends the change introduced in 7.1 to be consistent in more cases.
++    :issue:`1285`
+ 
+ 
+ Version 7.1.2
+diff --git a/src/click/core.py b/src/click/core.py
+index fae95db802..53b175b1da 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -142,6 +142,9 @@ class ParameterSource(enum.Enum):
+ 
+     .. versionchanged:: 8.0
+         Use :class:`~enum.Enum` and drop the ``validate`` method.
++
++    .. versionchanged:: 8.0
++        Added the ``PROMPT`` value.
+     """
+ 
+     COMMANDLINE = enum.auto()
+@@ -152,6 +155,8 @@ class ParameterSource(enum.Enum):
+     """Used the default specified by the parameter."""
+     DEFAULT_MAP = enum.auto()
+     """Used a default provided by :attr:`Context.default_map`."""
++    PROMPT = enum.auto()
++    """Used a prompt to confirm a default or provide a value."""
+ 
+ 
+ class Context:
+@@ -277,10 +282,6 @@ def __init__(
+         #: Map of parameter names to their parsed values. Parameters
+         #: with ``expose_value=False`` are not stored.
+         self.params = {}
+-        # This tracks the actual param objects that were parsed, even if
+-        # they didn't expose a value. Used by completion system to know
+-        # what parameters to exclude.
+-        self._seen_params = set()
+         #: the leftover arguments.
+         self.args = []
+         #: protected arguments.  These are arguments that are prepended
+@@ -737,8 +738,12 @@ def get_parameter_source(self, name):
+ 
+         :param name: The name of the parameter.
+         :rtype: ParameterSource
++
++        .. versionchanged:: 8.0
++            Returns ``None`` if the parameter was not provided from any
++            source.
+         """
+-        return self._parameter_source[name]
++        return self._parameter_source.get(name)
+ 
+ 
+ class BaseCommand:
+@@ -1283,7 +1288,11 @@ def shell_complete(self, ctx, incomplete):
+                 if (
+                     not isinstance(param, Option)
+                     or param.hidden
+-                    or (not param.multiple and param in ctx._seen_params)
++                    or (
++                        not param.multiple
++                        and ctx.get_parameter_source(param.name)
++                        is ParameterSource.COMMANDLINE
++                    )
+                 ):
+                     continue
+ 
+@@ -1779,6 +1788,15 @@ class Parameter:
+         be removed in 8.1, until then it will be wrapped to match the
+         new requirements.
+ 
++    .. versionchanged:: 8.0
++        For ``multiple=True, nargs>1``, the default must be a list of
++        tuples.
++
++    .. versionchanged:: 8.0
++        Setting a default is no longer required for ``nargs>1``, it will
++        default to ``None``. ``multiple=True`` or ``nargs=-1`` will
++        default to ``()``.
++
+     .. versionchanged:: 7.1
+         Empty environment variables are ignored rather than taking the
+         empty string value. This makes it possible for scripts to clear
+@@ -1926,16 +1944,20 @@ def consume_value(self, ctx, opts):
+             value = ctx.lookup_default(self.name)
+             source = ParameterSource.DEFAULT_MAP
+ 
+-        if value is not None:
+-            ctx.set_parameter_source(self.name, source)
++        if value is None:
++            value = self.get_default(ctx)
++            source = ParameterSource.DEFAULT
+ 
+-        return value
++        return value, source
+ 
+     def type_cast_value(self, ctx, value):
+         """Given a value this runs it properly through the type system.
+         This automatically handles things like `nargs` and `multiple` as
+         well as composite types.
+         """
++        if value is None:
++            return () if self.multiple or self.nargs == -1 else None
++
+         if self.type.is_composite:
+             if self.nargs <= 1:
+                 raise TypeError(
+@@ -1943,14 +1965,17 @@ def type_cast_value(self, ctx, value):
+                     f" been set to {self.nargs}. This is not supported;"
+                     " nargs needs to be set to a fixed value > 1."
+                 )
++
+             if self.multiple:
+-                return tuple(self.type(x or (), self, ctx) for x in value or ())
+-            return self.type(value or (), self, ctx)
++                return tuple(self.type(x, self, ctx) for x in value)
++
++            return self.type(value, self, ctx)
+ 
+         def _convert(value, level):
+             if level == 0:
+                 return self.type(value, self, ctx)
+-            return tuple(_convert(x, level - 1) for x in value or ())
++
++            return tuple(_convert(x, level - 1) for x in value)
+ 
+         return _convert(value, (self.nargs != 1) + bool(self.multiple))
+ 
+@@ -1975,12 +2000,6 @@ def value_is_missing(self, value):
+     def full_process_value(self, ctx, value):
+         value = self.process_value(ctx, value)
+ 
+-        if value is None and not ctx.resilient_parsing:
+-            value = self.get_default(ctx)
+-
+-            if value is not None:
+-                ctx.set_parameter_source(self.name, ParameterSource.DEFAULT)
+-
+         if self.required and self.value_is_missing(value):
+             raise MissingParameter(ctx=ctx, param=self)
+ 
+@@ -1988,8 +2007,12 @@ def full_process_value(self, ctx, value):
+         if (
+             not ctx.resilient_parsing
+             and self.nargs > 1
+-            and self.nargs != len(value)
+             and isinstance(value, (tuple, list))
++            and (
++                any(len(v) != self.nargs for v in value)
++                if self.multiple
++                else len(value) != self.nargs
++            )
+         ):
+             were = "was" if len(value) == 1 else "were"
+             ctx.fail(
+@@ -2002,45 +2025,46 @@ def full_process_value(self, ctx, value):
+     def resolve_envvar_value(self, ctx):
+         if self.envvar is None:
+             return
++
+         if isinstance(self.envvar, (tuple, list)):
+             for envvar in self.envvar:
+                 rv = os.environ.get(envvar)
+-                if rv is not None:
++
++                if rv:
+                     return rv
+         else:
+             rv = os.environ.get(self.envvar)
+ 
+-            if rv != "":
++            if rv:
+                 return rv
+ 
+     def value_from_envvar(self, ctx):
+         rv = self.resolve_envvar_value(ctx)
++
+         if rv is not None and self.nargs != 1:
+             rv = self.type.split_envvar_value(rv)
++
+         return rv
+ 
+     def handle_parse_result(self, ctx, opts, args):
+         with augment_usage_errors(ctx, param=self):
+-            value = self.consume_value(ctx, opts)
++            value, source = self.consume_value(ctx, opts)
++            ctx.set_parameter_source(self.name, source)
++
+             try:
+                 value = self.full_process_value(ctx, value)
++
++                if self.callback is not None:
++                    value = self.callback(ctx, self, value)
+             except Exception:
+                 if not ctx.resilient_parsing:
+                     raise
++
+                 value = None
+-            if self.callback is not None:
+-                try:
+-                    value = self.callback(ctx, self, value)
+-                except Exception:
+-                    if not ctx.resilient_parsing:
+-                        raise
+ 
+         if self.expose_value:
+             ctx.params[self.name] = value
+ 
+-        if value is not None:
+-            ctx._seen_params.add(self)
+-
+         return value, args
+ 
+     def get_help_record(self, ctx):
+@@ -2404,26 +2428,44 @@ def resolve_envvar_value(self, ctx):
+ 
+         if rv is not None:
+             return rv
++
+         if self.allow_from_autoenv and ctx.auto_envvar_prefix is not None:
+             envvar = f"{ctx.auto_envvar_prefix}_{self.name.upper()}"
+-            return os.environ.get(envvar)
++            rv = os.environ.get(envvar)
++
++            if rv:
++                return rv
+ 
+     def value_from_envvar(self, ctx):
+         rv = self.resolve_envvar_value(ctx)
++
+         if rv is None:
+             return None
++
+         value_depth = (self.nargs != 1) + bool(self.multiple)
++
+         if value_depth > 0 and rv is not None:
+             rv = self.type.split_envvar_value(rv)
++
+             if self.multiple and self.nargs != 1:
+                 rv = batch(rv, self.nargs)
++
+         return rv
+ 
+-    def full_process_value(self, ctx, value):
+-        if value is None and self.prompt is not None and not ctx.resilient_parsing:
+-            return self.prompt_for_value(ctx)
++    def consume_value(self, ctx, opts):
++        value, source = super().consume_value(ctx, opts)
++
++        # The value wasn't set, or used the param's default, prompt if
++        # prompting is enabled.
++        if (
++            source in {None, ParameterSource.DEFAULT}
++            and self.prompt is not None
++            and not ctx.resilient_parsing
++        ):
++            value = self.prompt_for_value(ctx)
++            source = ParameterSource.PROMPT
+ 
+-        return super().full_process_value(ctx, value)
++        return value, source
+ 
+ 
+ class Argument(Parameter):
+diff --git a/src/click/shell_completion.py b/src/click/shell_completion.py
+index efefba10d0..9b10e25cf8 100644
+--- a/src/click/shell_completion.py
++++ b/src/click/shell_completion.py
+@@ -4,6 +4,7 @@
+ from .core import Argument
+ from .core import MultiCommand
+ from .core import Option
++from .core import ParameterSource
+ from .parser import split_arg_string
+ from .utils import echo
+ 
+@@ -395,29 +396,27 @@ def get_completion_class(shell):
+     return _available_shells.get(shell)
+ 
+ 
+-def _is_incomplete_argument(values, param):
++def _is_incomplete_argument(ctx, param):
+     """Determine if the given parameter is an argument that can still
+     accept values.
+ 
+-    :param values: Dict of param names and values parsed from the
+-        command line args.
++    :param ctx: Invocation context for the command represented by the
++        parsed complete args.
+     :param param: Argument object being checked.
+     """
+     if not isinstance(param, Argument):
+         return False
+ 
+-    value = values[param.name]
+-
+-    if value is None:
+-        return True
+-
+-    if param.nargs == -1:
+-        return True
+-
+-    if isinstance(value, list) and param.nargs > 1 and len(value) < param.nargs:
+-        return True
+-
+-    return False
++    value = ctx.params[param.name]
++    return (
++        param.nargs == -1
++        or ctx.get_parameter_source(param.name) is not ParameterSource.COMMANDLINE
++        or (
++            param.nargs > 1
++            and isinstance(value, (tuple, list))
++            and len(value) < param.nargs
++        )
++    )
+ 
+ 
+ def _start_of_option(value):
+@@ -523,16 +522,18 @@ def _resolve_incomplete(ctx, args, incomplete):
+     if "--" not in args and _start_of_option(incomplete):
+         return ctx.command, incomplete
+ 
++    params = ctx.command.get_params(ctx)
++
+     # If the last complete arg is an option name with an incomplete
+     # value, the option will provide value completions.
+-    for param in ctx.command.get_params(ctx):
++    for param in params:
+         if _is_incomplete_option(args, param):
+             return param, incomplete
+ 
+     # It's not an option name or value. The first argument without a
+     # parsed value will provide value completions.
+-    for param in ctx.command.get_params(ctx):
+-        if _is_incomplete_argument(ctx.params, param):
++    for param in params:
++        if _is_incomplete_argument(ctx, param):
+             return param, incomplete
+ 
+     # There were no unparsed arguments, the command may be a group that
+diff --git a/src/click/types.py b/src/click/types.py
+index 721c556e8b..8c886d6b5f 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -181,7 +181,7 @@ def convert(self, value, param, ctx):
+                 else:
+                     value = value.decode("utf-8", "replace")
+             return value
+-        return value
++        return str(value)
+ 
+     def __repr__(self):
+         return "STRING"
+@@ -255,11 +255,9 @@ def convert(self, value, param, ctx):
+         if normed_value in normed_choices:
+             return normed_choices[normed_value]
+ 
+-        self.fail(
+-            f"invalid choice: {value}. (choose from {', '.join(self.choices)})",
+-            param,
+-            ctx,
+-        )
++        one_of = "one of " if len(self.choices) > 1 else ""
++        choices_str = ", ".join(repr(c) for c in self.choices)
++        self.fail(f"{value!r} is not {one_of}{choices_str}.", param, ctx)
+ 
+     def __repr__(self):
+         return f"Choice({list(self.choices)})"
+@@ -320,14 +318,19 @@ def _try_to_convert_date(self, value, format):
+             return None
+ 
+     def convert(self, value, param, ctx):
+-        # Exact match
++        if isinstance(value, datetime):
++            return value
++
+         for format in self.formats:
+-            dtime = self._try_to_convert_date(value, format)
+-            if dtime:
+-                return dtime
++            converted = self._try_to_convert_date(value, format)
++
++            if converted is not None:
++                return converted
+ 
++        plural = "s" if len(self.formats) > 1 else ""
++        formats_str = ", ".join(repr(f) for f in self.formats)
+         self.fail(
+-            f"invalid datetime format: {value}. (choose from {', '.join(self.formats)})"
++            f"{value!r} does not match the format{plural} {formats_str}.", param, ctx
+         )
+ 
+     def __repr__(self):
+@@ -341,7 +344,7 @@ def convert(self, value, param, ctx):
+         try:
+             return self._number_class(value)
+         except ValueError:
+-            self.fail(f"{value} is not a valid {self.name}", param, ctx)
++            self.fail(f"{value!r} is not a valid {self.name}.", param, ctx)
+ 
+ 
+ class _NumberRangeBase(_NumberParamTypeBase):
+@@ -495,7 +498,7 @@ class BoolParamType(ParamType):
+     name = "boolean"
+ 
+     def convert(self, value, param, ctx):
+-        if isinstance(value, bool):
++        if value in {False, True}:
+             return bool(value)
+ 
+         norm = value.strip().lower()
+@@ -506,7 +509,7 @@ def convert(self, value, param, ctx):
+         if norm in {"0", "false", "f", "no", "n", "off"}:
+             return False
+ 
+-        self.fail(f"{value!r} is not a valid boolean value.", param, ctx)
++        self.fail(f"{value!r} is not a valid boolean.", param, ctx)
+ 
+     def __repr__(self):
+         return "BOOL"
+@@ -518,10 +521,15 @@ class UUIDParameterType(ParamType):
+     def convert(self, value, param, ctx):
+         import uuid
+ 
++        if isinstance(value, uuid.UUID):
++            return value
++
++        value = value.strip()
++
+         try:
+             return uuid.UUID(value)
+         except ValueError:
+-            self.fail(f"{value} is not a valid UUID value", param, ctx)
++            self.fail(f"{value!r} is not a valid UUID.", param, ctx)
+ 
+     def __repr__(self):
+         return "UUID"
+@@ -610,11 +618,7 @@ def convert(self, value, param, ctx):
+                     ctx.call_on_close(safecall(f.flush))
+             return f
+         except OSError as e:  # noqa: B014
+-            self.fail(
+-                f"Could not open file: {filename_to_ui(value)}: {get_strerror(e)}",
+-                param,
+-                ctx,
+-            )
++            self.fail(f"{filename_to_ui(value)!r}: {get_strerror(e)}", param, ctx)
+ 
+     def shell_complete(self, ctx, param, incomplete):
+         """Return a special completion marker that tells the completion
+@@ -818,37 +822,55 @@ def convert(self, value, param, ctx):
+ 
+ 
+ def convert_type(ty, default=None):
+-    """Converts a callable or python type into the most appropriate
+-    param type.
++    """Find the most appropriate :class:`ParamType` for the given Python
++    type. If the type isn't provided, it can be inferred from a default
++    value.
+     """
+     guessed_type = False
++
+     if ty is None and default is not None:
+-        if isinstance(default, tuple):
+-            ty = tuple(map(type, default))
++        if isinstance(default, (tuple, list)):
++            # If the default is empty, ty will remain None and will
++            # return STRING.
++            if default:
++                item = default[0]
++
++                # A tuple of tuples needs to detect the inner types.
++                # Can't call convert recursively because that would
++                # incorrectly unwind the tuple to a single type.
++                if isinstance(item, (tuple, list)):
++                    ty = tuple(map(type, item))
++                else:
++                    ty = type(item)
+         else:
+             ty = type(default)
++
+         guessed_type = True
+ 
+     if isinstance(ty, tuple):
+         return Tuple(ty)
++
+     if isinstance(ty, ParamType):
+         return ty
++
+     if ty is str or ty is None:
+         return STRING
++
+     if ty is int:
+         return INT
+-    # Booleans are only okay if not guessed.  This is done because for
+-    # flags the default value is actually a bit of a lie in that it
+-    # indicates which of the flags is the one we want.  See get_default()
+-    # for more information.
+-    if ty is bool and not guessed_type:
+-        return BOOL
++
+     if ty is float:
+         return FLOAT
++
++    # Booleans are only okay if not guessed. For is_flag options with
++    # flag_value, default=True indicates which flag_value is the
++    # default.
++    if ty is bool and not guessed_type:
++        return BOOL
++
+     if guessed_type:
+         return STRING
+ 
+-    # Catch a common mistake
+     if __debug__:
+         try:
+             if issubclass(ty, ParamType):
+@@ -856,7 +878,9 @@ def convert_type(ty, default=None):
+                     f"Attempted to use an uninstantiated parameter type ({ty})."
+                 )
+         except TypeError:
++            # ty is an instance (correct), so issubclass fails.
+             pass
++
+     return FuncParamType(ty)
+ 
+ 

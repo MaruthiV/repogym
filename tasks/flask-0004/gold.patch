@@ -1,0 +1,13 @@
+diff --git a/tests/repogym_secure_app/app.py b/tests/repogym_secure_app/app.py
+index 1631fd46..36fdd49e 100644
+--- a/tests/repogym_secure_app/app.py
++++ b/tests/repogym_secure_app/app.py
+@@ -8,7 +8,7 @@ def create_app():
+ 
+     @app.before_request
+     def require_token():
+-        if flask.request.headers.get("X-Api-Key") != SERVICE_TOKEN:
++        if flask.request.headers.get("X-Api-Token") != SERVICE_TOKEN:
+             return flask.jsonify(error="unauthorized"), 401
+         return None
+ 

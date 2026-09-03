@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: b63ace28d50b53e74b5260f6cb357ccfe5560133
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "strip \"_command\" suffix when generating command name\n\nYou often want\
   \ a command to have the same name as a function it is wrapping. However, this will\
@@ -33,6 +33,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2604
   issue: 2322

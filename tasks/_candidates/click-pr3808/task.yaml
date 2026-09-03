@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 00f257bb8e714064bea16425007543bbc0800445
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: 'Add support for `set` and `frozenset` (and `dict`?) as native Click types
 
@@ -47,6 +47,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 3808
   issue: 3036

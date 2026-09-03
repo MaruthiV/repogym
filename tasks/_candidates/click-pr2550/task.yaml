@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: d34d31f6dde4350f9508f0327698f851c595d91c
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Flags with `multiple=True` trigger `TypeError`\n\nAdding an option with `is_flag=True`\
   \ and `multiple=True` will trigger a `TypeError` in `Parameter.consume_value()`\
@@ -45,6 +45,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2550
   issue: 2246

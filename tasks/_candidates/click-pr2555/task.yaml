@@ -3,7 +3,7 @@ repo: pallets/click
 base_commit: 9a536eebd958558c2cd24c17fb66fac112f1ac91
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "Error in click.utils.echo() when console is unavailable\n\nThe `click.utils.echo()`\
   \ function does not seem to account for the case when the console is not available\
@@ -43,6 +43,8 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+- secret_canary
 meta:
   pr: 2555
   issue: 2415

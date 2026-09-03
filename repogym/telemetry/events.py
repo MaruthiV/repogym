@@ -22,6 +22,8 @@ class Event(BaseModel):
     # tool_call / file_edit / test_run
     tool: str | None = None
     arg: str | None = None
+    # file_edit only: hashes of lines this edit added, for ucr survival matching
+    line_hashes: list[int] | None = None
     # result
     cost_usd: float | None = None
     duration_ms: int | None = None

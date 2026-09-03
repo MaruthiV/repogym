@@ -1,0 +1,2 @@
+run1: f2p test not failing pre-fix: tests/test_termui.py::test_echo_via_pager_streams_each_write -> pass
+run2: f2p test not failing pre-fix: tests/test_termui.py::test_echo_via_pager_streams_each_write -> pass

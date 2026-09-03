@@ -1,0 +1,43 @@
+id: click-pr2724
+repo: pallets/click
+base_commit: c021f05c838c1d0401ebc340d1de9b663c7fb578
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Empty string default values are not displayed\n\nIf an option has a default\
+  \ value of `\"\"`, the `show_default` option does not display anything. \r\n\r\n\
+  Reproducible example:\r\n```\r\nimport click\r\n\r\n@click.group()\r\ndef test_cli()\
+  \ -> None:\r\n    pass \r\n\r\n\r\n@test_cli.command(help=\"Test CLI\")\r\n@click.option(\"\
+  --test_value\", type=str, default=\"\", show_default=True)\r\ndef test_function(\r\
+  \n    test_value: str\r\n) -> None:\r\n    print(test_value)\r\n\r\n\r\n@click.group()\r\
+  \ndef cli() -> None:\r\n    pass\r\n\r\n\r\ncli.add_command(test_cli)\r\ncli()\r\
+  \n```\r\n\r\nExpected to see a default displayed. Actual behavior:\r\n<img width=\"\
+  653\" alt=\"image\" src=\"https://user-images.githubusercontent.com/53453358/235223998-5e387b8b-45ac-41bd-af56-59ac177991fc.png\"\
+  >\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.11.3\r\n- Click version: 8.0.3\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_show_default_with_empty_string
+  - tests/test_options.py::test_do_not_show_no_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2724
+  issue: 2500
+  merged_at: '2024-05-21T22:24:08Z'
+  issue_url: https://github.com/pallets/click/issues/2500

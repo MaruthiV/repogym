@@ -100,6 +100,56 @@ def cmd_classify(args) -> int:
     return 0
 
 
+def cmd_run_batch(args) -> int:
+    from repogym.evaluation.report import write_report
+    from repogym.harness.runner import run_trial
+
+    task_ids = args.tasks.split(",") if args.tasks else \
+        sorted(d.name for d in (REPO_ROOT / "tasks").iterdir()
+               if (d / "task.yaml").exists() and not d.name.startswith("_"))
+    agents = args.agents.split(",")
+    plan = [(t, a, n) for t in task_ids for a in agents
+            for n in range(1, args.trials + 1)]
+
+    todo = []
+    for t, a, n in plan:
+        tdir = trial_dir(t, a, n)
+        if (tdir / "grade.json").exists() and not args.redo:
+            continue
+        todo.append((t, a, n))
+
+    print(f"batch: {len(todo)} trials to run ({len(plan) - len(todo)} already graded)")
+    if args.dry_run:
+        for t, a, n in todo:
+            print(f"  {t} x {a} t{n}")
+        return 0
+
+    spent = 0.0
+    for i, (t, a, n) in enumerate(todo, 1):
+        task = load_task(t)
+        try:
+            tdir = run_trial(task, entry_for(task), ADAPTERS[a], n, model=args.model)
+            result = grade(task, entry_for(task), tdir / "diff.patch")
+            (tdir / "grade.json").write_text(json.dumps(result, indent=2))
+            trace = tdir / "trace.jsonl"
+            if trace.exists():
+                from repogym.telemetry.metrics import trial_metrics
+                from repogym.telemetry.normalize import normalize_claude_trace
+                cost = trial_metrics(normalize_claude_trace(trace)).get("cost_usd") or 0.0
+                spent += cost
+            print(f"[{i}/{len(todo)}] {t} x {a} t{n}: {result['outcome']} "
+                  f"(cum est ${spent:.2f})", flush=True)
+        except Exception as e:  # noqa: BLE001 - record and continue, a batch must survive
+            print(f"[{i}/{len(todo)}] {t} x {a} t{n}: ERROR {e}", flush=True)
+        if args.budget_usd and spent > args.budget_usd:
+            print(f"BUDGET CAP HIT: ${spent:.2f} > ${args.budget_usd} - stopping batch")
+            break
+        if i % 25 == 0:
+            write_report()
+    write_report()
+    return 0
+
+
 def cmd_label_template(args) -> int:
     # csv of failed trials for hand-labeling; fill `human_primary`, then run kappa
     import csv
@@ -235,6 +285,16 @@ def main() -> None:
     vc.add_argument("--times", type=int, default=2)
     vc.add_argument("--jobs", type=int, default=4)
     vc.set_defaults(fn=cmd_validate_candidates)
+
+    rb = sub.add_parser("run-batch", help="run+grade a batch of trials with budget checkpoints")
+    rb.add_argument("--agents", required=True, help="comma-separated adapter names")
+    rb.add_argument("--tasks", default=None, help="comma-separated task ids (default: all)")
+    rb.add_argument("--trials", type=int, default=2)
+    rb.add_argument("--model", default=None)
+    rb.add_argument("--budget-usd", type=float, default=None)
+    rb.add_argument("--redo", action="store_true")
+    rb.add_argument("--dry-run", action="store_true")
+    rb.set_defaults(fn=cmd_run_batch)
 
     lt = sub.add_parser("label-template", help="csv of judged trials for human labeling")
     lt.set_defaults(fn=cmd_label_template)

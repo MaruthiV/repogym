@@ -1,0 +1,273 @@
+diff --git a/tests/test_arguments.py b/tests/test_arguments.py
+index ca2e406def..5851d22532 100644
+--- a/tests/test_arguments.py
++++ b/tests/test_arguments.py
+@@ -164,17 +164,17 @@ def inout(output):
+ 
+ 
+ @pytest.mark.parametrize(
+-    ("nargs", "value", "code", "output"),
++    ("nargs", "value", "expect"),
+     [
+-        (2, "", 2, "Argument 'arg' takes 2 values but 0 were given."),
+-        (2, "a", 2, "Argument 'arg' takes 2 values but 1 was given."),
+-        (2, "a b", 0, "len 2"),
+-        (2, "a b c", 2, "Argument 'arg' takes 2 values but 3 were given."),
+-        (-1, "a b c", 0, "len 3"),
+-        (-1, "", 0, "len 0"),
++        (2, "", None),
++        (2, "a", "Argument 'arg' takes 2 values but 1 was given."),
++        (2, "a b", ("a", "b")),
++        (2, "a b c", "Argument 'arg' takes 2 values but 3 were given."),
++        (-1, "a b c", ("a", "b", "c")),
++        (-1, "", ()),
+     ],
+ )
+-def test_nargs_envvar(runner, nargs, value, code, output):
++def test_nargs_envvar(runner, nargs, value, expect):
+     if nargs == -1:
+         param = click.argument("arg", envvar="X", nargs=nargs)
+     else:
+@@ -183,11 +183,14 @@ def test_nargs_envvar(runner, nargs, value, code, output):
+     @click.command()
+     @param
+     def cmd(arg):
+-        click.echo(f"len {len(arg)}")
++        return arg
+ 
+-    result = runner.invoke(cmd, env={"X": value})
+-    assert result.exit_code == code
+-    assert output in result.output
++    result = runner.invoke(cmd, env={"X": value}, standalone_mode=False)
++
++    if isinstance(expect, str):
++        assert expect in str(result.exception)
++    else:
++        assert result.return_value == expect
+ 
+ 
+ def test_empty_nargs(runner):
+diff --git a/tests/test_basic.py b/tests/test_basic.py
+index cc0d0f245e..de9b0aceaf 100644
+--- a/tests/test_basic.py
++++ b/tests/test_basic.py
+@@ -147,7 +147,7 @@ def cli(foo):
+ 
+     result = runner.invoke(cli, ["--foo=bar"])
+     assert result.exception
+-    assert "Invalid value for '--foo': bar is not a valid integer" in result.output
++    assert "Invalid value for '--foo': 'bar' is not a valid integer." in result.output
+ 
+ 
+ def test_uuid_option(runner):
+@@ -169,7 +169,7 @@ def cli(u):
+ 
+     result = runner.invoke(cli, ["--u=bar"])
+     assert result.exception
+-    assert "Invalid value for '--u': bar is not a valid UUID value" in result.output
++    assert "Invalid value for '--u': 'bar' is not a valid UUID." in result.output
+ 
+ 
+ def test_float_option(runner):
+@@ -189,7 +189,7 @@ def cli(foo):
+ 
+     result = runner.invoke(cli, ["--foo=bar"])
+     assert result.exception
+-    assert "Invalid value for '--foo': bar is not a valid float" in result.output
++    assert "Invalid value for '--foo': 'bar' is not a valid float." in result.output
+ 
+ 
+ def test_boolean_option(runner):
+@@ -303,10 +303,7 @@ def input_non_lazy(file):
+         os.mkdir("example.txt")
+         result_in = runner.invoke(input_non_lazy, ["--file=example.txt"])
+         assert result_in.exit_code == 2
+-        assert (
+-            "Invalid value for '--file': Could not open file: example.txt"
+-            in result_in.output
+-        )
++        assert "Invalid value for '--file': 'example.txt'" in result_in.output
+ 
+ 
+ def test_path_option(runner):
+@@ -368,8 +365,8 @@ def cli(method):
+     result = runner.invoke(cli, ["--method=meh"])
+     assert result.exit_code == 2
+     assert (
+-        "Invalid value for '--method': invalid choice: meh."
+-        " (choose from foo, bar, baz)" in result.output
++        "Invalid value for '--method': 'meh' is not one of 'foo', 'bar', 'baz'."
++        in result.output
+     )
+ 
+     result = runner.invoke(cli, ["--help"])
+@@ -389,8 +386,8 @@ def cli(method):
+     result = runner.invoke(cli, ["meh"])
+     assert result.exit_code == 2
+     assert (
+-        "Invalid value for '{foo|bar|baz}': invalid choice: meh. "
+-        "(choose from foo, bar, baz)" in result.output
++        "Invalid value for '{foo|bar|baz}': 'meh' is not one of 'foo',"
++        " 'bar', 'baz'." in result.output
+     )
+ 
+     result = runner.invoke(cli, ["--help"])
+@@ -414,9 +411,8 @@ def cli(start_date):
+     result = runner.invoke(cli, ["--start_date=2015-09"])
+     assert result.exit_code == 2
+     assert (
+-        "Invalid value for '--start_date':"
+-        " invalid datetime format: 2015-09."
+-        " (choose from %Y-%m-%d, %Y-%m-%dT%H:%M:%S, %Y-%m-%d %H:%M:%S)"
++        "Invalid value for '--start_date': '2015-09' does not match the formats"
++        " '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'."
+     ) in result.output
+ 
+     result = runner.invoke(cli, ["--help"])
+diff --git a/tests/test_formatting.py b/tests/test_formatting.py
+index b2f72b7d24..407f0aa092 100644
+--- a/tests/test_formatting.py
++++ b/tests/test_formatting.py
+@@ -195,7 +195,7 @@ def cmd(arg):
+         "Usage: cmd [OPTIONS] metavar",
+         "Try 'cmd --help' for help.",
+         "",
+-        "Error: Invalid value for 'metavar': 3.14 is not a valid integer",
++        "Error: Invalid value for 'metavar': '3.14' is not a valid integer.",
+     ]
+ 
+ 
+diff --git a/tests/test_options.py b/tests/test_options.py
+index e86a82a588..2e5059455c 100644
+--- a/tests/test_options.py
++++ b/tests/test_options.py
+@@ -188,21 +188,37 @@ def cmd(arg, arg2):
+     assert "1, 2" in result.output
+ 
+ 
+-def test_multiple_default_type(runner):
+-    @click.command()
+-    @click.option("--arg1", multiple=True, default=("foo", "bar"))
+-    @click.option("--arg2", multiple=True, default=(1, "a"))
+-    def cmd(arg1, arg2):
+-        assert all(isinstance(e[0], str) for e in arg1)
+-        assert all(isinstance(e[1], str) for e in arg1)
++def test_multiple_default_type():
++    opt = click.Option(["-a"], multiple=True, default=(1, 2))
++    assert opt.nargs == 1
++    assert opt.multiple
++    assert opt.type is click.INT
++    ctx = click.Context(click.Command("test"))
++    assert opt.get_default(ctx) == (1, 2)
+ 
+-        assert all(isinstance(e[0], int) for e in arg2)
+-        assert all(isinstance(e[1], str) for e in arg2)
+ 
+-    result = runner.invoke(
+-        cmd, "--arg1 a b --arg1 test 1 --arg2 2 two --arg2 4 four".split()
+-    )
+-    assert not result.exception
++def test_multiple_default_composite_type():
++    opt = click.Option(["-a"], multiple=True, default=[(1, "a")])
++    assert opt.nargs == 2
++    assert opt.multiple
++    assert isinstance(opt.type, click.Tuple)
++    assert opt.type.types == [click.INT, click.STRING]
++    ctx = click.Context(click.Command("test"))
++    assert opt.get_default(ctx) == ((1, "a"),)
++
++
++def test_parse_multiple_default_composite_type(runner):
++    @click.command()
++    @click.option("-a", multiple=True, default=("a", "b"))
++    @click.option("-b", multiple=True, default=[(1, "a")])
++    def cmd(a, b):
++        click.echo(a)
++        click.echo(b)
++
++    # result = runner.invoke(cmd, "-a c -a 1 -a d -b 2 two -b 4 four".split())
++    # assert result.output == "('c', '1', 'd')\n((2, 'two'), (4, 'four'))\n"
++    result = runner.invoke(cmd)
++    assert result.output == "('a', 'b')\n((1, 'a'),)\n"
+ 
+ 
+ def test_dynamic_default_help_unset(runner):
+@@ -251,7 +267,7 @@ def cmd(username):
+     ],
+ )
+ def test_intrange_default_help_text(runner, type, expect):
+-    option = click.Option(["--count"], type=type, show_default=True, default=1)
++    option = click.Option(["--count"], type=type, show_default=True, default=2)
+     context = click.Context(click.Command("test"))
+     result = option.get_help_record(context)[1]
+     assert expect in result
+diff --git a/tests/test_shell_completion.py b/tests/test_shell_completion.py
+index 5c169a9073..e85dc322fa 100644
+--- a/tests/test_shell_completion.py
++++ b/tests/test_shell_completion.py
+@@ -90,6 +90,21 @@ def test_argument_order():
+     assert _get_words(cli, ["x", "b"], "d") == ["d"]
+ 
+ 
++def test_argument_default():
++    cli = Command(
++        "cli",
++        add_help_option=False,
++        params=[
++            Argument(["a"], type=Choice(["a"]), default="a"),
++            Argument(["b"], type=Choice(["b"]), default="b"),
++        ],
++    )
++    assert _get_words(cli, [], "") == ["a"]
++    assert _get_words(cli, ["a"], "b") == ["b"]
++    # ignore type validation
++    assert _get_words(cli, ["x"], "b") == ["b"]
++
++
+ def test_type_choice():
+     cli = Command("cli", params=[Option(["-c"], type=Choice(["a1", "a2", "b"]))])
+     assert _get_words(cli, ["-c"], "") == ["a1", "a2", "b"]
+@@ -119,9 +134,9 @@ def test_option_flag():
+             Argument(["a"], type=Choice(["a1", "a2", "b"])),
+         ],
+     )
+-    assert _get_words(cli, ["type"], "--") == ["--on", "--off"]
++    assert _get_words(cli, [], "--") == ["--on", "--off"]
+     # flag option doesn't take value, use choice argument
+-    assert _get_words(cli, ["x", "--on"], "a") == ["a1", "a2"]
++    assert _get_words(cli, ["--on"], "a") == ["a1", "a2"]
+ 
+ 
+ def test_option_custom():
+diff --git a/tests/test_types.py b/tests/test_types.py
+index b76aa805c9..4e995f1234 100644
+--- a/tests/test_types.py
++++ b/tests/test_types.py
+@@ -54,3 +54,27 @@ def test_float_range_no_clamp_open():
+ 
+     with pytest.raises(RuntimeError):
+         sneaky.convert("1.5", None, None)
++
++
++@pytest.mark.parametrize(
++    ("nargs", "multiple", "default", "expect"),
++    [
++        (2, False, None, None),
++        (2, False, (None, None), (None, None)),
++        (None, True, None, ()),
++        (None, True, (None, None), (None, None)),
++        (2, True, None, ()),
++        (2, True, [(None, None)], ((None, None),)),
++        (-1, None, None, ()),
++    ],
++)
++def test_cast_multi_default(runner, nargs, multiple, default, expect):
++    if nargs == -1:
++        param = click.Argument(["a"], nargs=nargs, default=default)
++    else:
++        param = click.Option(["-a"], nargs=nargs, multiple=multiple, default=default)
++
++    cli = click.Command("cli", params=[param], callback=lambda a: a)
++    result = runner.invoke(cli, standalone_mode=False)
++    assert result.exception is None
++    assert result.return_value == expect

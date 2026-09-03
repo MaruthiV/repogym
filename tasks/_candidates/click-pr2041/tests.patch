@@ -1,0 +1,162 @@
+diff --git a/tests/test_commands.py b/tests/test_commands.py
+index bf6a5db827..3a0d4b9c67 100644
+--- a/tests/test_commands.py
++++ b/tests/test_commands.py
+@@ -352,3 +352,62 @@ def deprecated_cmd():
+ 
+     result = runner.invoke(deprecated_cmd)
+     assert "DeprecationWarning:" in result.output
++
++
++def test_command_parse_args_collects_option_prefixes():
++    @click.command()
++    @click.option("+p", is_flag=True)
++    @click.option("!e", is_flag=True)
++    def test(p, e):
++        pass
++
++    ctx = click.Context(test)
++    test.parse_args(ctx, [])
++
++    assert ctx._opt_prefixes == {"-", "--", "+", "!"}
++
++
++def test_group_parse_args_collects_base_option_prefixes():
++    @click.group()
++    @click.option("~t", is_flag=True)
++    def group(t):
++        pass
++
++    @group.command()
++    @click.option("+p", is_flag=True)
++    def command1(p):
++        pass
++
++    @group.command()
++    @click.option("!e", is_flag=True)
++    def command2(e):
++        pass
++
++    ctx = click.Context(group)
++    group.parse_args(ctx, ["command1", "+p"])
++
++    assert ctx._opt_prefixes == {"-", "--", "~"}
++
++
++def test_group_invoke_collects_used_option_prefixes(runner):
++    opt_prefixes = set()
++
++    @click.group()
++    @click.option("~t", is_flag=True)
++    def group(t):
++        pass
++
++    @group.command()
++    @click.option("+p", is_flag=True)
++    @click.pass_context
++    def command1(ctx, p):
++        nonlocal opt_prefixes
++        opt_prefixes = ctx._opt_prefixes
++
++    @group.command()
++    @click.option("!e", is_flag=True)
++    def command2(e):
++        pass
++
++    runner.invoke(group, ["command1"])
++    assert opt_prefixes == {"-", "--", "~", "+"}
+diff --git a/tests/test_context.py b/tests/test_context.py
+index 98f083570d..df8b497e0b 100644
+--- a/tests/test_context.py
++++ b/tests/test_context.py
+@@ -365,3 +365,11 @@ def cli(ctx, option):
+ 
+     rv = runner.invoke(cli, standalone_mode=False, **invoke_args)
+     assert rv.return_value == expect
++
++
++def test_propagate_opt_prefixes():
++    parent = click.Context(click.Command("test"))
++    parent._opt_prefixes = {"-", "--", "!"}
++    ctx = click.Context(click.Command("test2"), parent=parent)
++
++    assert ctx._opt_prefixes == {"-", "--", "!"}
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index 964f9c8268..f694916964 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -1,5 +1,7 @@
+ import pytest
+ 
++import click
++from click.parser import OptionParser
+ from click.parser import split_arg_string
+ 
+ 
+@@ -15,3 +17,16 @@
+ )
+ def test_split_arg_string(value, expect):
+     assert split_arg_string(value) == expect
++
++
++def test_parser_default_prefixes():
++    parser = OptionParser()
++    assert parser._opt_prefixes == {"-", "--"}
++
++
++def test_parser_collects_prefixes():
++    ctx = click.Context(click.Command("test"))
++    parser = OptionParser(ctx)
++    click.Option("+p", is_flag=True).add_to_parser(parser, ctx)
++    click.Option("!e", is_flag=True).add_to_parser(parser, ctx)
++    assert parser._opt_prefixes == {"-", "--", "+", "!"}
+diff --git a/tests/test_shell_completion.py b/tests/test_shell_completion.py
+index 08fa0576e5..57729f5b67 100644
+--- a/tests/test_shell_completion.py
++++ b/tests/test_shell_completion.py
+@@ -110,6 +110,45 @@ def test_type_choice():
+     assert _get_words(cli, ["-c"], "a2") == ["a2"]
+ 
+ 
++def test_choice_special_characters():
++    cli = Command("cli", params=[Option(["-c"], type=Choice(["!1", "!2", "+3"]))])
++    assert _get_words(cli, ["-c"], "") == ["!1", "!2", "+3"]
++    assert _get_words(cli, ["-c"], "!") == ["!1", "!2"]
++    assert _get_words(cli, ["-c"], "!2") == ["!2"]
++
++
++def test_choice_conflicting_prefix():
++    cli = Command(
++        "cli",
++        params=[
++            Option(["-c"], type=Choice(["!1", "!2", "+3"])),
++            Option(["+p"], is_flag=True),
++        ],
++    )
++    assert _get_words(cli, ["-c"], "") == ["!1", "!2", "+3"]
++    assert _get_words(cli, ["-c"], "+") == ["+p"]
++
++
++def test_option_count():
++    cli = Command("cli", params=[Option(["-c"], count=True)])
++    assert _get_words(cli, ["-c"], "") == []
++    assert _get_words(cli, ["-c"], "-") == ["--help"]
++
++
++def test_option_optional():
++    cli = Command(
++        "cli",
++        add_help_option=False,
++        params=[
++            Option(["--name"], is_flag=False, flag_value="value"),
++            Option(["--flag"], is_flag=True),
++        ],
++    )
++    assert _get_words(cli, ["--name"], "") == []
++    assert _get_words(cli, ["--name"], "-") == ["--flag"]
++    assert _get_words(cli, ["--name", "--flag"], "-") == []
++
++
+ @pytest.mark.parametrize(
+     ("type", "expect"),
+     [(File(), "file"), (Path(), "file"), (Path(file_okay=False), "dir")],

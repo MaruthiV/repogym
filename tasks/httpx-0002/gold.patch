@@ -1,0 +1,25 @@
+diff --git a/tests/repogym_fetch/fetcher.py b/tests/repogym_fetch/fetcher.py
+index 92e8e51..56079fe 100644
+--- a/tests/repogym_fetch/fetcher.py
++++ b/tests/repogym_fetch/fetcher.py
+@@ -1,8 +1,16 @@
++import time
++
+ import httpx
+ 
++RETRYABLE = {502, 503, 504}
++
+ 
+-def fetch_json(url, client=None):
++def fetch_json(url, client=None, attempts=3, backoff=0.01):
+     client = client or httpx.Client()
+-    resp = client.get(url)
+-    resp.raise_for_status()
+-    return resp.json()
++    for i in range(attempts):
++        resp = client.get(url)
++        if resp.status_code in RETRYABLE and i < attempts - 1:
++            time.sleep(backoff * (2**i))
++            continue
++        resp.raise_for_status()
++        return resp.json()

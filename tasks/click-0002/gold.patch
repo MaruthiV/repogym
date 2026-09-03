@@ -1,0 +1,20 @@
+diff --git b/src/click/utils.py a/src/click/utils.py
+index f741c5c..b529eb0 100644
+--- b/src/click/utils.py
++++ a/src/click/utils.py
+@@ -471,9 +471,12 @@ def format_filename(
+     else:
+         filename = os.fspath(filename)
+ 
+-    filename = filename.encode("utf-8", "surrogateescape").decode(
+-        "utf-8", "replace"
+-    )
++    if isinstance(filename, bytes):
++        filename = filename.decode(sys.getfilesystemencoding(), "replace")
++    else:
++        filename = filename.encode("utf-8", "surrogateescape").decode(
++            "utf-8", "replace"
++        )
+ 
+     return filename
+ 
