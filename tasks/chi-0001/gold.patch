@@ -1,0 +1,14 @@
+diff --git b/middleware/realip.go a/middleware/realip.go
+index 73a961c..349f168 100644
+--- b/middleware/realip.go
++++ a/middleware/realip.go
+@@ -44,8 +44,7 @@ func realIP(r *http.Request) string {
+ 	} else if xrip := r.Header.Get(xRealIP); xrip != "" {
+ 		ip = xrip
+ 	} else if xff := r.Header.Get(xForwardedFor); xff != "" {
+-		parts := strings.Split(xff, ",")
+-		ip = strings.TrimSpace(parts[len(parts)-1])
++		ip, _, _ = strings.Cut(xff, ",")
+ 	}
+ 	if ip == "" || net.ParseIP(ip) == nil {
+ 		return ""

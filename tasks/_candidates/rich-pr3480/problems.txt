@@ -1,0 +1,2 @@
+run1: f2p test not failing pre-fix: tests/test_text.py::test_append_loop_regression -> error
+run2: f2p test not failing pre-fix: tests/test_text.py::test_append_loop_regression -> error

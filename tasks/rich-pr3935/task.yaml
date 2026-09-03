@@ -1,0 +1,79 @@
+id: rich-pr3935
+repo: Textualize/rich
+base_commit: fe55a131c2780fa856464ad04d7d6dc8a1079b72
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Table padding is miscalculated in first column\n\n- [x] I've checked\
+  \ [docs](https://rich.readthedocs.io/en/latest/introduction.html) and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n**Table padding is miscalculated in first column**\n\nI'm using a table for layout,\
+  \ but the first column has too much padding between it and the second column. When\
+  \ I investigated, I found that adjusting the padding also adjusts the margin of\
+  \ error, meaning that it's basically putting in double the requested amount of padding,\
+  \ but only for the divider between the first and second columns.\n\n**Minimum reproduceable\
+  \ code**\n```python\nfrom rich import print\nfrom rich.table import Table\n\ntable\
+  \ = Table.grid(padding=(0, 1))\n\nfor _ in range(3):\n    table.add_column(width=3)\n\
+  \nfor row in range(3):\n    table.add_row(*[\"a\" * 3 for _ in range(3)])\n\nprint(table)\n\
+  ```\n\n<img width=\"232\" height=\"124\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/535a79c7-b470-4392-9ce9-79d76b5e8b22\"\
+  \ />\n\n**Platform**\nTerminal: Windows Terminal (the new one from the Windows Store,\
+  \ not cmd.exe nor powershell.exe)\nEnvironment: WSL2 on Windows 10\nOS: (in WSL2)\
+  \ Ubuntu 24.04\nRich version: 14.2.0\n\n**Diagnostic Output**\n```\n╭─────────────────────────\
+  \ <class 'rich.console.Console'> ─────────────────────────╮\n│ A high level console\
+  \ interface.                                                  │\n│             \
+  \                                                                     │\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\n│ │ <console width=194 ColorSystem.EIGHT_BIT>                             \
+  \       │ │\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\n│                                                                         \
+  \         │\n│     color_system = '256'                                        \
+  \                 │\n│         encoding = 'utf-8'                              \
+  \                         │\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\n│           height = 49                        \
+  \                                    │\n│    is_alt_screen = False             \
+  \                                            │\n│ is_dumb_terminal = False     \
+  \                                                    │\n│   is_interactive = True\
+  \                                                          │\n│       is_jupyter\
+  \ = False                                                         │\n│      is_terminal\
+  \ = True                                                          │\n│   legacy_windows\
+  \ = False                                                         │\n│         no_color\
+  \ = False                                                         │\n│         \
+  \ options = ConsoleOptions(                                               │\n│ \
+  \                       size=ConsoleDimensions(width=194, height=49),          \
+  \   │\n│                        legacy_windows=False,                          \
+  \           │\n│                        min_width=1,                           \
+  \                   │\n│                        max_width=194,                 \
+  \                           │\n│                        is_terminal=True,      \
+  \                                   │\n│                        encoding='utf-8',\
+  \                                         │\n│                        max_height=49,\
+  \                                            │\n│                        justify=None,\
+  \                                             │\n│                        overflow=None,\
+  \                                            │\n│                        no_wrap=False,\
+  \                                            │\n│                        highlight=None,\
+  \                                           │\n│                        markup=None,\
+  \                                              │\n│                        height=None\
+  \                             \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_table.py::test_padding_width
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3935
+  issue: 3871
+  merged_at: '2026-01-23T11:31:32Z'
+  issue_url: https://github.com/Textualize/rich/issues/3871
+security_probes:
+- secret_canary

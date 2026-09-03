@@ -14,11 +14,22 @@ def test_cmd(entry: RepoEntry, test_id: str) -> str:
         if name:
             cmd += f" -t {shlex.quote(name)}"
         return cmd
+    if entry.test_style == "gotest":
+        # id is "pkg::TestName" or "pkg" ("." for module root)
+        pkg, _, name = test_id.partition("::")
+        cmd = f"{entry.test_base} ./{pkg.strip('/')}"
+        if name:
+            cmd += f" -run {shlex.quote(f'^{name}$')}"
+        return cmd
     return f"{entry.test_base} {shlex.quote(test_id)}"
 
 
 def run_test(sb: Sandbox, entry: RepoEntry, test_id: str, timeout: int) -> str:
-    rc, _ = sb.exec(test_cmd(entry, test_id), timeout=timeout)
+    rc, out = sb.exec(test_cmd(entry, test_id), timeout=timeout)
+    # go test exits 0 when -run matches nothing, that is not a pass
+    if entry.test_style == "gotest" and "::" in test_id \
+            and ("no tests to run" in out or "[no test files]" in out):
+        return ERROR
     if rc == 0:
         return PASS
     if rc == 1:

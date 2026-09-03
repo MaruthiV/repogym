@@ -1,0 +1,35 @@
+diff --git a/middleware/repogym_realip_test.go b/middleware/repogym_realip_test.go
+new file mode 100644
+index 0000000..2b8596a
+--- /dev/null
++++ b/middleware/repogym_realip_test.go
+@@ -0,0 +1,29 @@
++package middleware
++
++import (
++	"net/http"
++	"net/http/httptest"
++	"testing"
++
++	chi "github.com/go-chi/chi/v5"
++)
++
++func TestRepogymXFFClientBehindTwoProxies(t *testing.T) {
++	req, _ := http.NewRequest("GET", "/", nil)
++	req.Header.Add("X-Forwarded-For", "100.1.2.3, 10.0.0.1, 10.0.0.2")
++	w := httptest.NewRecorder()
++
++	r := chi.NewRouter()
++	r.Use(RealIP)
++
++	realIP := ""
++	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
++		realIP = r.RemoteAddr
++		w.Write([]byte("ok"))
++	})
++	r.ServeHTTP(w, req)
++
++	if realIP != "100.1.2.3" {
++		t.Fatalf("expected client ip 100.1.2.3, got %q", realIP)
++	}
++}

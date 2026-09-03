@@ -55,3 +55,25 @@ zod:
   default_p2p:
     - "packages/zod/src/v4/classic/tests/array.test.ts"
     - "packages/zod/src/v4/classic/tests/catch.test.ts"
+
+chi:
+  url: https://github.com/go-chi/chi
+  sha: ae6be7469132cf471ca099d8c7bda4010c4ff7b2
+  language: go
+  test_style: gotest
+  install: "go mod download && go build ./... && cd middleware && go build ./..."
+  test_base: "go test -count=1"
+  default_p2p:
+    - "::TestMuxBasic"
+    - "middleware::TestGetReqID"
+
+cobra:
+  url: https://github.com/spf13/cobra
+  sha: adbc8813901bba65827259daa8e22ff94ec1f30e
+  language: go
+  test_style: gotest
+  install: "go mod download && go build ./..."
+  test_base: "go test -count=1"
+  default_p2p:
+    - "::TestSingleCommand"
+    - "::TestChildCommand"

@@ -1,0 +1,2 @@
+run1: f2p test not failing pre-fix: tests/test_console.py::test_brokenpipeerror -> pass
+run2: f2p test not failing pre-fix: tests/test_console.py::test_brokenpipeerror -> pass

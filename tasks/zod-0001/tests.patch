@@ -1,0 +1,19 @@
+diff --git a/packages/zod/src/v4/classic/tests/repogym-multipleof.test.ts b/packages/zod/src/v4/classic/tests/repogym-multipleof.test.ts
+new file mode 100644
+index 0000000..4cb318b
+--- /dev/null
++++ b/packages/zod/src/v4/classic/tests/repogym-multipleof.test.ts
+@@ -0,0 +1,13 @@
++import { expect, test } from "vitest";
++import * as z from "zod/v4";
++
++test("multipleOf accepts exact decimal multiples of the step", () => {
++  expect(z.number().multipleOf(0.07).safeParse(2.03).success).toBe(true);
++  expect(z.number().multipleOf(0.1).safeParse(0.3).success).toBe(true);
++  expect(z.number().multipleOf(0.01).safeParse(19.99).success).toBe(true);
++});
++
++test("multipleOf still rejects true non-multiples", () => {
++  expect(z.number().multipleOf(0.07).safeParse(2.04).success).toBe(false);
++  expect(z.number().multipleOf(0.1).safeParse(0.35).success).toBe(false);
++});

@@ -3,7 +3,7 @@ repo: Textualize/rich
 base_commit: fde5d6eee3b0437eaecdcbf6f8b11aeab3a5d503
 language: python
 category: bug_fix
-level: L2
+level: L3
 source: mined
 prompt: "[BUG] Overriding `background_color` of `Syntax` doesn't include padding\n\
   \n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\

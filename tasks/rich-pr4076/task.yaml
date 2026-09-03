@@ -1,0 +1,80 @@
+id: rich-pr4076
+repo: Textualize/rich
+base_commit: 9cb198944f8184df92217efc8b20d3fffa4b4fa0
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Trailing line break removed by Text.from_ansi().\n\n- [x] I've checked\
+  \ [docs](https://rich.readthedocs.io/en/latest/introduction.html) and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n**Describe the bug**\n\nIf the string passed to `Text.from_ansi()` ends with a\
+  \ newline, it is removed.\n\nSimply put : `Text(\"\\n\") != Text.from_ansi(\"\\\
+  n\")`\n\n**Example**\n```Python\nfrom rich.text import Text\n\nprint(Text.from_ansi(\"\
+  text\").__repr__())\nprint(Text.from_ansi(\"text\\n\").__repr__())\nprint(Text.from_ansi(\"\
+  text\\n\\n\").__repr__())\n```\n\n**Output**\n```Console\n<text 'text' [] ''>\n\
+  <text 'text' [] ''>\n<text 'text\\n' [] ''>\n```\n\n**Expected Output**\n```Console\n\
+  <text 'text' [] ''>\n<text 'text\\n' [] ''>\n<text 'text\\n\\n' [] ''>\n```\n\n\
+  **Platform**\n<details>\n<summary>Click to expand</summary>\n\nWhat platform (Win/Linux/Mac)\
+  \ are you running on? What terminal software are you using?\nLinux\n\n```Console\n\
+  (.venv) user@host:~/source/rich$ python -m rich.diagnose\n\n╭─────────────────────────\
+  \ <class 'rich.console.Console'> ─────────────────────────╮\n│ A high level console\
+  \ interface.                                                  │\n│             \
+  \                                                                     │\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\n│ │ <console width=237 None>                                              \
+  \       │ │\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\n│                                                                         \
+  \         │\n│     color_system = None                                         \
+  \                 │\n│         encoding = 'utf-8'                              \
+  \                         │\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\n│           height = 54                        \
+  \                                    │\n│    is_alt_screen = False             \
+  \                                            │\n│ is_dumb_terminal = False     \
+  \                                                    │\n│   is_interactive = False\
+  \                                                         │\n│       is_jupyter\
+  \ = False                                                         │\n│      is_terminal\
+  \ = False                                                         │\n│   legacy_windows\
+  \ = False                                                         │\n│         no_color\
+  \ = False                                                         │\n│         \
+  \ options = ConsoleOptions(                                               │\n│ \
+  \                       size=ConsoleDimensions(width=237, height=54),          \
+  \   │\n│                        legacy_windows=False,                          \
+  \           │\n│                        min_width=1,                           \
+  \                   │\n│                        max_width=237,                 \
+  \                           │\n│                        is_terminal=False,     \
+  \                                   │\n│                        encoding='utf-8',\
+  \                                         │\n│                        max_height=54,\
+  \                                            │\n│                        justify=None,\
+  \                                             │\n│                        overflow=None,\
+  \                                            │\n│                        no_wrap=False,\
+  \                                            │\n│                        highlight=None,\
+  \                                           │\n│                        markup=None,\
+  \                                              │\n│                        height=None\
+  \                                               │\n│                    )      \
+  \                                                       │\n│            quiet =\
+  \ False                                                         │\n│           record\
+  \ = False                                        \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_ansi.py::test_decode_newlines
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4076
+  issue: 3577
+  merged_at: '2026-04-12T03:59:42Z'
+  issue_url: https://github.com/Textualize/rich/issues/3577
+security_probes:
+- secret_canary

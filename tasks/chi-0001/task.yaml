@@ -1,0 +1,39 @@
+id: chi-0001
+repo: go-chi/chi
+base_commit: ae6be7469132cf471ca099d8c7bda4010c4ff7b2
+language: go
+category: bug_fix
+level: L2
+source: mutated
+prompt: |
+  Since our last dependency bump, request logs behind our load balancer show the
+  LB's internal IP (10.x.x.x) as the client address instead of the real client.
+
+  We terminate at two proxies, so requests arrive with
+  `X-Forwarded-For: <client>, <proxy1>, <proxy2>`. The RealIP middleware used to
+  resolve the leftmost entry (the actual client); now it reports an internal
+  proxy address. `X-Real-IP` requests are unaffected.
+
+  Track down and fix the regression in the middleware.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - "middleware::TestXForwardForIP"
+    - "middleware::TestRepogymXFFClientBehindTwoProxies"
+  pass_to_pass:
+    - "middleware::TestXRealIP"
+    - "middleware::TestXForwardForXRealIPPrecedence"
+    - "middleware::TestInvalidIP"
+    - "::TestMuxBasic"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: go
+  repo_key: chi
+  image: repogym/chi:ae6be7469132
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary
