@@ -1,0 +1,48 @@
+diff --git a/tests/test_log.py b/tests/test_log.py
+index 22bb8b7b83..37fdda4621 100644
+--- a/tests/test_log.py
++++ b/tests/test_log.py
+@@ -37,7 +37,7 @@ def render_log():
+ 
+ def test_log():
+     expected = replace_link_ids(
+-        "\x1b[2;36m[TIME]\x1b[0m\x1b[2;36m \x1b[0m                                                           \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m32\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m      \x1b[0m\x1b[2;36m \x1b[0mHello from \x1b[1m<\x1b[0m\x1b[1;95mconsole\x1b[0m\x1b[39m \x1b[0m\x1b[33mwidth\x1b[0m\x1b[39m=\x1b[0m\x1b[1;36m80\x1b[0m\x1b[39m ColorSystem.TRUECOLOR\x1b[0m\x1b[1m>\x1b[0m !      \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m33\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m      \x1b[0m\x1b[2;36m \x1b[0m\x1b[1m[\x1b[0m\x1b[1;36m1\x1b[0m, \x1b[1;36m2\x1b[0m, \x1b[1;36m3\x1b[0m\x1b[1m]\x1b[0m                                                  \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m34\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m       \x1b[0m\x1b[34m╭─\x1b[0m\x1b[34m───────────────────── \x1b[0m\x1b[3;34mlocals\x1b[0m\x1b[34m ─────────────────────\x1b[0m\x1b[34m─╮\x1b[0m     \x1b[2m              \x1b[0m\n\x1b[2;36m       \x1b[0m\x1b[34m│\x1b[0m \x1b[3;33mconsole\x1b[0m\x1b[31m =\x1b[0m \x1b[1m<\x1b[0m\x1b[1;95mconsole\x1b[0m\x1b[39m \x1b[0m\x1b[33mwidth\x1b[0m\x1b[39m=\x1b[0m\x1b[1;36m80\x1b[0m\x1b[39m ColorSystem.TRUECOLOR\x1b[0m\x1b[1m>\x1b[0m \x1b[34m│\x1b[0m     \x1b[2m              \x1b[0m\n\x1b[2;36m       \x1b[0m\x1b[34m╰────────────────────────────────────────────────────╯\x1b[0m     \x1b[2m              \x1b[0m\n"
++        "\x1b[2;36m[TIME]\x1b[0m\x1b[2;36m \x1b[0m                                                           \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m32\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m      \x1b[0m\x1b[2;36m \x1b[0mHello from \x1b[1m<\x1b[0m\x1b[1;95mconsole\x1b[0m\x1b[39m \x1b[0m\x1b[33mwidth\x1b[0m\x1b[39m=\x1b[0m\x1b[1;36m80\x1b[0m\x1b[39m ColorSystem.TRUECOLOR\x1b[0m\x1b[1m>\x1b[0m !      \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m33\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m      \x1b[0m\x1b[2;36m \x1b[0m\x1b[1m[\x1b[0m\x1b[1;36m1\x1b[0m, \x1b[1;36m2\x1b[0m, \x1b[1;36m3\x1b[0m\x1b[1m]\x1b[0m                                                  \x1b]8;id=0;foo\x1b\\\x1b[2msource.py\x1b[0m\x1b]8;;\x1b\\\x1b[2m:\x1b[0m\x1b]8;id=0;foo\x1b\\\x1b[2m34\x1b[0m\x1b]8;;\x1b\\\n\x1b[2;36m       \x1b[0m\x1b[34m╭─\x1b[0m\x1b[34m─────────────────────\x1b[0m\x1b[34m \x1b[0m\x1b[3;34mlocals\x1b[0m\x1b[34m \x1b[0m\x1b[34m─────────────────────\x1b[0m\x1b[34m─╮\x1b[0m     \x1b[2m              \x1b[0m\n\x1b[2;36m       \x1b[0m\x1b[34m│\x1b[0m \x1b[3;33mconsole\x1b[0m\x1b[31m =\x1b[0m \x1b[1m<\x1b[0m\x1b[1;95mconsole\x1b[0m\x1b[39m \x1b[0m\x1b[33mwidth\x1b[0m\x1b[39m=\x1b[0m\x1b[1;36m80\x1b[0m\x1b[39m ColorSystem.TRUECOLOR\x1b[0m\x1b[1m>\x1b[0m \x1b[34m│\x1b[0m     \x1b[2m              \x1b[0m\n\x1b[2;36m       \x1b[0m\x1b[34m╰────────────────────────────────────────────────────╯\x1b[0m     \x1b[2m              \x1b[0m\n"
+     )
+     rendered = render_log()
+     print(repr(rendered))
+diff --git a/tests/test_panel.py b/tests/test_panel.py
+index 5ae3babee6..a79a4a9181 100644
+--- a/tests/test_panel.py
++++ b/tests/test_panel.py
+@@ -63,9 +63,9 @@ def test_render_size():
+     expected = [
+         [
+             Segment("╭─", Style()),
+-            Segment(
+-                "────────────────────────────────── Hello ───────────────────────────────────"
+-            ),
++            Segment("──────────────────────────────────", Style()),
++            Segment(" Hello ", Style()),
++            Segment("───────────────────────────────────", Style()),
+             Segment("─╮", Style()),
+         ],
+         [
+diff --git a/tests/test_text.py b/tests/test_text.py
+index 169931a768..5f06715db3 100644
+--- a/tests/test_text.py
++++ b/tests/test_text.py
+@@ -144,6 +144,13 @@ def test_stylize():
+     assert text._spans == [Span(7, 11, "bold")]
+ 
+ 
++def test_stylize_before():
++    text = Text("Hello, World!")
++    text.stylize("bold", 0, 5)
++    text.stylize_before("italic", 2, 7)
++    assert text._spans == [Span(2, 7, "italic"), Span(0, 5, "bold")]
++
++
+ def test_stylize_negative_index():
+     text = Text("Hello, World!")
+     text.stylize("bold", -6, -1)

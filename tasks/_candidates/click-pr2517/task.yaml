@@ -1,0 +1,42 @@
+id: click-pr2517
+repo: pallets/click
+base_commit: a6e0d2936891030f5092c9869c7391104f6721d9
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Split extra help item computing with help record rendering\n\nI maintain\
+  \ [Click Extra, a drop-in replacement for Click which adds colorization](https://github.com/kdeldycke/click-extra/tree/main#readme)\
+  \ of the help screen.\r\n\r\nI am currently relying on finicky regular expressions\
+  \ to identify and match the extra items that are displayed at the end of each option's\
+  \ help. These extra items are rendered in square brackets and looks like:\r\n- `[default:\
+  \ None]`\r\n- `[default: (unlimited)]`\r\n- `[env var: COLOR_CLI8_TIME; default:\
+  \ no-time]`\r\n- and a variety of other formats.\r\n\r\nThe problem is that the\
+  \ generation of these extra items are deeply embedded within Click and are impossible\
+  \ to fetch independently.\r\n\r\nThat's why I propose a simple refactor of the `Option.get_help_record()`\
+  \ method, and split it in two:\r\n- a new method to compute the values of these\
+  \ extra items\r\n- keep the original `get_help_record()` as-is, but dedicated to\
+  \ help message rendering only\r\n\r\nI have a PR that is ready at #2517.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_show_default_precedence
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2517
+  issue: 2516
+  merged_at: '2024-11-02T23:35:57Z'
+  issue_url: https://github.com/pallets/click/issues/2516

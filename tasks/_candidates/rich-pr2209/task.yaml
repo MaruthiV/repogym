@@ -1,0 +1,35 @@
+id: rich-pr2209
+repo: Textualize/rich
+base_commit: b5f0b743a7f50c72199eb792cd6e70730b60651f
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] printing -\\n- in rich.progress context manager will kill the jupyter.\n\
+  \ntry this code in the jupyter notebook:\r\n\r\n```python\r\nfrom rich.progress\
+  \ import Progress\r\nwith Progress() as progress:\r\n    print(\"-\\n-\")\r\nprint(\"\
+  finished\")\r\n```\r\nand it will show a popup message displaying that the kernel\
+  \ has died.\r\nI have tested it on google colab and mint.\r\n\r\nalso, I have installed\
+  \ rich using\r\n```\r\npip install rich[jupyter]\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_file_proxy.py::test_new_lines
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2209
+  issue: 2047
+  merged_at: '2022-04-21T09:23:12Z'
+  issue_url: https://github.com/Textualize/rich/issues/2047

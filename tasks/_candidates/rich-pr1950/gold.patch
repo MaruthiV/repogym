@@ -1,0 +1,62 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index fcf58cd7a1..407c9f158b 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ ### Fixed
+ 
+ - In Jupyter mode make the link target be set to "_blank"
++- Fix some issues with markup handling around "[" characters https://github.com/Textualize/rich/pull/1950
+ 
+ ## [11.2.0] - 2022-02-08
+ 
+diff --git a/rich/markup.py b/rich/markup.py
+index 58903f6bbb..a0201dfe2e 100644
+--- a/rich/markup.py
++++ b/rich/markup.py
+@@ -1,21 +1,20 @@
++import re
+ from ast import literal_eval
+ from operator import attrgetter
+-import re
+ from typing import Callable, Iterable, List, Match, NamedTuple, Optional, Tuple, Union
+ 
++from ._emoji_replace import _emoji_replace
++from .emoji import EmojiVariant
+ from .errors import MarkupError
+ from .style import Style
+ from .text import Span, Text
+-from .emoji import EmojiVariant
+-from ._emoji_replace import _emoji_replace
+-
+ 
+ RE_TAGS = re.compile(
+-    r"""((\\*)\[([a-z#\/@].*?)\])""",
++    r"""((\\*)\[([a-z#/@][^[]*?)])""",
+     re.VERBOSE,
+ )
+ 
+-RE_HANDLER = re.compile(r"^([\w\.]*?)(\(.*?\))?$")
++RE_HANDLER = re.compile(r"^([\w.]*?)(\(.*?\))?$")
+ 
+ 
+ class Tag(NamedTuple):
+@@ -146,6 +145,8 @@ def pop_style(style_name: str) -> Tuple[int, Tag]:
+ 
+     for position, plain_text, tag in _parse(markup):
+         if plain_text is not None:
++            # Handle open brace escapes, where the brace is not part of a tag.
++            plain_text = plain_text.replace("\\[", "[")
+             append(emoji_replace(plain_text) if emoji else plain_text)
+         elif tag is not None:
+             if tag.name.startswith("/"):  # Closing tag
+@@ -233,8 +234,8 @@ def pop_style(style_name: str) -> Tuple[int, Tag]:
+         ":warning-emoji: [bold red blink] DANGER![/]",
+     ]
+ 
+-    from rich.table import Table
+     from rich import print
++    from rich.table import Table
+ 
+     grid = Table("Markup", "Result", padding=(0, 1))
+ 

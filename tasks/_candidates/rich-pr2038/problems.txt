@@ -1,0 +1,12 @@
+run1: f2p test not failing pre-fix: tests/test_console.py::test_log -> pass
+run1: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_with_indent -> pass
+run1: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_string_only -> pass
+run1: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_empty_string_only -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not failing pre-fix: tests/test_console.py::test_log -> pass
+run2: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_with_indent -> pass
+run2: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_string_only -> pass
+run2: f2p test not failing pre-fix: tests/test_highlighter.py::test_highlight_json_empty_string_only -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error

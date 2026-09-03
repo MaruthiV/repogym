@@ -1,0 +1,78 @@
+id: flask-pr4647
+repo: pallets/flask
+base_commit: ae547270e935b08d4deada9e28b049ff53debefe
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Flask CLI doesn't support application context in argument callbacks\n\nI\
+  \ recently converted an old managing script to use Flask's built in CLI instead.\
+  \ I have a table for clients that are identified using a shortname/slug. I thought\
+  \ about using Click's argument callback for this. Given a shortname my function\
+  \ would get an instance of the client from my ORM. The problem is that the application\
+  \ context is not active when the callback is run.\r\n\r\n### Expected Behavior\r\
+  \n\r\nSince many scripts will rely on a database connection it makes sense to have\
+  \ the application context be available in arguments.\r\n\r\n```python\r\nimport\
+  \ click\r\nfrom flask import current_app, Flask\r\n\r\napp = Flask(\"demo\")\r\n\
+  \r\ndef example_callback(ctx, param, value):\r\n    # Access the application context\
+  \ to trigger an exception\r\n    click.echo(current_app.config)\r\n    return {\"\
+  id\": 1, \"shortname\": value}\r\n\r\n@app.cli.command()\r\n@click.argument(\"arg\"\
+  , callback=example_callback)\r\ndef view(arg):\r\n    click.echo(arg)\r\n```\r\n\
+  \r\nI run this using `flask view foobar`.\r\n\r\n### Actual Behavior\r\n\r\n```pytb\r\
+  \nTraceback (most recent call last):\r\n  File \"/dev/flask-cli-demo/venv/bin/flask\"\
+  , line 11, in <module>\r\n    sys.exit(main())\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/flask/cli.py\"\
+  , line 513, in main\r\n    cli.main(args=args, prog_name=name)\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/flask/cli.py\"\
+  , line 380, in main\r\n    return AppGroup.main(self, *args, **kwargs)\r\n  File\
+  \ \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\",\
+  \ line 697, in main\r\n    rv = self.invoke(ctx)\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\"\
+  , line 1064, in invoke\r\n    sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)\r\
+  \n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\"\
+  , line 621, in make_context\r\n    self.parse_args(ctx, args)\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\"\
+  , line 880, in parse_args\r\n    value, args = param.handle_parse_result(ctx, opts,\
+  \ args)\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\"\
+  , line 1404, in handle_parse_result\r\n    self.callback, ctx, self, value)\r\n\
+  \  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/click/core.py\"\
+  , line 78, in invoke_param_callback\r\n    return callback(ctx, param, value)\r\n\
+  \  File \"/dev/flask-cli-demo/app.py\", line 8, in example_callback\r\n    click.echo(current_app.config)\r\
+  \n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/werkzeug/local.py\"\
+  , line 347, in __getattr__\r\n    return getattr(self._get_current_object(), name)\r\
+  \n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/werkzeug/local.py\"\
+  , line 306, in _get_current_object\r\n    return self.__local()\r\n  File \"/dev/flask-cli-demo/venv/local/lib/python2.7/site-packages/flask/globals.py\"\
+  , line 51, in _find_app\r\n    raise RuntimeError(_app_ctx_err_msg)\r\nRuntimeError:\
+  \ Working outside of application context.\r\n```\r\n\r\n### Environment\r\n```\r\
+  \nclick==6.7\r\nFlask==0.12.2\r\nitsdangerous==0.24\r\nJinja2==2.9.6\r\nMarkupSafe==1.0\r\
+  \npkg-resources==0.0.0\r\nWerkzeug==0.12.2\r\n```\r\n\r\n### Workaround\r\nThe only\
+  \ workaround I've found is doing the same thing `@with_appcontext` does which is:\r\
+  \n\r\n```python\r\nwith ctx.ensure_object(ScriptInfo).load_app().app_context():\r\
+  \n```\r\n\r\nUsing `@with_appcontext` on `example_callback` doesn't work since that\
+  \ gives a warning about using a deprecated function signature (from before Click\
+  \ 2.0).\r\n\r\n### Why is this a problem?\r\nThis results in two separate instantiations\
+  \ of my ORM. Some ORM's (like the one I'm using) doesn't allow sharing objects across\
+  \ instances (for good reason) which makes the client object I produce unusable anyway.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_cli.py::test_app_cli_has_app_context
+  - tests/test_cli.py::test_with_appcontext
+  - tests/test_cli.py::test_appgroup_app_context
+  - tests/test_cli.py::test_flaskgroup_app_context
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4647
+  issue: 2410
+  merged_at: '2022-06-17T18:57:22Z'
+  issue_url: https://github.com/pallets/flask/issues/2410

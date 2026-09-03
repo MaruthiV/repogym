@@ -1,0 +1,41 @@
+diff --git a/src/flask/helpers.py b/src/flask/helpers.py
+index e479f18..f57fb13 100644
+--- a/src/flask/helpers.py
++++ b/src/flask/helpers.py
+@@ -638,7 +638,7 @@ def get_root_path(import_name: str) -> str:
+             )
+ 
+     # filepath is import_name.py for a module, or __init__.py for a package.
+-    return os.path.dirname(os.path.abspath(filepath))  # type: ignore[no-any-return]
++    return os.path.abspath(filepath)  # type: ignore[no-any-return]
+ 
+ 
+ @cache
+diff --git a/tests/test_root_path_ci.py b/tests/test_root_path_ci.py
+new file mode 100644
+index 0000000..c267038
+--- /dev/null
++++ b/tests/test_root_path_ci.py
+@@ -0,0 +1,22 @@
++import os
++import sys
++
++import flask.helpers
++
++
++def test_ci_root_path_module(tmp_path, monkeypatch):
++    (tmp_path / "ci_mod.py").write_text("value = 1\n")
++    monkeypatch.syspath_prepend(str(tmp_path))
++    sys.modules.pop("ci_mod", None)
++    rp = flask.helpers.get_root_path("ci_mod")
++    assert os.path.realpath(rp) == os.path.realpath(str(tmp_path))
++
++
++def test_ci_root_path_package(tmp_path, monkeypatch):
++    pkg = tmp_path / "ci_pkg"
++    pkg.mkdir()
++    (pkg / "__init__.py").write_text("")
++    monkeypatch.syspath_prepend(str(tmp_path))
++    sys.modules.pop("ci_pkg", None)
++    rp = flask.helpers.get_root_path("ci_pkg")
++    assert os.path.realpath(rp) == os.path.realpath(str(pkg))

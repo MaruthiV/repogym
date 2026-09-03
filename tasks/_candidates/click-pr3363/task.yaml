@@ -1,0 +1,45 @@
+id: click-pr3363
+repo: pallets/click
+base_commit: c8da1fcc2cb4523c1fb5bef7f0ca82394dde1efd
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "`flag_value` is passed through `ParamType.convert`\n\nIn upgrading from click\
+  \ 7.1.2 to 8.0.1, our click-based CLI started failing with type errors. We have\
+  \ click options whose default values are classes, and as of 8.0.1 they're being\
+  \ converted to strings.\n\nThis script is able to reproduce the behavior change:\n\
+  \n```python\nimport click\n\nclass Class1:\n    pass\n\nclass Class2:\n    pass\n\
+  \n@click.command()\n@click.option(\"--cls1\", \"config_cls\", flag_value=Class1,\
+  \ default=True)\n@click.option(\"--cls2\", \"config_cls\", flag_value=Class2)\n\
+  def test(config_cls):\n    print(config_cls)\n    print(type(config_cls))\n\nif\
+  \ __name__ == \"__main__\":\n    test()\n\n```\n\nBehavior with click 7.1.2:\n```shell-session\n\
+  # pip freeze | grep click\nclick==7.1.2\n# python test.py\n<class '__main__.Class1'>\n\
+  <class 'type'>\n```\n\nBehavior with 8.0.1:\n```shell-session\n# pip freeze | grep\
+  \ click\nclick==8.0.1\n# python test.py\n<class '__main__.Class1'>\n<class 'str'>\n\
+  ```\n\nThe type of `config_cls` should be the class we specified, not 'str'.\n\n\
+  \nEnvironment:\n\n- Python version: 3.9\n- Click version: 8.0.1\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_flag_value_not_stringified_for_custom_types
+  - tests/test_options.py::test_custom_type_frozenset_flag_value
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3363
+  issue: 2012
+  merged_at: '2026-04-29T06:47:36Z'
+  issue_url: https://github.com/pallets/click/issues/2012

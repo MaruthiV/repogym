@@ -1,0 +1,2 @@
+run1: f2p test not failing pre-fix: tests/test_testing.py::test_session_transactions_no_null_sessions -> pass
+run2: f2p test not failing pre-fix: tests/test_testing.py::test_session_transactions_no_null_sessions -> pass

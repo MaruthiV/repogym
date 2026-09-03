@@ -1,0 +1,77 @@
+id: rich-pr3471
+repo: Textualize/rich
+base_commit: e2a982d5ea747f0deb7f78e8eaa5b4be7d9194cf
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] `Text.append_tokens` does not strip control codes\n\n- [x] I've checked\
+  \ [docs](https://rich.readthedocs.io/en/latest/introduction.html) and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nA string containing control codepoints passed\
+  \ to `Text.append_tokens` sometimes crashes with `IndexError` when printed\r\n\r\
+  \nRelated issues: #2284 and #2963\r\n\r\nMinimal code example that demonstrates\
+  \ the issue:\r\n```pycon\r\n>>> from rich import get_console\r\n>>> from rich.text\
+  \ import Text\r\n>>> t = Text().append_tokens([(\"long text that will be wrapped\
+  \ with a control code \\r\\n.\", \"red\")])\r\n>>> get_console().print(t, width=40)\r\
+  \nTraceback (most recent call last):\r\n  File \"<stdin>\", line 1, in <module>\r\
+  \n  File \"/tmp/.venv/lib/python3.10/site-packages/rich/console.py\", line 1699,\
+  \ in print\r\n    extend(render(renderable, render_options))\r\n  File \"/tmp/.venv/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1331, in render\r\n    for render_output in iter_render:\r\n  File \"/tmp/.venv/lib/python3.10/site-packages/rich/text.py\"\
+  , line 654, in __rich_console__\r\n    lines = self.wrap(\r\n  File \"/tmp/.venv/lib/python3.10/site-packages/rich/text.py\"\
+  , line 1184, in wrap\r\n    new_lines = line.divide(offsets)\r\n  File \"/tmp/.venv/lib/python3.10/site-packages/rich/text.py\"\
+  , line 1113, in divide\r\n    line_start, line_end = line_ranges[end_line_no]\r\n\
+  IndexError: list index out of range\r\n```\r\n\r\n**Platform**\r\n<details>\r\n\
+  <summary>Click to expand</summary>\r\n\r\n```shell\r\n$ python -m rich.diagnose\r\
+  \n╭───────────────────────── <class 'rich.console.Console'> ─────────────────────────╮\r\
+  \n│ A high level console interface.                                            \
+  \      │\r\n│                                                                  \
+  \                │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=102 ColorSystem.EIGHT_BIT>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = '256'                                    \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 51                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=102, height=51),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=102, \
+  \                                           │\r\n│                        is_terminal=True,\
+  \                                         │\r\n│                        encoding='utf-8',\
+  \                                         │\r\n│                        max_height=51,\
+  \                                            │\r\n│                        justify=None,\
+  \                                             │\r\n│                        overflow=None,\
+  \                                      \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_text.py::test_append_tokens
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3471
+  issue: 3014
+  merged_at: '2024-08-26T15:14:23Z'
+  issue_url: https://github.com/Textualize/rich/issues/3014

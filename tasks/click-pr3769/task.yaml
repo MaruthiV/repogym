@@ -1,0 +1,44 @@
+id: click-pr3769
+repo: pallets/click
+base_commit: 8b44edfff7d9a6c895fa804148c16b3a0bc9efb5
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "`click.progressbar` doesn't show full completion when using `show_pos=True`\
+  \ combined with `update_min_steps`\n\nUsing a `click.progressbar` with:\n- `update_min_steps`\
+  \ which isn't a divisor of `length`\n- `show_pos=True`\n\nwon't show full completion\
+  \ at the end. This can be reproduced as follows:\n\n```python\nimport time\n\nimport\
+  \ click\n\nwith click.progressbar(\n    range(20),\n    show_pos=True,\n    update_min_steps=7,\n\
+  ) as bar:\n    for i in bar:\n        time.sleep(0.1)\n```\n\nwith (final) output\
+  \ in the terminal\n\n```text\n  [####################################]  14/20  \
+  \        \n```\n\n**Expected behaviour**: I had expected the output to show `20/20`\
+  \ at the end.\nThis would be consistent with the default percentage formatting,\
+  \ as can be seen by commenting the line `show_pos=True` and re-running the reproduction:\n\
+  \n```text\n  [####################################]  100%          \n```\n\nEnvironment:\n\
+  \n- Python version: tested with 3.12.3 and 3.14.3\n- Click version: 8.4.1\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_termui.py::test_progressbar_lands_on_final_position
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3769
+  issue: 3571
+  merged_at: '2026-08-15T17:56:58Z'
+  issue_url: https://github.com/pallets/click/issues/3571
+security_probes:
+  - secret_canary

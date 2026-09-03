@@ -1,0 +1,236 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index bc33feab42..f8083da2c3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ ### Fixed
+ 
+ - Allow exceptions that are raised while a Live is rendered to be displayed and/or processed https://github.com/Textualize/rich/pull/2305
++- Fix crashes that can happen with `inspect` when docstrings contain some special control codes https://github.com/Textualize/rich/pull/2294
+ 
+ ## [12.4.4] - 2022-05-24
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index 1b16acf9b2..f2edc90aae 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -61,3 +61,6 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+ [[tool.mypy.overrides]]
+ module = ["pygments.*", "IPython.*", "commonmark.*", "ipywidgets.*"]
+ ignore_missing_imports = true
++
++[tool.pytest.ini_options]
++testpaths = ["tests"]
+diff --git a/rich/_inspect.py b/rich/_inspect.py
+index 01713e5767..af44034070 100644
+--- a/rich/_inspect.py
++++ b/rich/_inspect.py
+@@ -5,6 +5,7 @@
+ from typing import Any, Iterable, Optional, Tuple
+ 
+ from .console import Group, RenderableType
++from .control import escape_control_codes
+ from .highlighter import ReprHighlighter
+ from .jupyter import JupyterMixin
+ from .panel import Panel
+@@ -19,12 +20,6 @@ def _first_paragraph(doc: str) -> str:
+     return paragraph
+ 
+ 
+-def _reformat_doc(doc: str) -> str:
+-    """Reformat docstring."""
+-    doc = cleandoc(doc).strip()
+-    return doc
+-
+-
+ class Inspect(JupyterMixin):
+     """A renderable to inspect any Python Object.
+ 
+@@ -161,11 +156,9 @@ def safe_getattr(attr_name: str) -> Tuple[Any, Any]:
+                 yield ""
+ 
+         if self.docs:
+-            _doc = getdoc(obj)
++            _doc = self._get_formatted_doc(obj)
+             if _doc is not None:
+-                if not self.help:
+-                    _doc = _first_paragraph(_doc)
+-                doc_text = Text(_reformat_doc(_doc), style="inspect.help")
++                doc_text = Text(_doc, style="inspect.help")
+                 doc_text = highlighter(doc_text)
+                 yield doc_text
+                 yield ""
+@@ -200,13 +193,10 @@ def safe_getattr(attr_name: str) -> Tuple[Any, Any]:
+                     add_row(key_text, Pretty(value, highlighter=highlighter))
+                 else:
+                     if self.docs:
+-                        docs = getdoc(value)
++                        docs = self._get_formatted_doc(value)
+                         if docs is not None:
+-                            _doc = _reformat_doc(str(docs))
+-                            if not self.help:
+-                                _doc = _first_paragraph(_doc)
+-                            _signature_text.append("\n" if "\n" in _doc else " ")
+-                            doc = highlighter(_doc)
++                            _signature_text.append("\n" if "\n" in docs else " ")
++                            doc = highlighter(docs)
+                             doc.stylize("inspect.doc")
+                             _signature_text.append(doc)
+ 
+@@ -220,3 +210,24 @@ def safe_getattr(attr_name: str) -> Tuple[Any, Any]:
+                 f"[b cyan]{not_shown_count}[/][i] attribute(s) not shown.[/i] "
+                 f"Run [b][magenta]inspect[/]([not b]inspect[/])[/b] for options."
+             )
++
++    def _get_formatted_doc(self, object_: Any) -> Optional[str]:
++        """
++        Extract the docstring of an object, process it and returns it.
++        The processing consists in cleaning up the doctring's indentation,
++        taking only its 1st paragraph if `self.help` is not True,
++        and escape its control codes.
++
++        Args:
++            object_ (Any): the object to get the docstring from.
++
++        Returns:
++            Optional[str]: the processed docstring, or None if no docstring was found.
++        """
++        docs = getdoc(object_)
++        if docs is None:
++            return None
++        docs = cleandoc(docs).strip()
++        if not self.help:
++            docs = _first_paragraph(docs)
++        return escape_control_codes(docs)
+diff --git a/rich/control.py b/rich/control.py
+index 747311fcea..a8a912553a 100644
+--- a/rich/control.py
++++ b/rich/control.py
+@@ -1,19 +1,35 @@
++import sys
+ import time
+ from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Union
+ 
++if sys.version_info >= (3, 8):
++    from typing import Final
++else:
++    from typing_extensions import Final  # pragma: no cover
++
+ from .segment import ControlCode, ControlType, Segment
+ 
+ if TYPE_CHECKING:
+     from .console import Console, ConsoleOptions, RenderResult
+ 
+-STRIP_CONTROL_CODES = [
++STRIP_CONTROL_CODES: Final = [
++    7,  # Bell
+     8,  # Backspace
+     11,  # Vertical tab
+     12,  # Form feed
+     13,  # Carriage return
+ ]
+-_CONTROL_TRANSLATE = {_codepoint: None for _codepoint in STRIP_CONTROL_CODES}
++_CONTROL_STRIP_TRANSLATE: Final = {
++    _codepoint: None for _codepoint in STRIP_CONTROL_CODES
++}
+ 
++CONTROL_ESCAPE: Final = {
++    7: "\\a",
++    8: "\\b",
++    11: "\\v",
++    12: "\\f",
++    13: "\\r",
++}
+ 
+ CONTROL_CODES_FORMAT: Dict[int, Callable[..., str]] = {
+     ControlType.BELL: lambda: "\x07",
+@@ -169,7 +185,7 @@ def __rich_console__(
+ 
+ 
+ def strip_control_codes(
+-    text: str, _translate_table: Dict[int, None] = _CONTROL_TRANSLATE
++    text: str, _translate_table: Dict[int, None] = _CONTROL_STRIP_TRANSLATE
+ ) -> str:
+     """Remove control codes from text.
+ 
+@@ -182,6 +198,22 @@ def strip_control_codes(
+     return text.translate(_translate_table)
+ 
+ 
++def escape_control_codes(
++    text: str,
++    _translate_table: Dict[int, str] = CONTROL_ESCAPE,
++) -> str:
++    """Replace control codes with their "escaped" equivalent in the given text.
++    (e.g. "\b" becomes "\\b")
++
++    Args:
++        text (str): A string possibly containing control codes.
++
++    Returns:
++        str: String with control codes replaced with their escaped version.
++    """
++    return text.translate(_translate_table)
++
++
+ if __name__ == "__main__":  # pragma: no cover
+     from rich.console import Console
+ 
+diff --git a/rich/text.py b/rich/text.py
+index f6b349d6a2..1471fac2df 100644
+--- a/rich/text.py
++++ b/rich/text.py
+@@ -2,7 +2,6 @@
+ from functools import partial, reduce
+ from math import gcd
+ from operator import itemgetter
+-from rich.emoji import EmojiVariant
+ from typing import (
+     TYPE_CHECKING,
+     Any,
+@@ -141,7 +140,8 @@ def __init__(
+         tab_size: Optional[int] = 8,
+         spans: Optional[List[Span]] = None,
+     ) -> None:
+-        self._text = [strip_control_codes(text)]
++        sanitized_text = strip_control_codes(text)
++        self._text = [sanitized_text]
+         self.style = style
+         self.justify: Optional["JustifyMethod"] = justify
+         self.overflow: Optional["OverflowMethod"] = overflow
+@@ -149,7 +149,7 @@ def __init__(
+         self.end = end
+         self.tab_size = tab_size
+         self._spans: List[Span] = spans or []
+-        self._length: int = len(text)
++        self._length: int = len(sanitized_text)
+ 
+     def __len__(self) -> int:
+         return self._length
+@@ -394,9 +394,10 @@ def plain(self) -> str:
+     def plain(self, new_text: str) -> None:
+         """Set the text to a new value."""
+         if new_text != self.plain:
+-            self._text[:] = [new_text]
++            sanitized_text = strip_control_codes(new_text)
++            self._text[:] = [sanitized_text]
+             old_length = self._length
+-            self._length = len(new_text)
++            self._length = len(sanitized_text)
+             if old_length > self._length:
+                 self._trim_spans()
+ 
+@@ -906,10 +907,10 @@ def append(
+ 
+         if len(text):
+             if isinstance(text, str):
+-                text = strip_control_codes(text)
+-                self._text.append(text)
++                sanitized_text = strip_control_codes(text)
++                self._text.append(sanitized_text)
+                 offset = len(self)
+-                text_length = len(text)
++                text_length = len(sanitized_text)
+                 if style is not None:
+                     self._spans.append(Span(offset, offset + text_length, style))
+                 self._length += text_length

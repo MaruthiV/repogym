@@ -1,0 +1,45 @@
+id: click-pr3152
+repo: pallets/click
+base_commit: 7f7bbe4569ea68e8dabee232eade069ef3310aea
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Bug: Optional value not optional anymore\n\n### Outline\n\nAs stated in [official\
+  \ documentation](https://click.palletsprojects.com/en/stable/options/#optional-value):\
+  \ \n> Setting `is_flag=False, flag_value=value` tells Click that the option can\
+  \ still be passed a value, but if only the flag is given, the value will be `flag_value`.\n\
+  \nSince 8.3.0 this doesn't work anymore, instead `SystemExit` with \"Error: Option\
+  \ '--xyz' requires an argument.\" is thrown.\n\n### Replication of bug\n\nExample\
+  \ taken from documentation:\n```python\n@click.command()\n@click.option(\"--name\"\
+  , is_flag=False, flag_value=\"Flag\", default=\"Default\")\ndef hello(name):\n \
+  \   click.echo(f\"Hello, {name}!\")\n```\n\n```shell\n$ hello --name\nError: Option\
+  \ '--name' requires an argument.\n```\n\n### Expected behavior\n\nThe code example\
+  \ above should work as\n```shell\n$ hello --name\nHello, Flag!\n```\n\nIt's not\
+  \ even working in the generated documentation anymore: while [documentation up to\
+  \ Sep, 10th](https://web.archive.org/web/20250910222023/https://click.palletsprojects.com/en/stable/options/#optional-value)\
+  \ shows the expected and correct behavior, [current documentation](https://click.palletsprojects.com/en/stable/options/#optional-value)\
+  \ demonstrates the bug.\n\n- Python version: 3.11\n- Click version: 8.3.0\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3152
+  issue: 3084
+  merged_at: '2025-11-20T03:49:38Z'
+  issue_url: https://github.com/pallets/click/issues/3084

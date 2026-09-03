@@ -1,0 +1,58 @@
+id: flask-pr5063
+repo: pallets/flask
+base_commit: 182ce3dd15dfa3537391c3efaf9c3ff407d134d4
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Flask routes to return domain/sub-domains information\n\nCurrently when checking\
+  \ **flask routes** it provides all routes but **it is no way to see which routes\
+  \ are assigned to which subdomain**.\r\n\r\n**Default server name:**\r\nSERVER_NAME:\
+  \ 'test.local'\r\n\r\n**Domains (sub-domains):**\r\ntest.test.local\r\nadmin.test.local\r\
+  \ntest.local\r\n\r\n**Adding blueprints:**\r\napp.register_blueprint(admin_blueprint,url_prefix='',subdomain='admin')\r\
+  \napp.register_blueprint(test_subdomain_blueprint,url_prefix='',subdomain='test')\r\
+  \n\r\n\r\n```\r\n$ flask routes\r\n * Tip: There are .env or .flaskenv files present.\
+  \ Do \"pip install python-dotenv\" to use them.\r\nEndpoint                    \
+  \                             Methods    Rule\r\n-------------------------------------------------------\
+  \  ---------  ------------------------------------------------\r\nadmin_blueprint.home\
+  \                                      GET        /home\r\ntest_subdomain_blueprint.home\
+  \                             GET        /home\r\nstatic                       \
+  \                             GET        /static/<path:filename>\r\n...\r\n```\r\
+  \n\r\n\r\n**Feature request**\r\nIt will be good to see something like below (that\
+  \ will make more clear which route for which subdomain, because now need to go and\
+  \ check configuration).\r\n**If it is not possible to fix routes**, can you add\
+  \ or tell which method(s) should be used to get below information from flask? \r\
+  \n\r\n```\r\n$ flask routes\r\n * Tip: There are .env or .flaskenv files present.\
+  \ Do \"pip install python-dotenv\" to use them.\r\nDomain                Endpoint\
+  \                                             Methods    Rule\r\n-----------------\
+  \   ----------------------------------------------------  ----------  ------------------------------------------------\r\
+  \nadmin.test.local     admin_blueprint.home                                  GET\
+  \        /home\r\ntest.test.local      test_subdomain_blueprint.home           \
+  \              GET        /home\r\ntest.local           static                 \
+  \                               GET        /static/<path:filename>\r\n...\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_cli.py::test_no_routes
+  - tests/test_cli.py::test_subdomain
+  - tests/test_cli.py::test_host
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5063
+  issue: 5004
+  merged_at: '2023-04-14T16:45:20Z'
+  issue_url: https://github.com/pallets/flask/issues/5004

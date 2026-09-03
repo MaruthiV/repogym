@@ -1,0 +1,31 @@
+diff --git a/tests/test_inspect.py b/tests/test_inspect.py
+index 5a9a57610c..05a78b8718 100644
+--- a/tests/test_inspect.py
++++ b/tests/test_inspect.py
+@@ -6,7 +6,6 @@
+ from rich import inspect
+ from rich.console import Console
+ 
+-
+ skip_py36 = pytest.mark.skipif(
+     sys.version_info.minor == 6 and sys.version_info.major == 3,
+     reason="rendered differently on py3.6",
+@@ -260,3 +259,18 @@ class Foo:
+     result = render(foo, methods=True, width=100)
+     print(repr(result))
+     assert expected == result
++
++
++def test_inspect_swig_edge_case():
++    """Issue #1838 - Edge case with Faiss library - object with empty dir()"""
++
++    class Thing:
++        @property
++        def __class__(self):
++            raise AttributeError
++
++    thing = Thing()
++    try:
++        inspect(thing)
++    except Exception as e:
++        assert False, f"Object with no __class__ shouldn't raise {e}"

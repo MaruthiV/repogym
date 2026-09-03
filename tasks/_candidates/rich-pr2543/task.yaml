@@ -1,0 +1,81 @@
+id: rich-pr2543
+repo: Textualize/rich
+base_commit: c6001e52260fb60250ba1e8d6ed67af004a85560
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Styling broken with rich text on panel titles and subtitles\n\nYou\
+  \ may find a solution to your problem in the [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ or [issues](https://github.com/willmcgugan/rich/issues).\r\n\r\n**Describe the\
+  \ bug**\r\n\r\n`rich.text.Text` styling is ignored when used on the title or subtitle\
+  \ of a panel.\r\n\r\n```py\r\nfrom rich.panel import Panel\r\nfrom rich.text import\
+  \ Text\r\nfrom rich import print\r\n\r\npanel = Panel(\r\n    \"hello [red]world[/]\"\
+  ,\r\n    title=Text(\"Hi\", style=\"red\"),  # this doesnt affect the output!\r\n\
+  \    subtitle=\"[red]Hi\",  # this works normally\r\n)\r\nprint(panel)\r\n```\r\n\
+  this then produces\r\n\r\n\r\n**Platform**\r\n<details>\r\n<summary>Click to expand</summary>\r\
+  \n\r\n```\r\n╭───────────────────────── <class 'rich.console.Console'> ─────────────────────────╮\r\
+  \n│ A high level console interface.                                            \
+  \      │\r\n│                                                                  \
+  \                │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=163 ColorSystem.TRUECOLOR>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = 'truecolor'                              \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 43                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=163, height=43),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=163, \
+  \                                           │\r\n│                        is_terminal=True,\
+  \                                         │\r\n│                        encoding='utf-8',\
+  \                                         │\r\n│                        max_height=43,\
+  \                                            │\r\n│                        justify=None,\
+  \                                             │\r\n│                        overflow=None,\
+  \                                            │\r\n│                        no_wrap=False,\
+  \                                            │\r\n│                        highlight=None,\
+  \                                           │\r\n│                        markup=None,\
+  \                                              │\r\n│                        height=None\
+  \                                               │\r\n│                    )    \
+  \                                                         │\r\n│            quiet\
+  \ = False                                                         │\r\n│       \
+  \    record = False                                                         │\r\n\
+  │         safe_box = True                                                      \
+  \    │\r\n│             size = ConsoleDimensions(width=163, height=43)         \
+  \              │\r\n│        soft_wrap = False                                 \
+  \                        │\r\n│           stderr = False                       \
+  \                                  │\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_text.py::test_stylize_before
+  - tests/test_text.py::test_stylize_negative_index
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2543
+  issue: 2466
+  merged_at: '2022-09-23T14:22:51Z'
+  issue_url: https://github.com/Textualize/rich/issues/2466

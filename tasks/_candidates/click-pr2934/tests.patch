@@ -1,0 +1,61 @@
+diff --git a/tests/test_chain.py b/tests/test_chain.py
+index 702eaaa3e1..ba11b7e2ae 100644
+--- a/tests/test_chain.py
++++ b/tests/test_chain.py
+@@ -163,8 +163,8 @@ def processor(iterator):
+         return processor
+ 
+     result = runner.invoke(cli, args, input=input)
+-    assert not result.exception
+-    assert result.output.splitlines() == expect
++    # last two lines are '' and 'Aborted!'
++    assert result.output.splitlines()[:-2] == expect
+ 
+ 
+ def test_args_and_chain(runner):
+diff --git a/tests/test_termui.py b/tests/test_termui.py
+index ad9d0a66c2..5d8b9fb803 100644
+--- a/tests/test_termui.py
++++ b/tests/test_termui.py
+@@ -242,7 +242,7 @@ def test_file_prompt_default_format(runner, file_kwargs):
+     def cli(f):
+         click.echo(f.name)
+ 
+-    result = runner.invoke(cli)
++    result = runner.invoke(cli, input="\n")
+     assert result.output == f"file [{__file__}]: \n{__file__}\n"
+ 
+ 
+@@ -451,7 +451,7 @@ def cli(value, o):
+     [
+         (True, "password\npassword", None, "password"),
+         ("Confirm Password", "password\npassword\n", None, "password"),
+-        (True, "", "", ""),
++        (True, "\n\n", "", ""),
+         (False, None, None, None),
+     ],
+ )
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index 48f9f4c243..e941415b6d 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -179,6 +179,19 @@ def f(_):
+     assert out == "Password:\ninterrupted\n"
+ 
+ 
++def test_prompts_eof(runner):
++    """If too few lines of input are given, prompt should exit, not hang."""
++
++    @click.command
++    def echo():
++        for _ in range(3):
++            click.echo(click.prompt("", type=int))
++
++    # only provide two lines of input for three prompts
++    result = runner.invoke(echo, input="1\n2\n")
++    assert result.exit_code == 1
++
++
+ def _test_gen_func():
+     yield "a"
+     yield "b"

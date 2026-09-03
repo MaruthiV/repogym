@@ -1,0 +1,41 @@
+id: click-pr3079
+repo: pallets/click
+base_commit: 2ed395b0b5ac4d56553ff715335f456f812cdc78
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "`default=True` on feature flags is order-sensitive\n\nThe following code:\n\
+  \n```python\nimport click\n\n\n@click.command()\n@click.option(\"--red\", \"color\"\
+  , flag_value=\"red\")\n@click.option(\"--green\", \"color\", flag_value=\"green\"\
+  , default=True)\n@click.option(\"--blue\", \"color\", flag_value=\"blue\")\ndef\
+  \ main(color: str) -> None:\n    print(repr(color))\n\n\nif __name__ == \"__main__\"\
+  :\n    main()\n```\n\nwhen run with no arguments using click 8.2.1 outputs `'green'`,\
+  \ which is what I expect.  If click 8.3.0 is used instead, then it outputs `None`\
+  \ — but if the `--green` option is moved above the `--red` option in the script,\
+  \ click 8.3.0 will output `'green'`.\n\nI believe that the script should output\
+  \ `'green'` regardless of the declaration order of the options.\n\nEnvironment:\n\
+  \n- Python version: 3.13.7\n- Click version: 8.2.1 and 8.3.0\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_defaults.py::test_shared_param_prefers_first_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3079
+  issue: 3071
+  merged_at: '2025-09-24T17:07:42Z'
+  issue_url: https://github.com/pallets/click/issues/3071

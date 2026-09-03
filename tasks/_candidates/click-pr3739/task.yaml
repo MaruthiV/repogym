@@ -1,0 +1,58 @@
+id: click-pr3739
+repo: pallets/click
+base_commit: 9c4dfdaebe0e6b2aabc566eb81f6f10eb5cd6ea1
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "[Bug] On Windows, get_pager_file returns a typing.BinaryIO object NOT typing.TextIO\n\
+  \nInside `src/click/_termui_impl.py`, the function `get_pager_file` delegates the\
+  \ creation of a tempfile to `_tempfilepager`, which returns a `BinaryIO` object\
+  \ of the opened file:\n\n```python\nf = tempfile.NamedTemporaryFile(mode=\"wb\"\
+  , delete=False)\ntry:\n    yield t.cast(t.BinaryIO, f), encoding, color\n...\n```\n\
+  Which is called by _pager_contextmanager in\n```python\n...\nif pager_cmd_parts:\n\
+  \        if WIN:\n            return _tempfilepager(pager_cmd_parts, color)\n  \
+  \      return _pipepager(pager_cmd_parts, color)\n...\n    if WIN or sys.platform.startswith(\"\
+  os2\"):\n        return _tempfilepager([\"more\"], color)\n    return _pipepager([\"\
+  less\"], color)\n```\nIn the end `get_pager_file`\n```python\ndef get_pager_file(color:\
+  \ bool | None = None) -> t.Generator[t.TextIO, None, None]:\n    ...\n    with _pager_contextmanager(color=color)\
+  \ as (stream, encoding, color):\n    # Split streams by capabilities rather than\
+  \ the abstract TextIO /\n    # BinaryIO annotations: buffered text streams can be\
+  \ unwrapped to bytes,\n    # while other streams are yielded as-is.\n    wrapper:\
+  \ MaybeStripAnsi | None = None\n        if _has_binary_buffer(stream):\n       \
+  \     # Text stream backed by a binary buffer.\n            wrapper = MaybeStripAnsi(stream.buffer,\
+  \ color=color, encoding=encoding)\n            stream = wrapper\n        try:\n\
+  \            # Narrow the BinaryIO | TextIO union that _pager_contextmanager\n \
+  \           # yields; the caller writes text to the pager.\n            yield t.cast(t.TextIO,\
+  \ stream)\n        ...\n```\nIn the above `yield t.cast(t.TextIO, stream)` stream\
+  \ object will be `BinaryIO`, contradicting the `TextIO` annotation of the return\
+  \ value, all because it was created with the mode `\"wb\"` earlier.\n\nThen if a\
+  \ caller tries: `stream.write(\"some text\")` it will raise an exception:\n`TypeError:\
+  \ a bytes-like object is required, not 'str'`\n\nFIX:\nIn `_tempfilepager`, create\
+  \ the temp file with `mode='w'`\n```python\nf = tempfile.NamedTemporaryFile(mode=\"\
+  w\", delete=False)\n```\nI went ahead and created a pull request:\nhttps://github.com/pallets/click/pull/3739\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_termui.py::test_tempfile_pager_accepts_text
+  - tests/test_termui.py::test_tempfile_pager_handles_ansi
+  - tests/test_termui.py::test_editor_unclosed_quote
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3739
+  issue: 3740
+  merged_at: '2026-08-14T18:51:52Z'
+  issue_url: https://github.com/pallets/click/issues/3740

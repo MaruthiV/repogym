@@ -1,0 +1,8 @@
+run1: f2p test not failing pre-fix: tests/test_traceback.py::test_recursive -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: f2p test not passing post-gold: tests/test_traceback.py::test_guess_lexer_yaml_j2 -> fail
+run1: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not failing pre-fix: tests/test_traceback.py::test_recursive -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not passing post-gold: tests/test_traceback.py::test_guess_lexer_yaml_j2 -> fail
+run2: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error

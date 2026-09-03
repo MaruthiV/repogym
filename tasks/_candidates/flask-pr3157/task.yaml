@@ -1,0 +1,58 @@
+id: flask-pr3157
+repo: pallets/flask
+base_commit: 754b72957854e0b955fe973d169daa27a2f98ef1
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'Testing errors when streaming
+
+
+  I currently have a problem with errors when I try to test a streaming endpoint,
+  namely when I use the `stream_with_context` flask function/decorator to keep the
+  context around, as I am streaming from a database which client is on `current_app`.
+
+
+  Essentially, the test passes, but then pytest-flask errors with a message about
+  it having popped the wrong request context:
+
+  `AssertionError: Popped wrong request context.  (<RequestContext ''http://localhost/stream''
+  [GET] of app> instead of <RequestContext ''http://localhost/'' [GET] of app>)`
+
+
+  Or at least I think it''s pytest-flask.
+
+
+  I have a small gist that demonstrates the issue: https://gist.github.com/cknv/152d81ffcc4a74be491d,
+  though it might be a little on the primitive side, but for me it does demonstrate
+  the error. If you need some more information, I would of course be more than happy
+  to provide it :)
+
+
+  For completeness sake, I am running python 3.5.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_testing.py::test_client_pop_all_preserved
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3157
+  issue: 42
+  merged_at: '2019-05-25T21:09:18Z'
+  issue_url: https://github.com/pytest-dev/pytest-flask/issues/42

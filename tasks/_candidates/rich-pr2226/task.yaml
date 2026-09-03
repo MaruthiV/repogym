@@ -1,0 +1,36 @@
+id: rich-pr2226
+repo: Textualize/rich
+base_commit: 49840e3b82821d0d57e7e20992eb8e1d9af74a7d
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'Hide frame from tracebacks
+
+
+  Sometimes it is useful to completely omit a frame from a traceback. Suggest a local
+  variable with a name like `_rich_traceback_omit`
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_traceback.py::test_rich_traceback_omit_optional_local_flag
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2226
+  issue: 2207
+  merged_at: '2022-04-26T13:04:03Z'
+  issue_url: https://github.com/Textualize/rich/issues/2207

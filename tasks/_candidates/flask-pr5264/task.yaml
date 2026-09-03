@@ -1,0 +1,49 @@
+id: flask-pr5264
+repo: pallets/flask
+base_commit: b7c1290528f907c9f41afcdfd33a2227c73e26d3
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "TypeError: Flask.url_for() got multiple values for argument 'self'\n\n[Official\
+  \ documentation](https://flask.palletsprojects.com/en/2.3.x/api/#flask.url_for)\
+  \ doesn't mention any preconditions for values argument, but `self=1` raises an\
+  \ exception.\r\n\r\nCan be replicated with the following test case:\r\n\r\n```python\r\
+  \nfrom unittest import TestCase\r\n\r\nfrom flask import Flask, url_for\r\n\r\n\r\
+  \nclass UrlForTests(TestCase):\r\n    def setUp(self) -> None:\r\n        self.app\
+  \ = Flask(__name__)\r\n\r\n    def test_with_self_argument(self) -> None:\r\n  \
+  \      with (\r\n            self.app.app_context(),\r\n            self.assertRaisesRegex(\r\
+  \n                TypeError, \"got multiple values for argument 'self'\"\r\n   \
+  \         ),\r\n        ):\r\n            url_for(\"doesnotmatter\", self=1)\r\n\
+  ```\r\n\r\nTraceback example:\r\n\r\n```\r\nTraceback (most recent call last):\r\
+  \n  File \"/home/dmitry/git/github.com/minetest/contentdb/tests.py\", line 6, in\
+  \ <module>\r\n    url_for(\"doesnotmatter\", self=1)\r\n  File \"/home/dmitry/.cache/pypoetry/virtualenvs/contentdb-MK2UWkId-py3.10/lib/python3.10/site-packages/flask/helpers.py\"\
+  , line 256, in url_for\r\n    return current_app.url_for(\r\nTypeError: Flask.url_for()\
+  \ got multiple values for argument 'self'\r\n```\r\n\r\nThe expected behavior is\
+  \ the returned URL has query string like '?self=1'.\r\n\r\nEnvironment:\r\n\r\n\
+  - Python version: 3.10.6\r\n- Flask version: 2.3.3\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_helpers.py::test_url_for_with_self
+  - tests/test_helpers.py::test_redirect_no_app
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5264
+  issue: 5258
+  merged_at: '2023-09-30T14:25:31Z'
+  issue_url: https://github.com/pallets/flask/issues/5258

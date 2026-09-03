@@ -1,0 +1,100 @@
+id: rich-pr2339
+repo: Textualize/rich
+base_commit: 695256ce5316482f15818962ba8f692a460f923f
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Console.show_cursor() (and displaying Rich progress bars) clobbers\
+  \ cursor style on Windows\n\n**Describe the bug**\r\n\r\nFor some context, I originally\
+  \ discovered this with the Rich progress bars in Twine, that whenever one would\
+  \ display, the cursor style would be clobbered to a block cursor, and reported as\
+  \ pypa/twine#902 . However, I subsequently reproduced it in `pip` as and was directed\
+  \ to report it to Rich, and indeed, I can reproduce it with a minimal Rich snippit.\r\
+  \n\r\nOn Windows (tested both 8.1 and 10 on multiple machines) running `rich.console.Console.show_cursor()`\
+  \ clobbers the current cursor style (underbar in the stock Windows terminals, bar\
+  \ in ConEmu) and forces the cursor to display as a block, even if the cursor is\
+  \ already visible, with no way I've found to get it back other than completely closing\
+  \ and restarting the terminal. This also happens whenever I run pip and Twine and\
+  \ Rich progress bars are displayed, unless I specifically disable them through their\
+  \ respective CLIs, which I have to always remember to do, or I have to restart my\
+  \ terminal tab to get my normal cursor back, potentially losing tens of thousands\
+  \ of lines of scrollback and command history.\r\n\r\nI've reproduced the same behavior\
+  \ in all environments on my machine I was able to test, as well as the other clean-installed\
+  \ Windows machines I tested (with no obvious common configuration):\r\n\r\n* cmd.exe\
+  \ shell running in the default Command Prompt terminal\r\n* Powershell running in\
+  \ the default Powershell terminal\r\n* cmd.exe running in ConEmu\r\n* Git Bash running\
+  \ in ConEmu\r\n\r\n(In Git Bash running in its bundled MinTTY, I could not confirm\
+  \ if the behavior can be reproduced since Rich treats it as a not a terminal and\
+  \ the function terminates without doing anything, given `is_terminal` is `False`\
+  \ there and `show_cursor(False)` does nothing.)\r\n\r\nFurthermore, I've reproduced\
+  \ the above running the latest version of Rich, 12.4.4, in fresh clean environments\
+  \ with only Rich, pip, Twine and their deps installed, both from PyPI with pip,\
+  \ and from conda-forge with conda.\r\n\r\nI've tried numerous methods to restore\
+  \ it once this happens, including modifying my terminal emulator settings, various\
+  \ ANSI escape sequences, the `reset` command in my shell, starting a new `bash`\
+  \ session within an existing one and sshing into another machine, including a Linux\
+  \ box, but nothing works save closing and restarting the terminal.\r\n\r\n_However,_\
+  \ if I `ssh` into a Linux host (prior to triggering the bug) from either ConEmu\
+  \ + Git Bash or MinTTY + Git Bash and run `show_cursor()` there, the cursor both\
+  \ hides and shows correctly, retaining whatever shape I configured in my terminal\
+  \ emulator (and I tested with lines, blocks and underbars). (To note, this works\
+  \ even from MinTTY running Git Bash, despite it not being considered a terminal\
+  \ when running bash on Windows.) The cursor hiding/showing persists (correctly,\
+  \ I assume) even when I exist the remote session, but if I do trigger the bug on\
+  \ Windows, so does the block cursor within and without the ssh session (and `show_cursor()`\
+  \ does not restore the previous one, since the block cursor is set as the current\
+  \ cursor). Therefore, it would seem there is something specific to Windows that\
+  \ is triggering this issue, given I'm running the same shell and same terminal emulator\
+  \ and everything works fine.\r\n\r\nMinimal reproducer:\r\n\r\n```shell\r\npython\
+  \ -c \"import rich.console; rich.console.Console().show_cursor()\"\r\n# Cursor now\
+  \ a block\r\n```\r\n\r\n**Platform**\r\n\r\n\r\nWhat platform (Win/Linux/Mac) are\
+  \ you running on? What terminal software are you using?\r\n\r\n### Reproduced issue\r\
+  \n\r\nAll running Python 3.9.13 x64\r\n\r\n* {1*) Windows 8.1 Pro x64 + ConEmu 210912\
+  \ stable + Git Bash 4.4.23(1)-release (x86_64-pc-msys)\r\n* Windows 8.1 Pro x64\
+  \ + ConEmu 210912 stable + cmd.exe\r\n* Windows 8.1 Pro x64 + Command Prompt + cmd.exe\r\
+  \n* Windows 8.1 Pro x64 + Windows Powershell + powershell\r\n* Windows 10 Enterprise\
+  \ x64 + Command Prompt + cmd.exe\r\n\r\n<details>\r\n\r\n<summary>Windows + ConEmu\
+  \ + Git Bash platform details</summary>\r\n\r\n`python -m rich` and `python -m rich.diagnose`\
+  \ display color\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_win32_console.py::test_cursor_position
+  - tests/test_win32_console.py::test_screen_size
+  - tests/test_win32_console.py::test_write_text
+  - tests/test_win32_console.py::test_write_styled
+  - tests/test_win32_console.py::test_write_styled_bold
+  - tests/test_win32_console.py::test_write_styled_reverse
+  - tests/test_win32_console.py::test_write_styled_reverse
+  - tests/test_win32_console.py::test_write_styled_no_foreground_color
+  - tests/test_win32_console.py::test_write_styled_no_background_color
+  - tests/test_win32_console.py::test_move_cursor_to
+  - tests/test_win32_console.py::test_move_cursor_up
+  - tests/test_win32_console.py::test_move_cursor_down
+  - tests/test_win32_console.py::test_move_cursor_forward
+  - tests/test_win32_console.py::test_move_cursor_forward_newline_wrap
+  - tests/test_win32_console.py::test_move_cursor_to_column
+  - tests/test_win32_console.py::test_move_cursor_backward
+  - tests/test_win32_console.py::test_hide_cursor
+  - tests/test_win32_console.py::test_show_cursor
+  - tests/test_win32_console.py::test_set_title
+  - tests/test_win32_console.py::test_set_title_too_long
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2339
+  issue: 2333
+  merged_at: '2022-06-15T14:21:58Z'
+  issue_url: https://github.com/Textualize/rich/issues/2333

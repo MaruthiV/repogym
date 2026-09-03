@@ -1,0 +1,43 @@
+id: click-pr2796
+repo: pallets/click
+base_commit: 8a47580a00f3404e7071b9ecfec3692a1e18309f
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: 'Python Enum support for click.Choice
+
+
+  I can work  around it as [described here](https://pythonpath.wordpress.com/2012/01/26/python-enum-with-namedtuple/)
+  it would be great if `Choice` supported Python Enum.
+
+
+  Unless of course I have missed something completely fundamental :-)
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_choice_argument_enum
+  - tests/test_basic.py::test_choice_argument_custom_type
+  - tests/test_basic.py::test_choice_argument_none
+  - tests/test_basic.py::test_datetime_option_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2796
+  issue: 605
+  merged_at: '2025-01-12T14:59:58Z'
+  issue_url: https://github.com/pallets/click/issues/605

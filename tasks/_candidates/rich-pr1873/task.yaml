@@ -1,0 +1,37 @@
+id: rich-pr1873
+repo: Textualize/rich
+base_commit: 5407d8006fc575d678c92fd4c48f57b5000932bd
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Add lexer option to Syntax.from_path\n\nSyntax.from_path doesn't have a lexer\
+  \ option to override the auto-detection of the lexer from the filename.\r\n\r\n\
+  This is required so that the `--lexer` option in rich-cli is respected when reading\
+  \ Syntax via a path.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_syntax.py::test_from_path
+  - tests/test_syntax.py::test_from_path_unknown_lexer
+  - tests/test_syntax.py::test_from_path_lexer_override
+  - tests/test_syntax.py::test_from_path_lexer_override_invalid_lexer
+  - tests/test_syntax.py::test_syntax_guess_lexer
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 1873
+  issue: 1871
+  merged_at: '2022-01-27T16:44:54Z'
+  issue_url: https://github.com/Textualize/rich/issues/1871

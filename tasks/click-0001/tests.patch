@@ -1,0 +1,31 @@
+diff --git a/tests/test_repogym_short_help.py b/tests/test_repogym_short_help.py
+new file mode 100644
+index 0000000..e12075e
+--- /dev/null
++++ b/tests/test_repogym_short_help.py
+@@ -0,0 +1,25 @@
++import click
++from click.testing import CliRunner
++from click.utils import _make_default_short_help
++
++
++def test_short_help_keeps_full_first_sentence():
++    text = "Sync the database. Second sentence here."
++    assert _make_default_short_help(text) == "Sync the database."
++
++
++def test_short_help_single_sentence():
++    assert _make_default_short_help("Do things.") == "Do things."
++
++
++def test_command_short_help_in_group_listing():
++    @click.group()
++    def cli():
++        pass
++
++    @cli.command()
++    def sync():
++        """Sync the database. More details follow here."""
++
++    result = CliRunner().invoke(cli, ["--help"])
++    assert "Sync the database." in result.output

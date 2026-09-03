@@ -1,0 +1,35 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 86b56e44f5..d2448cdb2e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fall back to `sys.__stderr__` on POSIX systems when trying to get the terminal size (fix issues when Rich is piped to another process)
+ - Fixed markup escaping issue https://github.com/Textualize/rich/issues/2187
+ - Safari - Box appearing around SVG export https://github.com/Textualize/rich/pull/2201
++- Fixed recursion error in Jupyter progress bars https://github.com/Textualize/rich/issues/2047
+ 
+ ## [12.2.0] - 2022-04-05
+ 
+diff --git a/rich/file_proxy.py b/rich/file_proxy.py
+index 3ec593a5a4..cc69f22f3c 100644
+--- a/rich/file_proxy.py
++++ b/rich/file_proxy.py
+@@ -1,5 +1,5 @@
+ import io
+-from typing import List, Any, IO, TYPE_CHECKING
++from typing import IO, TYPE_CHECKING, Any, List
+ 
+ from .ansi import AnsiDecoder
+ from .text import Text
+@@ -48,7 +48,7 @@ def write(self, text: str) -> int:
+         return len(text)
+ 
+     def flush(self) -> None:
+-        buffer = self.__buffer
+-        if buffer:
+-            self.__console.print("".join(buffer))
+-            del buffer[:]
++        output = "".join(self.__buffer)
++        if output:
++            self.__console.print(output)
++        del self.__buffer[:]

@@ -1,0 +1,75 @@
+id: rich-pr3064
+repo: Textualize/rich
+base_commit: 01b85ac116c4635b6ddb8b488be8254be6df2a84
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "rich.markdown generates AssertionError rendering certain strings\n\n- [x]\
+  \ I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html) and\
+  \ [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\nMoved from [here](https://github.com/Textualize/textual/issues/3006)\r\n\r\
+  \nThe following string `\"| Simple | Table |\\n| ------ | -----\"` or similar ones\
+  \ that are incomplete tables will generate AssertionError rather than printing the\
+  \ string.\r\n\r\n```python\r\nfrom rich.console import Console\r\nfrom rich.markdown\
+  \ import Markdown\r\n\r\n# This will work\r\nresponses = \"| Simple | Table |\\\
+  n| ------ | ----- |\\n| cell1  | cell2 |\"\r\n\r\n# This will not work\r\nresponses\
+  \ = \"| Simple | Table |\\n| ------ | ----- \"\r\n\r\nconsole = Console()\r\nmd\
+  \ = Markdown(responses)\r\nconsole.print(md)\r\n```\r\n\r\nResults:\r\n\r\n```\r\
+  \nTraceback (most recent call last):\r\n  File \"/Users/justin/src/mchat/rtest.py\"\
+  , line 12, in <module>\r\n    console.print(md)\r\n  File \"/Users/justin/Library/Caches/pypoetry/virtualenvs/mchat-mvZqEniY-py3.11/lib/python3.11/site-packages/rich/console.py\"\
+  , line 1699, in print\r\n    extend(render(renderable, render_options))\r\n  File\
+  \ \"/Users/justin/Library/Caches/pypoetry/virtualenvs/mchat-mvZqEniY-py3.11/lib/python3.11/site-packages/rich/console.py\"\
+  , line 1331, in render\r\n    for render_output in iter_render:\r\n  File \"/Users/justin/Library/Caches/pypoetry/virtualenvs/mchat-mvZqEniY-py3.11/lib/python3.11/site-packages/rich/markdown.py\"\
+  , line 686, in __rich_console__\r\n    yield from console.render(element, context.options)\r\
+  \n  File \"/Users/justin/Library/Caches/pypoetry/virtualenvs/mchat-mvZqEniY-py3.11/lib/python3.11/site-packages/rich/console.py\"\
+  , line 1331, in render\r\n    for render_output in iter_render:\r\n  File \"/Users/justin/Library/Caches/pypoetry/virtualenvs/mchat-mvZqEniY-py3.11/lib/python3.11/site-packages/rich/markdown.py\"\
+  , line 262, in __rich_console__\r\n    assert self.body is not None\r\n        \
+  \   ^^^^^^^^^^^^^^^^^^^^^\r\nAssertionError\r\n```\r\n**Platform**\r\n<details>\r\
+  \n<summary>Click to expand</summary>\r\n\r\nMacOS 13.4.1\r\n\r\n```\r\n╭─────────────────────────\
+  \ <class 'rich.console.Console'> ─────────────────────────╮\r\n│ A high level console\
+  \ interface.                                                  │\r\n│           \
+  \                                                                       │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=187 ColorSystem.TRUECOLOR>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = 'truecolor'                              \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 50                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=187, height=50),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                  \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_markdown.py::test_partial_table
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3064
+  issue: 3053
+  merged_at: '2023-07-29T09:13:37Z'
+  issue_url: https://github.com/Textualize/rich/issues/3053

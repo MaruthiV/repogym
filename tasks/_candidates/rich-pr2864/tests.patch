@@ -1,0 +1,47 @@
+diff --git a/tests/test_pretty.py b/tests/test_pretty.py
+index c3f7967bfb..0edc60b2e6 100644
+--- a/tests/test_pretty.py
++++ b/tests/test_pretty.py
+@@ -2,7 +2,7 @@
+ import io
+ import sys
+ from array import array
+-from collections import UserDict, defaultdict
++from collections import UserDict, defaultdict, deque
+ from dataclasses import dataclass, field
+ from typing import Any, List, NamedTuple
+ 
+@@ -488,6 +488,33 @@ def test_defaultdict():
+     assert result == "defaultdict(<class 'int'>, {'foo': 2})"
+ 
+ 
++def test_deque():
++    test_deque = deque([1, 2, 3])
++    result = pretty_repr(test_deque)
++    assert result == "deque([1, 2, 3])"
++    test_deque = deque([1, 2, 3], maxlen=None)
++    result = pretty_repr(test_deque)
++    assert result == "deque([1, 2, 3])"
++    test_deque = deque([1, 2, 3], maxlen=5)
++    result = pretty_repr(test_deque)
++    assert result == "deque([1, 2, 3], maxlen=5)"
++    test_deque = deque([1, 2, 3], maxlen=0)
++    result = pretty_repr(test_deque)
++    assert result == "deque([], maxlen=0)"
++    test_deque = deque([])
++    result = pretty_repr(test_deque)
++    assert result == "deque([])"
++    test_deque = deque([], maxlen=None)
++    result = pretty_repr(test_deque)
++    assert result == "deque([])"
++    test_deque = deque([], maxlen=5)
++    result = pretty_repr(test_deque)
++    assert result == "deque([], maxlen=5)"
++    test_deque = deque([], maxlen=0)
++    result = pretty_repr(test_deque)
++    assert result == "deque([], maxlen=0)"
++
++
+ def test_array():
+     test_array = array("I", [1, 2, 3])
+     result = pretty_repr(test_array)

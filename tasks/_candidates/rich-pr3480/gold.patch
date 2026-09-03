@@ -1,0 +1,38 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e14bd69a65..63116cf011 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++## Unreleased
++
++### Fixed
++
++- Fixed infinite loop when appending Text to same instance https://github.com/Textualize/rich/pull/3480
+ 
+ ## [13.8.0] - 2024-08-26
+ 
+diff --git a/rich/text.py b/rich/text.py
+index 69e19b6454..1f53533642 100644
+--- a/rich/text.py
++++ b/rich/text.py
+@@ -998,7 +998,7 @@ def append(
+                 self._text.append(text.plain)
+                 self._spans.extend(
+                     _Span(start + text_length, end + text_length, style)
+-                    for start, end, style in text._spans
++                    for start, end, style in text._spans.copy()
+                 )
+                 self._length += len(text)
+         return self
+@@ -1020,7 +1020,7 @@ def append_text(self, text: "Text") -> "Text":
+         self._text.append(text.plain)
+         self._spans.extend(
+             _Span(start + text_length, end + text_length, style)
+-            for start, end, style in text._spans
++            for start, end, style in text._spans.copy()
+         )
+         self._length += len(text)
+         return self

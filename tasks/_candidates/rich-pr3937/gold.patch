@@ -1,0 +1,51 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b7b0398864..a3b06bdaef 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - IPython now respects when a `Console` instance is passed to `pretty.install` https://github.com/Textualize/rich/pull/3915
+ - Fixed extraneous blank line on non-interactive disabled `Progress` https://github.com/Textualize/rich/pull/3905
+ - Fixed extra padding on first cell in columns https://github.com/Textualize/rich/pull/3935
++- Fixed trailing whitespace removed when soft_wrap=True https://github.com/Textualize/rich/pull/3937
+ 
+ ### Added
+ 
+@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ### Fixed
+ 
+-- Fixed exception when callling `inspect` on objects with unusual `__qualname__` attribute https://github.com/Textualize/rich/pull/3894
++- Fixed exception when calling `inspect` on objects with unusual `__qualname__` attribute https://github.com/Textualize/rich/pull/3894
+ 
+ ## [14.1.0] - 2025-06-25
+ 
+diff --git a/rich/text.py b/rich/text.py
+index b5b114b42e..60109dd9e8 100644
+--- a/rich/text.py
++++ b/rich/text.py
+@@ -691,7 +691,6 @@ def __rich_console__(
+     ) -> Iterable[Segment]:
+         tab_size: int = console.tab_size if self.tab_size is None else self.tab_size
+         justify = self.justify or options.justify or DEFAULT_JUSTIFY
+-
+         overflow = self.overflow or options.overflow or DEFAULT_OVERFLOW
+ 
+         lines = self.wrap(
+@@ -1232,12 +1231,15 @@ def wrap(
+             if "\t" in line:
+                 line.expand_tabs(tab_size)
+             if no_wrap:
++                if overflow == "ignore":
++                    lines.append(line)
++                    continue
+                 new_lines = Lines([line])
+             else:
+                 offsets = divide_line(str(line), width, fold=wrap_overflow == "fold")
+                 new_lines = line.divide(offsets)
+-            for line in new_lines:
+-                line.rstrip_end(width)
++                for line in new_lines:
++                    line.rstrip_end(width)
+             if wrap_justify:
+                 new_lines.justify(
+                     console, width, justify=wrap_justify, overflow=wrap_overflow

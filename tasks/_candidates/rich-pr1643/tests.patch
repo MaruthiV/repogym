@@ -1,0 +1,15 @@
+diff --git a/tests/test_console.py b/tests/test_console.py
+index 0f88436ca8..fe3ce5b0db 100644
+--- a/tests/test_console.py
++++ b/tests/test_console.py
+@@ -709,3 +709,9 @@ def _mock_isatty():
+     console.file.isatty = _mock_isatty
+ 
+     assert console.is_terminal == False
++
++
++@pytest.mark.skipif(sys.platform == "win32", reason="not relevant on Windows")
++def test_detect_color_system():
++    console = Console(_environ={"TERM": "rxvt-unicode-256color"}, force_terminal=True)
++    assert console._detect_color_system() == ColorSystem.EIGHT_BIT
+\ No newline at end of file

@@ -1,0 +1,22 @@
+diff --git a/tests/test_repogym_stream_length.py b/tests/test_repogym_stream_length.py
+new file mode 100644
+index 0000000..5b49e7c
+--- /dev/null
++++ b/tests/test_repogym_stream_length.py
+@@ -0,0 +1,16 @@
++import io
++
++import httpx
++from httpx._utils import peek_filelike_length
++
++
++def test_peek_filelike_length_preserves_position():
++    stream = io.BytesIO(b"hello world")
++    stream.seek(3)
++    assert peek_filelike_length(stream) == 11
++    assert stream.tell() == 3
++
++
++def test_request_content_from_bytesio_body():
++    request = httpx.Request("POST", "http://example.org", content=io.BytesIO(b"payload"))
++    assert request.read() == b"payload"

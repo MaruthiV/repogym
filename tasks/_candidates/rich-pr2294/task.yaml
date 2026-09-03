@@ -1,0 +1,78 @@
+id: rich-pr2294
+repo: Textualize/rich
+base_commit: 5ccf4ed37686b69aa1412272cfdf60fc10ad9f5d
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "IndexError: list index out of range when using inspect(pyparsing, all=True)\n\
+  \nOS: macOS Monterey 12.4\r\nCPU: Intel\r\nPython version:\r\n\r\n`Python 3.10.4\
+  \ | packaged by conda-forge | (main, Mar 24 2022, 17:43:32) [Clang 12.0.1 ]`\r\n\
+  \r\n`rich` and `pyparsing` version: 12.2.0 and 3.0.8\r\n\r\n```\r\n❯ conda list\
+  \ rich\r\n# packages in environment at /usr/local/Caskroom/miniconda/base:\r\n#\r\
+  \n# Name                    Version                   Build  Channel\r\nrich   \
+  \                   12.2.0             pyhd8ed1ab_0    conda-forge\r\n❯ conda list\
+  \ pyparsing\r\n# packages in environment at /usr/local/Caskroom/miniconda/base:\r\
+  \n#\r\n# Name                    Version                   Build  Channel\r\npyparsing\
+  \                 3.0.8              pyhd8ed1ab_0    conda-forge\r\n```\r\n\r\n\
+  Traceback:\r\n\r\n```\r\n$ python3 -c \"import pyparsing; from rich import inspect;\
+  \ inspect(pyparsing, all=True)\" # similar error when using `methods=True`\r\n\r\
+  \nTraceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\
+  \n    import pyparsing; from rich import inspect; inspect(pyparsing, all=True)\r\
+  \n                                                │       └ <module 'pyparsing'\
+  \ from '/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/pyparsing/__init__.py'>\r\
+  \n                                                └ <function inspect at 0x10849e5f0>\r\
+  \n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/__init__.py\"\
+  , line 168, in inspect\r\n    _console.print(_inspect)\r\n    │              └ <rich._inspect.Inspect\
+  \ object at 0x1084b5b70>\r\n    └ <console width=160 None>\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1752, in print\r\n    extend(render(renderable, render_options))\r\n    │\
+  \      │      │           └ ConsoleOptions(size=ConsoleDimensions(width=160, height=48),\
+  \ legacy_windows=False, min_width=1, max_width=160, is_terminal=False...\r\n   \
+  \ │      │      └ <rich.panel.Panel object at 0x1087b9ed0>\r\n    │      └ <bound\
+  \ method Console.render of <console width=160 None>>\r\n    └ <built-in method extend\
+  \ of list object at 0x1087d9340>\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1390, in render\r\n    for render_output in iter_render:\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/panel.py\"\
+  , line 175, in __rich_console__\r\n    lines = console.render_lines(renderable,\
+  \ child_options, style=style)\r\n            │                    │           │\
+  \                    └ Style()\r\n            │                    │           └\
+  \ ConsoleOptions(size=ConsoleDimensions(width=160, height=48), legacy_windows=False,\
+  \ min_width=158, max_width=158, is_terminal=Fal...\r\n            │            \
+  \        └ Padding(<rich.console.Group object at 0x1087ba320>, (0,1,0,1))\r\n  \
+  \          └ <console width=160 None>\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1425, in render_lines\r\n    lines = list(\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/segment.py\"\
+  , line 288, in split_and_crop_lines\r\n    for segment in segments:\r\n  File \"\
+  /usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1390, in render\r\n    for render_output in iter_render:\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/padding.py\"\
+  , line 97, in __rich_console__\r\n    lines = console.render_lines(\r\n  File \"\
+  /usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1425, in render_lines\r\n    lines = list(\r\n  File \"/usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/segment.py\"\
+  , line 288, in split_and_crop_lines\r\n    for segment in segments:\r\n  File \"\
+  /usr/local/Caskroom/miniconda/base/lib/python3.10/site-packages/rich/console.py\"\
+  , line 1394, in render\r\n    yield from self.render(render_output, _options)\r\n\
+  \               │           │              └ ConsoleOptions(size=ConsoleDimensions(width=160,\
+  \ height=48), legacy_windows=False, min_width=156, max_width=156, is_terminal=Fal...\r\
+  \n               │       \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_control.py::test_escape_control_codes
+  - tests/test_control.py::test_control_move_to
+  - tests/test_inspect.py::test_can_handle_special_characters_in_docstrings
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2294
+  issue: 2284
+  merged_at: '2022-05-27T14:15:37Z'
+  issue_url: https://github.com/Textualize/rich/issues/2284

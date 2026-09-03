@@ -1,0 +1,46 @@
+id: rich-pr3130
+repo: Textualize/rich
+base_commit: 720800e6930d85ad027b1e9bd0cbb96b5e994ce3
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Rich markdown printed to console only shows a single link in a column/\
+  \ table cell\n\n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nI use Rich to format a pandas data frame with\
+  \ multiple links in some column to markdown and show it in the terminal. However,\
+  \ when there are more than a single link in a column rich only shows the last one?\r\
+  \n\r\n```python\r\nfrom rich.console import Console\r\nfrom rich.markdown import\
+  \ Markdown\r\n\r\nimport pandas as pd\r\n\r\nmd_table = pd.DataFrame(\r\n    {\r\
+  \n        \"links\": [\"[page1](https://www.example.com/page1), [page2](https://www.example.com/page2)\"\
+  ]\r\n    }\r\n).to_markdown()\r\n\r\nconsole = Console()\r\nconsole.print(Markdown(md_table))\r\
+  \n```\r\n\r\nOutput:\r\n```bash\r\n      links  \r\n ━━━━━━━━━━━ \r\n  0   page2\
+  \  \r\n```\r\n\r\nExpected\r\n```\r\n      links  \r\n ━━━━━━━━━━━ \r\n  0   page1,\
+  \ page2  \r\n```\r\n\r\nIf I write the markdown to a file I get the expected table\
+  \ with multiple links...\r\n\r\n**Platform**\r\n\r\nplatform=\"Darwin\"\r\nrich==13.5.2\r\
+  \n\r\n\r\n</details>\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_markdown.py::test_inline_styles_in_table
+  - tests/test_markdown.py::test_inline_styles_with_justification
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3130
+  issue: 3115
+  merged_at: '2023-09-17T14:56:07Z'
+  issue_url: https://github.com/Textualize/rich/issues/3115

@@ -1,0 +1,27 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 078a5c0504..9846ee56f2 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fixed superfluous space above Markdown tables https://github.com/Textualize/rich/pull/3469
+ - Fixed issue with record and capture interaction https://github.com/Textualize/rich/pull/3470
+ - Fixed control codes breaking in `append_tokens` https://github.com/Textualize/rich/pull/3471
++- Fixed exception pretty printing a dataclass with missing fields https://github.com/Textualize/rich/pull/3472
+ 
+ ### Changed
+ 
+diff --git a/rich/pretty.py b/rich/pretty.py
+index e0c78f6270..5c725c0c53 100644
+--- a/rich/pretty.py
++++ b/rich/pretty.py
+@@ -781,7 +781,9 @@ def iter_attrs() -> (
+                 )
+ 
+                 for last, field in loop_last(
+-                    field for field in fields(obj) if field.repr
++                    field
++                    for field in fields(obj)
++                    if field.repr and hasattr(obj, field.name)
+                 ):
+                     child_node = _traverse(getattr(obj, field.name), depth=depth + 1)
+                     child_node.key_repr = field.name

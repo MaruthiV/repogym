@@ -1,0 +1,69 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index adf2623d59..bcec74a76b 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -3,6 +3,8 @@ Version 2.3.0
+ 
+ Unreleased
+ 
++-   Ensure subdomains are applied with nested blueprints. :issue:`4834`
++
+ 
+ Version 2.2.3
+ -------------
+diff --git a/docs/blueprints.rst b/docs/blueprints.rst
+index af368bacf1..d5cf3d8237 100644
+--- a/docs/blueprints.rst
++++ b/docs/blueprints.rst
+@@ -140,6 +140,19 @@ name, and child URLs will be prefixed with the parent's URL prefix.
+     url_for('parent.child.create')
+     /parent/child/create
+ 
++In addition a child blueprint's will gain their parent's subdomain,
++with their subdomain as prefix if present i.e.
++
++.. code-block:: python
++
++    parent = Blueprint('parent', __name__, subdomain='parent')
++    child = Blueprint('child', __name__, subdomain='child')
++    parent.register_blueprint(child)
++    app.register_blueprint(parent)
++
++    url_for('parent.child.create', _external=True)
++    "child.parent.domain.tld"
++
+ Blueprint-specific before request functions, etc. registered with the
+ parent will trigger for the child. If a child does not have an error
+ handler that can handle a given exception, the parent's will be tried.
+diff --git a/src/flask/blueprints.py b/src/flask/blueprints.py
+index f6d62ba83f..2403be1cf8 100644
+--- a/src/flask/blueprints.py
++++ b/src/flask/blueprints.py
+@@ -358,6 +358,9 @@ def register(self, app: "Flask", options: dict) -> None:
+         :param options: Keyword arguments forwarded from
+             :meth:`~Flask.register_blueprint`.
+ 
++        .. versionchanged:: 2.3
++            Nested blueprints now correctly apply subdomains.
++
+         .. versionchanged:: 2.0.1
+             Nested blueprints are registered with their dotted name.
+             This allows different blueprints with the same name to be
+@@ -453,6 +456,17 @@ def extend(bp_dict, parent_dict):
+         for blueprint, bp_options in self._blueprints:
+             bp_options = bp_options.copy()
+             bp_url_prefix = bp_options.get("url_prefix")
++            bp_subdomain = bp_options.get("subdomain")
++
++            if bp_subdomain is None:
++                bp_subdomain = blueprint.subdomain
++
++            if state.subdomain is not None and bp_subdomain is not None:
++                bp_options["subdomain"] = bp_subdomain + "." + state.subdomain
++            elif bp_subdomain is not None:
++                bp_options["subdomain"] = bp_subdomain
++            elif state.subdomain is not None:
++                bp_options["subdomain"] = state.subdomain
+ 
+             if bp_url_prefix is None:
+                 bp_url_prefix = blueprint.url_prefix

@@ -1,0 +1,60 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 495eb2a55b..387f84fe36 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -54,6 +54,8 @@ Unreleased
+ -   When using ``Option.envvar`` with ``Option.flag_value``, the ``flag_value``
+     will always be used instead of the value of the environment variable.
+     :issue:`2746` :pr:`2788`
++-   Add ``Choice.get_invalid_choice_message`` method for customizing the
++    invalid choice message. :issue:`2621` :pr:`2622`
+ 
+ 
+ Version 8.1.8
+diff --git a/docs/api.rst b/docs/api.rst
+index 09efd033cb..7c070e8eab 100644
+--- a/docs/api.rst
++++ b/docs/api.rst
+@@ -134,6 +134,7 @@ Types
+ .. autoclass:: Path
+ 
+ .. autoclass:: Choice
++   :members:
+ 
+ .. autoclass:: IntRange
+ 
+diff --git a/src/click/types.py b/src/click/types.py
+index 2195f3a9b3..354c7e3817 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -304,16 +304,21 @@ def convert(
+         if normed_value in normed_choices:
+             return normed_choices[normed_value]
+ 
++        self.fail(self.get_invalid_choice_message(value), param, ctx)
++
++    def get_invalid_choice_message(self, value: t.Any) -> str:
++        """Get the error message when the given choice is invalid.
++
++        :param value: The invalid value.
++
++        .. versionadded:: 8.2
++        """
+         choices_str = ", ".join(map(repr, self.choices))
+-        self.fail(
+-            ngettext(
+-                "{value!r} is not {choice}.",
+-                "{value!r} is not one of {choices}.",
+-                len(self.choices),
+-            ).format(value=value, choice=choices_str, choices=choices_str),
+-            param,
+-            ctx,
+-        )
++        return ngettext(
++            "{value!r} is not {choice}.",
++            "{value!r} is not one of {choices}.",
++            len(self.choices),
++        ).format(value=value, choice=choices_str, choices=choices_str)
+ 
+     def __repr__(self) -> str:
+         return f"Choice({list(self.choices)})"

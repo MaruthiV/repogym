@@ -1,0 +1,60 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 63d6f5e545..962916dc42 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
+ 
++## Unreleased
++
++### Fixed
++
++- Fix pretty repr for `collections.deque` https://github.com/Textualize/rich/pull/2864
++
+ ## [13.3.2] - 2023-02-04
+ 
+ ### Fixed
+@@ -41,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fixed failing tests due to Pygments dependency https://github.com/Textualize/rich/issues/2757
+ - Relaxed ipywidgets https://github.com/Textualize/rich/issues/2767
+ 
+-### Added 
++### Added
+ 
+ - Added `encoding` parameter in `Theme.read`
+ 
+diff --git a/rich/pretty.py b/rich/pretty.py
+index fd12885bae..d81711e704 100644
+--- a/rich/pretty.py
++++ b/rich/pretty.py
+@@ -15,6 +15,7 @@
+     Any,
+     Callable,
+     DefaultDict,
++    Deque,
+     Dict,
+     Iterable,
+     List,
+@@ -352,6 +353,12 @@ def _get_braces_for_defaultdict(_object: DefaultDict[Any, Any]) -> Tuple[str, st
+     )
+ 
+ 
++def _get_braces_for_deque(_object: Deque[Any]) -> Tuple[str, str, str]:
++    if _object.maxlen is None:
++        return ("deque([", "])", "deque()")
++    return ("deque([", f"], maxlen={_object.maxlen})", f"deque(maxlen={_object.maxlen})")
++
++
+ def _get_braces_for_array(_object: "array[Any]") -> Tuple[str, str, str]:
+     return (f"array({_object.typecode!r}, [", "])", f"array({_object.typecode!r})")
+ 
+@@ -361,7 +368,7 @@ def _get_braces_for_array(_object: "array[Any]") -> Tuple[str, str, str]:
+     array: _get_braces_for_array,
+     defaultdict: _get_braces_for_defaultdict,
+     Counter: lambda _object: ("Counter({", "})", "Counter()"),
+-    deque: lambda _object: ("deque([", "])", "deque()"),
++    deque: _get_braces_for_deque,
+     dict: lambda _object: ("{", "}", "{}"),
+     UserDict: lambda _object: ("{", "}", "{}"),
+     frozenset: lambda _object: ("frozenset({", "})", "frozenset()"),

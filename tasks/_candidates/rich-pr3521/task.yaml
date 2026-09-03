@@ -1,0 +1,83 @@
+id: rich-pr3521
+repo: Textualize/rich
+base_commit: 8b84ee998ab51967a7649b47b11412717e89db7e
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Double-width character measured incorrectly when in background of modal screen\n\
+  \nSame issue as https://github.com/Textualize/textual/issues/4996\r\nIt appears\
+  \ to still happen in some cases.\r\n\r\n## Versions\r\n\r\n| Name    | Value  |\r\
+  \n|---------|--------|\r\n| Textual | 0.82.0 |\r\n| Rich    | 13.9.1 |\r\n\r\n##\
+  \ Python\r\n\r\n| Name           | Value                                       \
+  \                                                         |\r\n|----------------|------------------------------------------------------------------------------------------------------|\r\
+  \n| Version        | 3.11.1                                                    \
+  \                                           |\r\n| Implementation | CPython    \
+  \                                                                              \
+  \            |\r\n| Compiler       | MSC v.1934 64 bit (AMD64)                 \
+  \                                                           |\r\n| Executable  \
+  \   | C:\\Users\\Kevin\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\listentui-qruDwX8r-py3.11\\\
+  Scripts\\python.exe |\r\n\r\n## Operating System\r\n\r\n| Name    | Value      |\r\
+  \n|---------|------------|\r\n| System  | Windows    |\r\n| Release | 10       \
+  \  |\r\n| Version | 10.0.22621 |\r\n\r\n## Terminal\r\n\r\n| Name              \
+  \   | Value            |\r\n|----------------------|------------------|\r\n| Terminal\
+  \ Application | Windows Terminal |\r\n| TERM                 | *Not set*       \
+  \ |\r\n| COLORTERM            | *Not set*        |\r\n| FORCE_COLOR          | *Not\
+  \ set*        |\r\n| NO_COLOR             | *Not set*        |\r\n\r\n## Rich Console\
+  \ options\r\n\r\n| Name           | Value               |\r\n|----------------|---------------------|\r\
+  \n| size           | width=93, height=34 |\r\n| legacy_windows | False         \
+  \      |\r\n| min_width      | 1                   |\r\n| max_width      | 93  \
+  \                |\r\n| is_terminal    | True                |\r\n| encoding   \
+  \    | utf-8               |\r\n| max_height     | 34                  |\r\n| justify\
+  \        | None                |\r\n| overflow       | None                |\r\n\
+  | no_wrap        | False               |\r\n| highlight      | None            \
+  \    |\r\n| markup         | None                |\r\n| height         | None  \
+  \              |\r\n\r\n# MRE\r\n```python\r\nfrom textual import events, on\r\n\
+  from textual.app import App, ComposeResult\r\nfrom textual.containers import Center,\
+  \ Grid, Middle\r\nfrom textual.screen import ModalScreen\r\nfrom textual.widgets\
+  \ import Button, DataTable, Label\r\n\r\n\r\nclass QuitScreen(ModalScreen):\r\n\
+  \    DEFAULT_CSS = \"\"\"\r\n    QuitScreen {\r\n        align: center middle;\r\
+  \n    }\r\n\r\n    #dialog {\r\n        grid-size: 2;\r\n        grid-gutter: 1\
+  \ 2;\r\n        grid-rows: 1fr 3;\r\n        padding: 0 1;\r\n        width: 60;\r\
+  \n        height: 11;\r\n        border: thick $primary 80%;\r\n        background:\
+  \ $surface;\r\n    }\r\n\r\n    #question {\r\n        column-span: 2;\r\n     \
+  \   height: 1fr;\r\n        width: 1fr;\r\n        content-align: center middle;\r\
+  \n    }\r\n    Button {\r\n        width: 100%;\r\n    }   \r\n    \"\"\"\r\n  \
+  \  \"\"\"Screen with a dialog to quit.\"\"\"\r\n\r\n    def compose(self) -> ComposeResult:\r\
+  \n        yield Grid(\r\n            Label(\"Are you sure you want to quit?\", id=\"\
+  question\"),\r\n            Button(\"Quit\", variant=\"error\", id=\"quit\"),\r\n\
+  \            Button(\"Cancel\", variant=\"primary\", id=\"cancel\"),\r\n       \
+  \     id=\"dialog\",\r\n        )\r\n\r\n    def on_button_pressed(self, event:\
+  \ Button.Pressed) -> None:\r\n        if event.button.id == \"quit\":\r\n      \
+  \      self.app.exit()\r\n        else:\r\n            self.app.pop_screen()\r\n\
+  \r\n\r\nDATA = [\r\n    [\"Id\", \"Track\", \"Requested By\", \"Played At\", \"\
+  Artists\", \"Album\", \"Source\"],\r\n    [\r\n        \"7941\",\r\n        \"青春サツバツ論\"\
+  ,\r\n        \"\",\r\n        \"04-10-2024 11:11:14\",\r\n        \"3-nen E-gumi\
+  \ Utatan\",\r\n        \"Ansatsu Kyoushitsu OP Single - Seishun Satsubatsuron\"\
+  ,\r\n        \"Assassination Classroom\",\r\n    ],\r\n    [\"3223\", \"Bolero!\"\
+  , \"\", \"04-10-2024 11:06:09\", \"Arashi\", \"\", \"\"],\r\n    [\"8471\", \"崩壊の日\"\
+  , \"\", \"04-10-2024 11:02:03\", \"EastNewSound\", \"Tragical Garnet\", \"\"],\r\
+  \n    [\"19012\", \"HORiZON\", \"\", \"04-10-2024 10:58:04\", \"halca\", \"スターティングブルー\"\
+  , \"\"],\r\n    [\"28218\", \"Lamy*Love♡Fe\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_segment.py::test_split_cells_mixed
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3521
+  issue: 5090
+  merged_at: '2024-10-04T11:49:13Z'
+  issue_url: https://github.com/Textualize/textual/issues/5090

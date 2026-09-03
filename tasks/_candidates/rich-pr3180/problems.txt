@@ -1,0 +1,21 @@
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_words_followed_by_other_words -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_word_preceeded_by_word_of_full_line_length -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_multiple_consecutive_spaces -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_words_justify_left -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_wrap_leading_and_trailing_whitespace -> pass
+run1: f2p test not failing pre-fix: tests/test_text.py::test_no_wrap_no_crop -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> fail
+run1: gold patch failed to apply: error: patch failed: CHANGELOG.md:13
+error: CHANGELOG.md: patch does not apply
+
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_words_followed_by_other_words -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_word_preceeded_by_word_of_full_line_length -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_multiple_consecutive_spaces -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_long_words_justify_left -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_wrap_leading_and_trailing_whitespace -> pass
+run2: f2p test not failing pre-fix: tests/test_text.py::test_no_wrap_no_crop -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> fail
+run2: gold patch failed to apply: error: patch failed: CHANGELOG.md:13
+error: CHANGELOG.md: patch does not apply

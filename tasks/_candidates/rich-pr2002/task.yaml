@@ -1,0 +1,56 @@
+id: rich-pr2002
+repo: Textualize/rich
+base_commit: f82a4ccf21bdcd57ad222dcd6b269208684a2049
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] `Pretty` width calculated incorrectly if `expand_all` is `True`\n\n\
+  **Describe the bug**\r\n\r\nIf `expand_all` is `True` on a `Pretty` renderable,\
+  \ the width of the renderable seems to still be calculated as if `expand_all` was\
+  \ `False`. Here is a minimal example:\r\n\r\n```python\r\nfrom rich.pretty import\
+  \ Pretty\r\nfrom rich.panel import Panel\r\nfrom rich import print\r\n\r\nprint(Panel(Pretty([\"\
+  alpha\"], expand_all=True), expand=False))\r\nprint(Panel(Pretty([\"alpha\", \"\
+  beta\"], expand_all=True), expand=False))\r\nprint(Panel(Pretty([\"alpha\", \"beta\"\
+  , \"delta\"], expand_all=True), expand=False))\r\nprint(Panel(Pretty([\"alpha\"\
+  , \"beta\", \"delta\", \"gamma\"], expand_all=True), expand=False))\r\n```\r\n\r\
+  \nAnd here is the output:\r\n\r\n```\r\n╭───────────╮\r\n│ [         │\r\n│    \
+  \ 'alph │\r\n│ a'        │\r\n│ ]         │\r\n╰───────────╯\r\n╭───────────────────╮\r\
+  \n│ [                 │\r\n│     'alpha',      │\r\n│     'beta'        │\r\n│ ]\
+  \                 │\r\n╰───────────────────╯\r\n╭────────────────────────────╮\r\
+  \n│ [                          │\r\n│     'alpha',               │\r\n│     'beta',\
+  \                │\r\n│     'delta'                │\r\n│ ]                    \
+  \      │\r\n╰────────────────────────────╯\r\n╭─────────────────────────────────────╮\r\
+  \n│ [                                   │\r\n│     'alpha',                    \
+  \    │\r\n│     'beta',                         │\r\n│     'delta',            \
+  \            │\r\n│     'gamma'                         │\r\n│ ]               \
+  \                    │\r\n╰─────────────────────────────────────╯\r\n```\r\n\r\n\
+  The `Panel` is created with `expand=False` so it fits the content, but clearly the\
+  \ width of the `Pretty` output is incorrect because as you can see the panel does\
+  \ not really fit the output. In the first case the panel is too narrow, and as more\
+  \ elements are added it gets wider even though the actual rendered output is not\
+  \ getting wider.\r\n\r\n**Platform**\r\n<details>\r\n<summary>Click to expand</summary>\r\
+  \n\r\nWhat platform (Win/Linux/Mac) are you running on? What terminal software are\
+  \ you using?  \r\n**Mac, Default Terminal**\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_pretty.py::test_measure_pretty
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2002
+  issue: 1998
+  merged_at: '2022-02-26T19:08:45Z'
+  issue_url: https://github.com/Textualize/rich/issues/1998

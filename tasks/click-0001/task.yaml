@@ -1,0 +1,44 @@
+id: click-0001
+repo: pallets/click
+base_commit: 36baa15ff831b939a22bc527cd76ce653ef6f66d
+language: python
+category: bug_fix
+level: L1
+source: mutated
+prompt: |
+  In the commands list of a group's `--help` output, every command's short
+  description is missing the last word of its first sentence. A command whose
+  docstring starts with "Sync the database. More details follow." shows up in
+  the listing as "Sync the" instead of "Sync the database."
+
+  Running the full `--help` for the individual command shows the complete
+  docstring fine; only the condensed one-line summaries in the parent group
+  listing are affected. Several of our CLIs render truncated nonsense now.
+
+  Find and fix the bug.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - tests/test_basic.py::test_basic_group
+    - tests/test_commands.py::test_auto_shorthelp
+    - tests/test_repogym_short_help.py::test_short_help_keeps_full_first_sentence
+    - tests/test_repogym_short_help.py::test_short_help_single_sentence
+    - tests/test_repogym_short_help.py::test_command_short_help_in_group_listing
+  pass_to_pass:
+    - tests/test_basic.py::test_basic_functionality
+    - tests/test_basic.py::test_repr
+    - tests/test_basic.py::test_param_named_help[no-collision]
+    - tests/test_utils/test_format_filename.py::test_filename_formatting
+    - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

@@ -1,0 +1,55 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index eb80f1dad9..9e3b19fdb6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ - Workaround for edge case of object from Faiss with no `__class__` https://github.com/Textualize/rich/issues/1838
+ - Add `Syntax.guess_lexer`, add support for more lexers (e.g. Django templates etc.) https://github.com/Textualize/rich/pull/1869
++- Add `lexer` parameter to `Syntax.from_path` to allow for overrides https://github.com/Textualize/rich/pull/1873
+ - Ensure `Syntax` always justifies left https://github.com/Textualize/rich/pull/1872
+ 
+ 
+diff --git a/rich/syntax.py b/rich/syntax.py
+index 380710ba75..142f48f46a 100644
+--- a/rich/syntax.py
++++ b/rich/syntax.py
+@@ -266,6 +266,7 @@ def from_path(
+         cls,
+         path: str,
+         encoding: str = "utf-8",
++        lexer: Optional[Union[Lexer, str]] = None,
+         theme: Union[str, SyntaxTheme] = DEFAULT_THEME,
+         dedent: bool = False,
+         line_numbers: bool = False,
+@@ -283,6 +284,7 @@ def from_path(
+         Args:
+             path (str): Path to file to highlight.
+             encoding (str): Encoding of file.
++            lexer (str | Lexer, optional): Lexer to use. If None, lexer will be auto-detected from path/file content.
+             theme (str, optional): Color theme, aka Pygments style (see https://pygments.org/docs/styles/#getting-a-list-of-available-styles). Defaults to "emacs".
+             dedent (bool, optional): Enable stripping of initial whitespace. Defaults to True.
+             line_numbers (bool, optional): Enable rendering of line numbers. Defaults to False.
+@@ -301,11 +303,12 @@ def from_path(
+         with open(path, "rt", encoding=encoding) as code_file:
+             code = code_file.read()
+ 
+-        lexer_name = cls.guess_lexer(path, code=code)
++        if not lexer:
++            lexer = cls.guess_lexer(path, code=code)
+ 
+         return cls(
+             code,
+-            lexer_name,
++            lexer,
+             theme=theme,
+             dedent=dedent,
+             line_numbers=line_numbers,
+@@ -756,6 +759,7 @@ def __rich_console__(
+     else:
+         syntax = Syntax.from_path(
+             args.path,
++            lexer=args.lexer_name,
+             line_numbers=args.line_numbers,
+             word_wrap=args.word_wrap,
+             theme=args.theme,

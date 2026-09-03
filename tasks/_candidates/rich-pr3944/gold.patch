@@ -1,0 +1,51 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 0cd1275bf6..6f3029d4ac 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++## [14.3.1] - 2025-01-24
++
++### Fixed
++
++- Fixed characters out of unicode range reporting a cell size if 0 https://github.com/Textualize/rich/pull/3944
++
+ ## [14.3.0] - 2025-01-24
+ 
+ ### Fixed
+@@ -2177,6 +2183,7 @@ Major version bump for a breaking change to `Text.stylize signature`, which corr
+ 
+ - First official release, API still to be stabilized
+ 
++[14.3.1]: https://github.com/textualize/rich/compare/v14.3.0...v14.3.1
+ [14.3.0]: https://github.com/textualize/rich/compare/v14.2.0...v14.3.0
+ [14.2.0]: https://github.com/textualize/rich/compare/v14.1.0...v14.2.0
+ [14.1.0]: https://github.com/textualize/rich/compare/v14.0.0...v14.1.0
+diff --git a/pyproject.toml b/pyproject.toml
+index 1cd6a50c30..267fdc91c8 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -2,7 +2,7 @@
+ name = "rich"
+ homepage = "https://github.com/Textualize/rich"
+ documentation = "https://rich.readthedocs.io/en/latest/"
+-version = "14.3.0"
++version = "14.3.1"
+ description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
+ authors = ["Will McGugan <willmcgugan@gmail.com>"]
+ license = "MIT"
+diff --git a/rich/cells.py b/rich/cells.py
+index 4429790957..15fe7b65cd 100644
+--- a/rich/cells.py
++++ b/rich/cells.py
+@@ -57,7 +57,7 @@ def get_character_cell_size(character: str, unicode_version: str = "auto") -> in
+     codepoint = ord(character)
+     table = load_cell_table(unicode_version).widths
+     if codepoint > table[-1][1]:
+-        return 0
++        return 1
+     lower_bound = 0
+     upper_bound = len(table) - 1
+     index = (lower_bound + upper_bound) // 2

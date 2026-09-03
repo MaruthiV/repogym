@@ -1,0 +1,12 @@
+diff --git b/httpx/_utils.py a/httpx/_utils.py
+index e6671a8..7fe827d 100644
+--- b/httpx/_utils.py
++++ a/httpx/_utils.py
+@@ -109,6 +109,7 @@ def peek_filelike_length(stream: typing.Any) -> int | None:
+             # then put it back in place.
+             offset = stream.tell()
+             length = stream.seek(0, os.SEEK_END)
++            stream.seek(offset)
+         except (AttributeError, OSError):
+             # Not even that? Sorry, we're doomed...
+             return None

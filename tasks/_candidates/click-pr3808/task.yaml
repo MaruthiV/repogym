@@ -1,0 +1,54 @@
+id: click-pr3808
+repo: pallets/click
+base_commit: 00f257bb8e714064bea16425007543bbc0800445
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: 'Add support for `set` and `frozenset` (and `dict`?) as native Click types
+
+
+  ### Context
+
+
+  This is a follow-up on https://github.com/pallets/click/issues/2610. Half of the
+  latter has been solved by #3030. This ticket contain the other half that was not
+  fixed by #3030.
+
+
+  CC @drunkwcodes
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_envvar_container_type
+  - tests/test_options.py::test_show_default_container_defaults
+  - tests/test_options.py::test_multiple_default_type
+  - tests/test_options.py::test_type_from_default_container
+  - tests/test_options.py::test_parse_multiple_default_composite_type
+  - tests/test_options.py::test_custom_type_container_flag_value
+  - tests/test_types.py::test_convert_type_from_container_default
+  - tests/test_types.py::test_explicit_container_type_splits_string
+  - tests/test_types.py::test_explicit_dict_type_rejects_string
+  - tests/test_types.py::test_type_inferred_from_default
+  - tests/test_types.py::test_type_inferred_from_nested_sequence_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3808
+  issue: 3036
+  merged_at: '2026-09-01T18:21:58Z'
+  issue_url: https://github.com/pallets/click/issues/3036

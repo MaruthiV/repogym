@@ -1,0 +1,38 @@
+id: rich-pr2491
+repo: Textualize/rich
+base_commit: 16bba26ea0dcb2c137867bc7ce527c32841e2a50
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[REQUEST] Add `max_depth` as a parameter to `install()`\n\n**How would you\
+  \ improve Rich?**\r\n\r\nCurrently `rich.pretty.install()` accepts most of the parameters\
+  \ allowed by `rich.pretty.pprint()`, but it doesn't have `max_depth`. I would add\
+  \ this parameter to `install()`.\r\n\r\n**What problem does it solve for you?**\r\
+  \n\r\nI would like to use the rich install hook, but also to customize the pretty\
+  \ printing behaviour, specifically the `max_depth` argument to simplify the result\
+  \ presentation. It isn't trivial to implement this in user code, because the `install()`\
+  \ function is actually quite complex, and difficult to modify.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_pretty.py::test_install_max_depth
+  - tests/test_pretty.py::test_ipy_display_hook__repr_html
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2491
+  issue: 2486
+  merged_at: '2022-08-26T10:31:00Z'
+  issue_url: https://github.com/Textualize/rich/issues/2486

@@ -1,0 +1,69 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5d527500de..db52baa25f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++
+ ## [13.3.2] - Unreleased
+ 
+ ### Fixed
+@@ -13,10 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fix syntax error when building with nuitka https://github.com/Textualize/rich/pull/2635
+ - Fixed pretty printing of empty dataclass https://github.com/Textualize/rich/issues/2819
+ - Fixes superfluous spaces in html output https://github.com/Textualize/rich/issues/2832
++- Fixed duplicate output in Jupyter https://github.com/Textualize/rich/pulls/2804
+ 
+ ### Added
+ 
+ - Added Polish README
++
+ ## [13.3.1] - 2023-01-28
+ 
+ ### Fixed
+diff --git a/CONTRIBUTORS.md b/CONTRIBUTORS.md
+index f8c87edf22..310463ba4b 100644
+--- a/CONTRIBUTORS.md
++++ b/CONTRIBUTORS.md
+@@ -43,6 +43,7 @@ The following people have contributed to the development of Rich:
+ - [Kyle Pollina](https://github.com/kylepollina)
+ - [Sebastián Ramírez](https://github.com/tiangolo)
+ - [Felipe Guedes](https://github.com/guedesfelipe)
++- [Min RK](https://github.com/minrk)
+ - [Clément Robert](https://github.com/neutrinoceros)
+ - [Brian Rutledge](https://github.com/bhrutledge)
+ - [Tushar Sadhwani](https://github.com/tusharsadhwani)
+diff --git a/rich/console.py b/rich/console.py
+index a3aaa83b52..3cad3632c0 100644
+--- a/rich/console.py
++++ b/rich/console.py
+@@ -711,11 +711,6 @@ def __init__(
+         self._force_terminal = None
+         if force_terminal is not None:
+             self._force_terminal = force_terminal
+-        else:
+-            # If FORCE_COLOR env var has any value at all, we force terminal.
+-            force_color = self._environ.get("FORCE_COLOR")
+-            if force_color is not None:
+-                self._force_terminal = True
+ 
+         self._file = file
+         self.quiet = quiet
+@@ -949,6 +944,15 @@ def is_terminal(self) -> bool:
+             # Return False for Idle which claims to be a tty but can't handle ansi codes
+             return False
+ 
++        if self.is_jupyter:
++            # return False for Jupyter, which may have FORCE_COLOR set
++            return False
++
++        # If FORCE_COLOR env var has any value at all, we assume a terminal.
++        force_color = self._environ.get("FORCE_COLOR")
++        if force_color is not None:
++            self._force_terminal = True
++
+         isatty: Optional[Callable[[], bool]] = getattr(self.file, "isatty", None)
+         try:
+             return False if isatty is None else isatty()

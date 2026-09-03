@@ -1,0 +1,36 @@
+id: rich-pr2544
+repo: Textualize/rich
+base_commit: 221b280f29788b2a87ccf0028080a96c08e27db8
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[REQUEST] Document Table end_section\n\nConsider posting in https://github.com/willmcgugan/rich/discussions\
+  \ for feedback before raising a feature request.\r\n\r\nHave you checked the issues\
+  \ for a similar suggestions?\r\n\r\n**How would you improve Rich?**\r\n\r\nGive\
+  \ as much detail as you can. Example code of how you would like it to work would\
+  \ help.\r\n\r\n**What problem does it solve for you?**\r\n\r\nWhat problem do you\
+  \ have that this feature would solve? I may be able to suggest an existing way of\
+  \ solving it.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_table.py::test_section
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2544
+  issue: 2476
+  merged_at: '2022-09-23T14:42:13Z'
+  issue_url: https://github.com/Textualize/rich/issues/2476

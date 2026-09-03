@@ -1,0 +1,72 @@
+id: flask-pr2635
+repo: pallets/flask
+base_commit: 4a7db6647407de076daf31f1dd766388128f9a3d
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'SERVER_NAME configuration should not implicitly change routing behavior.
+
+
+  When `Flask.config[''SERVER_NAME'']` is set to a domain (_thedomain.com:8080_) it
+  alters the route matching behavior. Requests on "subdomained" urls (_sub1.thedomain.com:8080/some/route_)
+  then only resolve to subdomained Blueprints (Blueprints with their ''subdomain''
+  attribute set). With `app.config[''SERVER_NAME'']` set to `None`, subdomained url
+  would also properly resolve to non-subdomained Blueprints.
+
+
+  In other words, the presence of `app.config[''SERVER_NAME'']` effectively serves
+  as an _implicit_ switch to subdomain matching behaviour for Blueprints.
+
+
+  (1) if this is intentional the documentation is not clear about it.
+
+  (2) the naming of that config is not very indicative of this behavior altering property
+  either.
+
+  (3) this is not always the desirable behavior. Sometimes one still wants to use
+  subdomains and set `app.config[''SERVER_NAME'']`, but does not want to map blueprints
+  to subdomains. Such is the case for example, when using the value contained by `app.config[''SERVER_NAME'']`
+  to extract the subdomain info from the requested url in one''s own user-defined
+  function (a `before_request` handler for example). As it stands, the behavior altering
+  property of `app.config[''SERVER_NAME'']` forces developers in the latter use-case
+  to set another more innocuous config property with the same value (e.g. `app.config[''SERVER_DOMAIN'']`).
+
+
+  I propose that a new config flag that will explicitly enable subdomain matching
+  behavior be added. The presence of which would make `app.config[''SERVER_NAME'']`
+  mandatory (can''t have subdomain support without it). But the presence of `app.config[''SERVER_NAME'']`
+  should not impose subdomain matching behavior.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_test_app_proper_environ
+  - tests/test_basic.py::test_subdomain_basic_support
+  - tests/test_basic.py::test_subdomain_matching
+  - tests/test_basic.py::test_subdomain_matching_with_ports
+  - tests/test_basic.py::test_subdomain_matching_other_name
+  - tests/test_basic.py::test_multi_route_rules
+  - tests/test_testing.py::test_blueprint_with_subdomain
+  - tests/test_testing.py::test_subdomain
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2635
+  issue: 998
+  merged_at: '2018-02-23T16:47:20Z'
+  issue_url: https://github.com/pallets/flask/issues/998

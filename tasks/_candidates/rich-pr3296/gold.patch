@@ -1,0 +1,55 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e153073c2c..9eff3e39f1 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,7 +5,6 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
+-
+ ## Unreleased
+ 
+ ### Fixed
+@@ -16,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Thread used in progress.track will exit if an exception occurs in a generator https://github.com/Textualize/rich/pull/3402
+ - Progress track thread is now a daemon thread https://github.com/Textualize/rich/pull/3402
+ - Fixed cached hash preservation upon clearing meta and links https://github.com/Textualize/rich/issues/2942
++- Fixed overriding the `background_color` of `Syntax` not including padding https://github.com/Textualize/rich/issues/3295
+ 
+ ### Changed
+ 
+@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ## [13.7.1] - 2024-02-28
+ 
++
+ ### Fixed
+ 
+ - Updated the widths of some characters https://github.com/Textualize/rich/pull/3289
+diff --git a/CONTRIBUTORS.md b/CONTRIBUTORS.md
+index b107adc837..0ce5307ab5 100644
+--- a/CONTRIBUTORS.md
++++ b/CONTRIBUTORS.md
+@@ -20,6 +20,7 @@ The following people have contributed to the development of Rich:
+ - [Aryaz Eghbali](https://github.com/AryazE)
+ - [Oleksis Fraga](https://github.com/oleksis)
+ - [Andy Gimblett](https://github.com/gimbo)
++- [Tom Gooding](https://github.com/TomJGooding)
+ - [Michał Górny](https://github.com/mgorny)
+ - [Nok Lam Chan](https://github.com/noklam)
+ - [Leron Gray](https://github.com/daddycocoaman)
+diff --git a/rich/syntax.py b/rich/syntax.py
+index f3ceff758e..4da6c3b7a6 100644
+--- a/rich/syntax.py
++++ b/rich/syntax.py
+@@ -619,9 +619,7 @@ def __rich_console__(
+     ) -> RenderResult:
+         segments = Segments(self._get_syntax(console, options))
+         if self.padding:
+-            yield Padding(
+-                segments, style=self._theme.get_background_style(), pad=self.padding
+-            )
++            yield Padding(segments, style=self._get_base_style(), pad=self.padding)
+         else:
+             yield segments
+ 

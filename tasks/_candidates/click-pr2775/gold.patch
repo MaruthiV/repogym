@@ -1,0 +1,84 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 91241ac8e9..aedea88942 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -68,7 +68,16 @@ Unreleased
+     :issue:`2067` :pr:`2068`
+ -   Specialized typing of ``progressbar(length=...)`` as ``ProgressBar[int]``.
+     :pr:`2630`
+-
++-   Improve ``echo_via_pager`` behaviour in face of errors.
++    :issue:`2674`
++
++    -   Terminate the pager in case a generator passed to ``echo_via_pager``
++        raises an exception.
++    -   Ensure to always close the pipe to the pager process and wait for it
++        to terminate.
++    -   ``echo_via_pager`` will not ignore ``KeyboardInterrupt`` anymore. This
++        allows the user to search for future output of the generator when
++        using less and then aborting the program using ctrl-c.
+ 
+ Version 8.1.8
+ -------------
+diff --git a/src/click/_termui_impl.py b/src/click/_termui_impl.py
+index 0ec9e2ce1f..24dec542ec 100644
+--- a/src/click/_termui_impl.py
++++ b/src/click/_termui_impl.py
+@@ -427,26 +427,40 @@ def _pipepager(generator: cabc.Iterable[str], cmd: str, color: bool | None) -> N
+                 text = strip_ansi(text)
+ 
+             stdin.write(text.encode(encoding, "replace"))
+-    except (OSError, KeyboardInterrupt):
++    except BrokenPipeError:
++        # In case the pager exited unexpectedly, ignore the broken pipe error.
+         pass
+-    else:
+-        stdin.close()
+-
+-    # Less doesn't respect ^C, but catches it for its own UI purposes (aborting
+-    # search or other commands inside less).
+-    #
+-    # That means when the user hits ^C, the parent process (click) terminates,
+-    # but less is still alive, paging the output and messing up the terminal.
+-    #
+-    # If the user wants to make the pager exit on ^C, they should set
+-    # `LESS='-K'`. It's not our decision to make.
+-    while True:
++    except Exception as e:
++        # In case there is an exception we want to close the pager immediately
++        # and let the caller handle it.
++        # Otherwise the pager will keep running, and the user may not notice
++        # the error message, or worse yet it may leave the terminal in a broken state.
++        c.terminate()
++        raise e
++    finally:
++        # We must close stdin and wait for the pager to exit before we continue
+         try:
+-            c.wait()
+-        except KeyboardInterrupt:
++            stdin.close()
++        # Close implies flush, so it might throw a BrokenPipeError if the pager
++        # process exited already.
++        except BrokenPipeError:
+             pass
+-        else:
+-            break
++
++        # Less doesn't respect ^C, but catches it for its own UI purposes (aborting
++        # search or other commands inside less).
++        #
++        # That means when the user hits ^C, the parent process (click) terminates,
++        # but less is still alive, paging the output and messing up the terminal.
++        #
++        # If the user wants to make the pager exit on ^C, they should set
++        # `LESS='-K'`. It's not our decision to make.
++        while True:
++            try:
++                c.wait()
++            except KeyboardInterrupt:
++                pass
++            else:
++                break
+ 
+ 
+ def _tempfilepager(generator: cabc.Iterable[str], cmd: str, color: bool | None) -> None:

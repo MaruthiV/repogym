@@ -1,0 +1,38 @@
+id: flask-pr5632
+repo: pallets/flask
+base_commit: 7522c4bcdb10449dc919e0ffbdebb92fe66822b5
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Rotating secret keys\n\nI'd like to have a couple of secret keys available,\
+  \ like so\r\n```\r\napp.secret_keys = [\r\n   'key-1',\r\n   'key-2',\r\n]\r\n```\r\
+  \nTo allow them to rotate.\r\n\r\nI've seen this issue which seems to have auto-closed\r\
+  \nhttps://github.com/pallets/flask/issues/1574\r\n\r\nIt seems like itsdangerous\
+  \ now supports this\r\nhttps://github.com/pallets/itsdangerous/pull/141\r\n\r\n\
+  This would allow secret keys to be rotated regularly without sessions being invalidated.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_session_secret_key_fallbacks
+  - tests/test_basic.py::test_session_expiration
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5632
+  issue: 5621
+  merged_at: '2024-11-08T16:16:04Z'
+  issue_url: https://github.com/pallets/flask/issues/5621

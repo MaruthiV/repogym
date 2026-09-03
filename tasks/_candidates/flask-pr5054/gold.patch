@@ -1,0 +1,181 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 40f6c78c1f..0948bc1983 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -37,6 +37,10 @@ Unreleased
+     binary file instead. :issue:`4989`
+ -   If a blueprint is created with an empty name it raises a ``ValueError``.
+     :issue:`5010`
++-   ``SESSION_COOKIE_DOMAIN`` does not fall back to ``SERVER_NAME``. The default is not
++    to set the domain, which modern browsers interpret as an exact match rather than
++    a subdomain match. Warnings about ``localhost`` and IP addresses are also removed.
++    :issue:`5051`
+ 
+ 
+ Version 2.2.4
+diff --git a/docs/config.rst b/docs/config.rst
+index d71f03263c..3c06b29cee 100644
+--- a/docs/config.rst
++++ b/docs/config.rst
+@@ -134,12 +134,17 @@ The following configuration values are used internally by Flask:
+ 
+ .. py:data:: SESSION_COOKIE_DOMAIN
+ 
+-    The domain match rule that the session cookie will be valid for. If not
+-    set, the cookie will be valid for all subdomains of :data:`SERVER_NAME`.
+-    If ``False``, the cookie's domain will not be set.
++    The value of the ``Domain`` parameter on the session cookie. If not set, browsers
++    will only send the cookie to the exact domain it was set from. Otherwise, they
++    will send it to any subdomain of the given value as well.
++
++    Not setting this value is more restricted and secure than setting it.
+ 
+     Default: ``None``
+ 
++    .. versionchanged:: 2.3
++        Not set by default, does not fall back to ``SERVER_NAME``.
++
+ .. py:data:: SESSION_COOKIE_PATH
+ 
+     The path that the session cookie will be valid for. If not set, the cookie
+@@ -219,19 +224,14 @@ The following configuration values are used internally by Flask:
+     Inform the application what host and port it is bound to. Required
+     for subdomain route matching support.
+ 
+-    If set, will be used for the session cookie domain if
+-    :data:`SESSION_COOKIE_DOMAIN` is not set. Modern web browsers will
+-    not allow setting cookies for domains without a dot. To use a domain
+-    locally, add any names that should route to the app to your
+-    ``hosts`` file. ::
+-
+-        127.0.0.1 localhost.dev
+-
+     If set, ``url_for`` can generate external URLs with only an application
+     context instead of a request context.
+ 
+     Default: ``None``
+ 
++    .. versionchanged:: 2.3
++        Does not affect ``SESSION_COOKIE_DOMAIN``.
++
+ .. py:data:: APPLICATION_ROOT
+ 
+     Inform the application what path it is mounted under by the application /
+diff --git a/src/flask/helpers.py b/src/flask/helpers.py
+index 939508d237..33dc41a48f 100644
+--- a/src/flask/helpers.py
++++ b/src/flask/helpers.py
+@@ -3,6 +3,7 @@
+ import socket
+ import sys
+ import typing as t
++import warnings
+ from datetime import datetime
+ from functools import lru_cache
+ from functools import update_wrapper
+@@ -662,7 +663,16 @@ def is_ip(value: str) -> bool:
+ 
+     :return: True if string is an IP address
+     :rtype: bool
++
++    .. deprecated:: 2.3
++        Will be removed in Flask 2.4.
+     """
++    warnings.warn(
++        "The 'is_ip' function is deprecated and will be removed in Flask 2.4.",
++        DeprecationWarning,
++        stacklevel=2,
++    )
++
+     for family in (socket.AF_INET, socket.AF_INET6):
+         try:
+             socket.inet_pton(family, value)
+diff --git a/src/flask/sessions.py b/src/flask/sessions.py
+index 02b8cf7693..afd49edbd1 100644
+--- a/src/flask/sessions.py
++++ b/src/flask/sessions.py
+@@ -1,6 +1,5 @@
+ import hashlib
+ import typing as t
+-import warnings
+ from collections.abc import MutableMapping
+ from datetime import datetime
+ from datetime import timezone
+@@ -9,7 +8,6 @@
+ from itsdangerous import URLSafeTimedSerializer
+ from werkzeug.datastructures import CallbackDict
+ 
+-from .helpers import is_ip
+ from .json.tag import TaggedJSONSerializer
+ 
+ if t.TYPE_CHECKING:  # pragma: no cover
+@@ -181,62 +179,17 @@ def get_cookie_name(self, app: "Flask") -> str:
+         return app.config["SESSION_COOKIE_NAME"]
+ 
+     def get_cookie_domain(self, app: "Flask") -> t.Optional[str]:
+-        """Returns the domain that should be set for the session cookie.
++        """The value of the ``Domain`` parameter on the session cookie. If not set,
++        browsers will only send the cookie to the exact domain it was set from.
++        Otherwise, they will send it to any subdomain of the given value as well.
+ 
+-        Uses ``SESSION_COOKIE_DOMAIN`` if it is configured, otherwise
+-        falls back to detecting the domain based on ``SERVER_NAME``.
++        Uses the :data:`SESSION_COOKIE_DOMAIN` config.
+ 
+-        Once detected (or if not set at all), ``SESSION_COOKIE_DOMAIN`` is
+-        updated to avoid re-running the logic.
++        .. versionchanged:: 2.3
++            Not set by default, does not fall back to ``SERVER_NAME``.
+         """
+-
+         rv = app.config["SESSION_COOKIE_DOMAIN"]
+-
+-        # set explicitly, or cached from SERVER_NAME detection
+-        # if False, return None
+-        if rv is not None:
+-            return rv if rv else None
+-
+-        rv = app.config["SERVER_NAME"]
+-
+-        # server name not set, cache False to return none next time
+-        if not rv:
+-            app.config["SESSION_COOKIE_DOMAIN"] = False
+-            return None
+-
+-        # chop off the port which is usually not supported by browsers
+-        # remove any leading '.' since we'll add that later
+-        rv = rv.rsplit(":", 1)[0].lstrip(".")
+-
+-        if "." not in rv:
+-            # Chrome doesn't allow names without a '.'. This should only
+-            # come up with localhost. Hack around this by not setting
+-            # the name, and show a warning.
+-            warnings.warn(
+-                f"{rv!r} is not a valid cookie domain, it must contain"
+-                " a '.'. Add an entry to your hosts file, for example"
+-                f" '{rv}.localdomain', and use that instead."
+-            )
+-            app.config["SESSION_COOKIE_DOMAIN"] = False
+-            return None
+-
+-        ip = is_ip(rv)
+-
+-        if ip:
+-            warnings.warn(
+-                "The session cookie domain is an IP address. This may not work"
+-                " as intended in some browsers. Add an entry to your hosts"
+-                ' file, for example "localhost.localdomain", and use that'
+-                " instead."
+-            )
+-
+-        # if this is not an ip and app is mounted at the root, allow subdomain
+-        # matching by adding a '.' prefix
+-        if self.get_cookie_path(app) == "/" and not ip:
+-            rv = f".{rv}"
+-
+-        app.config["SESSION_COOKIE_DOMAIN"] = rv
+-        return rv
++        return rv if rv else None
+ 
+     def get_cookie_path(self, app: "Flask") -> str:
+         """Returns the path for which the cookie should be valid.  The

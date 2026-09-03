@@ -1,0 +1,44 @@
+id: flask-pr4230
+repo: pallets/flask
+base_commit: 4346498c85848c53843b810537b83a8f6124c9d3
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Handlers are called in wrong order when using nested blueprints\n\nWhen using\
+  \ nested blueprints, handlers registered via `url_value_preprocessor`, `before_request`,\
+  \ `context_processor`, or `url_defaults` are called in an inconsistent order: First\
+  \ on the app, then on the deepest blueprint, and then upwards through all parents\
+  \ (except the app). Here is a minimal example:\r\n\r\n```python\r\nfrom flask import\
+  \ Flask, Blueprint, g\r\n\r\napp = Flask(__name__)\r\nparent = Blueprint('parent',\
+  \ __name__)\r\nchild = Blueprint('child', __name__)\r\n\r\n@app.before_request\r\
+  \ndef app_before():\r\n    g.test = 'app'\r\n\r\n@parent.before_request\r\ndef parent_before():\r\
+  \n    g.test = 'parent'\r\n\r\n@child.before_request\r\ndef child_before():\r\n\
+  \    g.test = 'child'\r\n\r\n@child.route('/')\r\ndef test():\r\n    return g.test\r\
+  \n\r\nparent.register_blueprint(child)\r\napp.register_blueprint(parent)\r\n```\r\
+  \nI would expect this to return `child`, but it returns `parent`.\r\n\r\nEnvironment:\r\
+  \n\r\n- Python version: 3.9.6\r\n- Flask version: 2.0.1\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_blueprints.py::test_nested_callback_order
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4230
+  issue: 4229
+  merged_at: '2021-10-04T03:38:28Z'
+  issue_url: https://github.com/pallets/flask/issues/4229

@@ -1,0 +1,149 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 84fa436f6e..6a363149ca 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -139,6 +139,10 @@ unreleased
+   attribute on the session cookie. (`#2607`_)
+ - Added :meth:`~flask.Flask.test_cli_runner` to create a Click runner
+   that can invoke Flask CLI commands for testing. (`#2636`_)
++- Subdomain matching is disabled by default and setting
++  :data:`SERVER_NAME` does not implicily enable it. It can be enabled by
++  passing ``subdomain_matching=True`` to the ``Flask`` constructor.
++  (`#2635`_)
+ 
+ .. _pallets/meta#24: https://github.com/pallets/meta/issues/24
+ .. _#1421: https://github.com/pallets/flask/issues/1421
+@@ -181,6 +185,7 @@ unreleased
+ .. _#2606: https://github.com/pallets/flask/pull/2606
+ .. _#2607: https://github.com/pallets/flask/pull/2607
+ .. _#2636: https://github.com/pallets/flask/pull/2636
++.. _#2635: https://github.com/pallets/flask/pull/2635
+ 
+ 
+ Version 0.12.2
+diff --git a/docs/config.rst b/docs/config.rst
+index 2e2833f9bf..c496ac0039 100644
+--- a/docs/config.rst
++++ b/docs/config.rst
+@@ -181,8 +181,8 @@ The following configuration values are used internally by Flask:
+ .. py:data:: SESSION_COOKIE_DOMAIN
+ 
+     The domain match rule that the session cookie will be valid for. If not
+-    set, the cookie will be valid for all subdomains of ``SERVER_NAME``. If
+-    ``False``, the cookie's domain will not be set.
++    set, the cookie will be valid for all subdomains of :data:`SERVER_NAME`.
++    If ``False``, the cookie's domain will not be set.
+ 
+     Default: ``None``
+ 
+@@ -257,13 +257,14 @@ The following configuration values are used internally by Flask:
+ 
+ .. py:data:: SERVER_NAME
+ 
+-    Inform the application what host and port it is bound to. Required for
+-    subdomain route matching support.
++    Inform the application what host and port it is bound to. Required
++    for subdomain route matching support.
+ 
+     If set, will be used for the session cookie domain if
+-    ``SESSION_COOKIE_DOMAIN`` is not set. Modern web browsers will not allow
+-    setting cookies for domains without a dot. To use a domain locally,
+-    add any names that should route to the app to your ``hosts`` file. ::
++    :data:`SESSION_COOKIE_DOMAIN` is not set. Modern web browsers will
++    not allow setting cookies for domains without a dot. To use a domain
++    locally, add any names that should route to the app to your
++    ``hosts`` file. ::
+ 
+         127.0.0.1 localhost.dev
+ 
+diff --git a/flask/app.py b/flask/app.py
+index 7c53a5838c..89be4dc532 100644
+--- a/flask/app.py
++++ b/flask/app.py
+@@ -123,8 +123,13 @@ class Flask(_PackageBoundObject):
+     .. versionadded:: 0.11
+        The `root_path` parameter was added.
+ 
+-    .. versionadded:: 0.13
+-       The `host_matching` and `static_host` parameters were added.
++    .. versionadded:: 1.0
++       The ``host_matching`` and ``static_host`` parameters were added.
++
++    .. versionadded:: 1.0
++       The ``subdomain_matching`` parameter was added. Subdomain
++       matching needs to be enabled manually now. Setting
++       :data:`SERVER_NAME` does not implicitly enable it.
+ 
+     :param import_name: the name of the application package
+     :param static_url_path: can be used to specify a different path for the
+@@ -133,11 +138,13 @@ class Flask(_PackageBoundObject):
+     :param static_folder: the folder with static files that should be served
+                           at `static_url_path`.  Defaults to the ``'static'``
+                           folder in the root path of the application.
+-    :param host_matching: sets the app's ``url_map.host_matching`` to the given
+-                          value. Defaults to False.
+-    :param static_host: the host to use when adding the static route. Defaults
+-                        to None. Required when using ``host_matching=True``
+-                        with a ``static_folder`` configured.
++    :param static_host: the host to use when adding the static route.
++        Defaults to None. Required when using ``host_matching=True``
++        with a ``static_folder`` configured.
++    :param host_matching: set ``url_map.host_matching`` attribute.
++        Defaults to False.
++    :param subdomain_matching: consider the subdomain relative to
++        :data:`SERVER_NAME` when matching routes. Defaults to False.
+     :param template_folder: the folder that contains the templates that should
+                             be used by the application.  Defaults to
+                             ``'templates'`` folder in the root path of the
+@@ -347,6 +354,7 @@ def __init__(
+         static_folder='static',
+         static_host=None,
+         host_matching=False,
++        subdomain_matching=False,
+         template_folder='templates',
+         instance_path=None,
+         instance_relative_config=False,
+@@ -530,6 +538,7 @@ def __init__(
+         self.url_map = Map()
+ 
+         self.url_map.host_matching = host_matching
++        self.subdomain_matching = subdomain_matching
+ 
+         # tracks internally if the application already handled at least one
+         # request.
+@@ -1977,19 +1986,30 @@ def make_response(self, rv):
+         return rv
+ 
+     def create_url_adapter(self, request):
+-        """Creates a URL adapter for the given request.  The URL adapter
+-        is created at a point where the request context is not yet set up
+-        so the request is passed explicitly.
++        """Creates a URL adapter for the given request. The URL adapter
++        is created at a point where the request context is not yet set
++        up so the request is passed explicitly.
+ 
+         .. versionadded:: 0.6
+ 
+         .. versionchanged:: 0.9
+            This can now also be called without a request object when the
+            URL adapter is created for the application context.
++
++        .. versionchanged:: 1.0
++            :data:`SERVER_NAME` no longer implicitly enables subdomain
++            matching. Use :attr:`subdomain_matching` instead.
+         """
+         if request is not None:
+-            return self.url_map.bind_to_environ(request.environ,
+-                server_name=self.config['SERVER_NAME'])
++            # If subdomain matching is disabled (the default), use the
++            # default subdomain in all cases. This should be the default
++            # in Werkzeug but it currently does not have that feature.
++            subdomain = ((self.url_map.default_subdomain or None)
++                         if not self.subdomain_matching else None)
++            return self.url_map.bind_to_environ(
++                request.environ,
++                server_name=self.config['SERVER_NAME'],
++                subdomain=subdomain)
+         # We need at the very least the server name to be set for this
+         # to work.
+         if self.config['SERVER_NAME'] is not None:

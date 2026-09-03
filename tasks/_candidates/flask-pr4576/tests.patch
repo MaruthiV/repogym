@@ -1,0 +1,48 @@
+diff --git a/tests/test_helpers.py b/tests/test_helpers.py
+index 63dbbc135a..0893893f88 100644
+--- a/tests/test_helpers.py
++++ b/tests/test_helpers.py
+@@ -2,6 +2,7 @@
+ import os
+ 
+ import pytest
++import werkzeug.exceptions
+ 
+ import flask
+ from flask.helpers import get_debug_flag
+@@ -174,6 +175,35 @@ def redirect(location, code=302):
+         flask.redirect("other")
+ 
+ 
++def test_abort_no_app():
++    with pytest.raises(werkzeug.exceptions.Unauthorized):
++        flask.abort(401)
++
++    with pytest.raises(LookupError):
++        flask.abort(900)
++
++
++def test_app_aborter_class():
++    class MyAborter(werkzeug.exceptions.Aborter):
++        pass
++
++    class MyFlask(flask.Flask):
++        aborter_class = MyAborter
++
++    app = MyFlask(__name__)
++    assert isinstance(app.aborter, MyAborter)
++
++
++def test_abort_with_app(app):
++    class My900Error(werkzeug.exceptions.HTTPException):
++        code = 900
++
++    app.aborter.mapping[900] = My900Error
++
++    with app.app_context(), pytest.raises(My900Error):
++        flask.abort(900)
++
++
+ class TestNoImports:
+     """Test Flasks are created without import.
+ 

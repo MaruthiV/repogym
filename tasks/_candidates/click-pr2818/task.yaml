@@ -1,0 +1,38 @@
+id: click-pr2818
+repo: pallets/click
+base_commit: 5961d31fb566f089ad468a5b26a32f1ebfa7f63e
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Set the `catch_exceptions` value for the whole runner\n\nI always pass `catch_exceptions=False`\
+  \ for all my test suites.\r\nIt would be convenient to configure this value once\
+  \ for all in `CLIRunner` for example.\r\n\r\nFor example, we could add a `CLIRunner.catch_exceptions`\
+  \ parameter, and make `invoke` use that value if not directly passed in parameter\
+  \ of `invoke`. Then I would just have to put the runner in a pytest fixture and\
+  \ that would do the thing for me.\r\n\r\nIf that is OK, I can open a PR for this.\r\
+  \n\r\nWhat do you think?\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_testing.py::test_catch_exceptions_cli_runner
+  - tests/test_testing.py::test_with_color
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2818
+  issue: 2817
+  merged_at: '2024-12-19T16:54:32Z'
+  issue_url: https://github.com/pallets/click/issues/2817

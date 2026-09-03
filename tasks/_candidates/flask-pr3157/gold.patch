@@ -1,0 +1,42 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 1dbb960532..f7508afd3a 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -61,6 +61,9 @@ Unreleased
+ -   Blueprints have a ``cli`` Click group like ``app.cli``. CLI commands
+     registered with a blueprint will be available as a group under the
+     ``flask`` command. :issue:`1357`.
++-   When using the test client as a context manager (``with client:``),
++    all preserved request contexts are popped when the block exits,
++    ensuring nested contexts are cleaned up correctly. :pr:`3157`
+ 
+ .. _#2935: https://github.com/pallets/flask/issues/2935
+ .. _#2957: https://github.com/pallets/flask/issues/2957
+diff --git a/flask/testing.py b/flask/testing.py
+index 6c9de31382..f2fbad6c80 100644
+--- a/flask/testing.py
++++ b/flask/testing.py
+@@ -206,12 +206,17 @@ def __enter__(self):
+     def __exit__(self, exc_type, exc_value, tb):
+         self.preserve_context = False
+ 
+-        # on exit we want to clean up earlier.  Normally the request context
+-        # stays preserved until the next request in the same thread comes
+-        # in.  See RequestGlobals.push() for the general behavior.
+-        top = _request_ctx_stack.top
+-        if top is not None and top.preserved:
+-            top.pop()
++        # Normally the request context is preserved until the next
++        # request in the same thread comes. When the client exits we
++        # want to clean up earlier. Pop request contexts until the stack
++        # is empty or a non-preserved one is found.
++        while True:
++            top = _request_ctx_stack.top
++
++            if top is not None and top.preserved:
++                top.pop()
++            else:
++                break
+ 
+ 
+ class FlaskCliRunner(CliRunner):

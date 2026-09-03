@@ -1,0 +1,72 @@
+id: click-pr2840
+repo: pallets/click
+base_commit: 0bf333e1b77b4ae0e85d387531b38930fc657f12
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Regression: Help option subclassing no longer works with verion 8.1.8 \n\n\
+  Click 8.18 has a regression wrt. to help with Option subclasses.\r\n\r\nThis was\
+  \ found in this issue originally:\r\n- https://github.com/aboutcode-org/scancode-toolkit/issues/4044\r\
+  \n\r\nThis was introduced in this PR by @kdeldycke :wave: :\r\n- https://github.com/pallets/click/pull/2563\r\
+  \n\r\nIt breaks code that uses option subclasses. \r\n\r\n\r\n- This code works\
+  \ in 8.1.7 and  8.1.8 with no custom class\r\n```Python\r\nimport click\r\n\r\n\
+  @click.command()\r\n@click.help_option(\"-h\", \"--help\")\r\ndef scancode():\r\n\
+  \    \"\"\"OK in pkg:pypi/click@8.1.8 and pkg:pypi/click@8.1.7\"\"\"\r\n    pass\r\
+  \n\r\n\r\nif __name__ == \"__main__\":\r\n    scancode()\r\n```\r\nand then with\
+  \ 8.1.7 and 8.1.8:\r\n```\r\n$ python  works.py --help\r\nUsage: works.py [OPTIONS]\r\
+  \n\r\n  Regression in pkg:pypi/click@8.1.8\r\n\r\nOptions:\r\n  -h, --help  Show\
+  \ this message and exit.\r\n```\r\n\r\n\r\n\r\n\r\n- This code works in 8.1.7 and\
+  \ fails in 8.1.8 with a custom class\r\n```Python\r\nimport click\r\n\r\n\r\nclass\
+  \ PluggableCommandLineOption(click.Option):\r\n    pass\r\n\r\n\r\n@click.command()\r\
+  \n@click.help_option(\"-h\", \"--help\", cls=PluggableCommandLineOption)\r\ndef\
+  \ scancode():\r\n    \"\"\"Regression in pkg:pypi/click@8.1.8\"\"\"\r\n    pass\r\
+  \n\r\n\r\nif __name__ == \"__main__\":\r\n    scancode()\r\n```\r\n\r\nand then\
+  \ with 8.1.7\r\n```\r\n python  failing.py --help\r\nUsage: failing.py [OPTIONS]\r\
+  \n\r\n  Regression in pkg:pypi/click@8.1.8\r\n\r\nOptions:\r\n  -h, --help  Show\
+  \ this message and exit.\r\n\r\n\r\n$ python  failing.py -h\r\nUsage: failing.py\
+  \ [OPTIONS]\r\n\r\n  Regression in pkg:pypi/click@8.1.8\r\n\r\nOptions:\r\n  -h,\
+  \ --help  Show this message and exit.\r\n\r\n```\r\n\r\nand then with 8.1.8\r\n\
+  ```\r\n$ python  failing.py -h\r\nError: Option '-h' requires an argument.\r\n\r\
+  \n\r\n$ python  failing.py --help\r\nError: Option '--help' requires an argument.\r\
+  \n\r\n\r\n```\r\n\r\n\r\n\r\n- This code works more or less in 8.1.7 and 8.1.8 with\
+  \ custom class and no \"--help\" option\r\n```Python\r\nimport click\r\n\r\n\r\n\
+  class PluggableCommandLineOption(click.Option):\r\n    pass\r\n\r\n\r\n@click.command()\r\
+  \n@click.help_option(\"-h\", cls=PluggableCommandLineOption)\r\ndef scancode():\r\
+  \n    \"\"\"Regression in pkg:pypi/click@8.1.8\"\"\"\r\n    pass\r\n\r\n\r\nif __name__\
+  \ == \"__main__\":\r\n    scancode()\r\n\r\n```\r\nand then with 8.1.7\r\n```\r\n\
+  $ python  works2.py -h\r\nUsage: works2.py [OPTIONS]\r\n\r\n  Regression in pkg:pypi/click@8.1.8\r\
+  \n\r\nOptions:\r\n  -h      Show this message and exit.\r\n  --help  Show this message\
+  \ and exit.\r\n```\r\n\r\nand then with 8.1.7\r\n```\r\n$ python  works2.py --help\r\
+  \nUsage: works2.py [OPTIONS]\r\n\r\n  Regression in pkg:pypi/click@8.1.8\r\n\r\n\
+  Options:\r\n  -h      Show this message and exit.\r\n  --help  Show this message\
+  \ and exit\r\n```\r\n\r\nand then with 8.1.8\r\n```\r\n$ python  works2.py -h\r\n\
+  Error: Option '-h' requires an argument.\r\n\r\n```\r\nand then with 8.1.8 note\
+  \ the changes in `-h TEXT`\r\n```\r\n$ python  works2.py --help\r\nUsage: works2.py\
+  \ [OPTIONS]\r\n\r\n  Regression in pkg:pypi/click@8.1.8\r\n\r\nOptions:\r\n  -h\
+  \ TEXT\r\n  --help   Show this message and exit.\r\n\r\n```\r\n\r\n\r\n\r\n\r\n\r\
+  \nEnvironment:\r\n\r\n- Python version: 3.9 to 3.11\r\n- Click version: 8.1.8\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_help_option_custom_names_and_class
+  - tests/test_options.py::test_bool_flag_with_type
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2840
+  issue: 2832
+  merged_at: '2025-03-18T17:59:13Z'
+  issue_url: https://github.com/pallets/click/issues/2832

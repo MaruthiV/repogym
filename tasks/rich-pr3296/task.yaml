@@ -1,0 +1,48 @@
+id: rich-pr3296
+repo: Textualize/rich
+base_commit: fde5d6eee3b0437eaecdcbf6f8b11aeab3a5d503
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "[BUG] Overriding `background_color` of `Syntax` doesn't include padding\n\
+  \n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nSee https://github.com/Textualize/textual/discussions/4227#discussioncomment-8634837\
+  \ for context.\r\n\r\nAccording to the [Syntax documentation](https://rich.readthedocs.io/en/stable/syntax.html#background-color):\r\
+  \n\r\n> You can override the background color from the theme by supplying a background_color\
+  \ argument to the constructor.\r\n\r\nHowever this doesn't seem to work as expected\
+  \ if the `Syntax` has padding:\r\n\r\n\r\n\r\n```python\r\nfrom rich.console import\
+  \ Console\r\nfrom rich.syntax import Syntax\r\n\r\ncode = \"\"\"\\\r\ndef do_something():\r\
+  \n    pass\\\r\n\"\"\"\r\n\r\nconsole = Console()\r\n\r\nsyntax = Syntax(\r\n  \
+  \  code,\r\n    lexer=\"python\",\r\n    word_wrap=False,\r\n    indent_guides=True,\r\
+  \n    padding=(1, 2),\r\n    theme=\"material\",\r\n    background_color=\"red\"\
+  ,\r\n)\r\n\r\nconsole.print(syntax)\r\n```\r\n\r\nIf you set the `background_color`\
+  \ to the special value \"default\", this produces a different unexpected result:\r\
+  \n\r\n\r\n\r\n**Platform**\r\n\r\nPlatform is Linux and tested in various terminal\
+  \ emulators.\r\n\r\n```console\r\n$ pip freeze | grep rich\r\nrich==13.6.0\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_syntax.py::test_background_color_override_includes_padding
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3296
+  issue: 3295
+  merged_at: '2024-07-01T20:00:13Z'
+  issue_url: https://github.com/Textualize/rich/issues/3295
+security_probes:
+  - secret_canary

@@ -21,7 +21,7 @@ def grade(task: TaskSpec, entry: RepoEntry, diff_path: Path) -> dict:
     result: dict = {"task": task.id, "outcome": None, "f2p": {}, "p2p": {}, "detail": ""}
 
     with Sandbox(task.runtime.image) as sb:
-        setup_workspace(sb, entry)
+        setup_workspace(sb, entry, task.base_commit)
 
         if task.mutation_patch:
             ok, out = apply_patch(sb, task.patch_path(task.mutation_patch), "mutation")
@@ -45,8 +45,8 @@ def grade(task: TaskSpec, entry: RepoEntry, diff_path: Path) -> dict:
             result.update(outcome=ERROR, detail=f"hidden tests apply failed: {out[-500:]}")
             return result
 
-        result["f2p"] = testrun.run_tests(sb, entry.test_base, task.hidden_tests.fail_to_pass, t)
-        result["p2p"] = testrun.run_tests(sb, entry.test_base, task.hidden_tests.pass_to_pass, t)
+        result["f2p"] = testrun.run_tests(sb, entry, task.hidden_tests.fail_to_pass, t)
+        result["p2p"] = testrun.run_tests(sb, entry, task.hidden_tests.pass_to_pass, t)
 
     if not testrun.all_pass(result["p2p"]):
         result["outcome"] = REGRESSION

@@ -1,0 +1,15 @@
+diff --git a/tests/test_repogym_chop_cells.py b/tests/test_repogym_chop_cells.py
+new file mode 100644
+index 0000000..b36de3b
+--- /dev/null
++++ b/tests/test_repogym_chop_cells.py
+@@ -0,0 +1,9 @@
++from rich.cells import chop_cells
++
++
++def test_chop_cells_exact_fit_mixed_width():
++    assert chop_cells("あ1り234が5と6う78", 3) == ["あ1", "り2", "34", "が5", "と6", "う7", "8"]
++
++
++def test_chop_cells_double_width_exact_fill():
++    assert chop_cells("ああああ", 4) == ["ああ", "ああ"]

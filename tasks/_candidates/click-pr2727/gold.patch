@@ -1,0 +1,146 @@
+diff --git a/.gitignore b/.gitignore
+index 62c1b887d7..787c222591 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,6 +2,8 @@
+ .vscode/
+ .venv*/
+ venv*/
++.env*/
++env*/
+ __pycache__/
+ dist/
+ .coverage*
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 59c5b58f78..e6032649ae 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -48,6 +48,7 @@ Unreleased
+ -   ``Context.close`` will be called on exit. This results in all
+     ``Context.call_on_close`` callbacks and context managers added via
+     ``Context.with_resource`` to be closed on exit as well. :pr:`2680`
++-   Add ``ProgressBar(hidden: bool)`` to allow hiding the progressbar. :issue:`2609`
+ 
+ 
+ Version 8.1.8
+diff --git a/src/click/_termui_impl.py b/src/click/_termui_impl.py
+index 923641a44f..7b97bfb55c 100644
+--- a/src/click/_termui_impl.py
++++ b/src/click/_termui_impl.py
+@@ -47,6 +47,7 @@ def __init__(
+         empty_char: str = " ",
+         bar_template: str = "%(bar)s",
+         info_sep: str = "  ",
++        hidden: bool = False,
+         show_eta: bool = True,
+         show_percent: bool | None = None,
+         show_pos: bool = False,
+@@ -61,6 +62,7 @@ def __init__(
+         self.empty_char = empty_char
+         self.bar_template = bar_template
+         self.info_sep = info_sep
++        self.hidden = hidden
+         self.show_eta = show_eta
+         self.show_percent = show_percent
+         self.show_pos = show_pos
+@@ -105,7 +107,7 @@ def __init__(
+         self.max_width: int | None = None
+         self.entered: bool = False
+         self.current_item: V | None = None
+-        self.is_hidden: bool = not isatty(self.file)
++        self._is_atty = isatty(self.file)
+         self._last_line: str | None = None
+ 
+     def __enter__(self) -> ProgressBar[V]:
+@@ -136,7 +138,7 @@ def __next__(self) -> V:
+         return next(iter(self))
+ 
+     def render_finish(self) -> None:
+-        if self.is_hidden:
++        if self.hidden or not self._is_atty:
+             return
+         self.file.write(AFTER_BAR)
+         self.file.flush()
+@@ -232,13 +234,14 @@ def format_progress_line(self) -> str:
+     def render_progress(self) -> None:
+         import shutil
+ 
+-        if self.is_hidden:
+-            # Only output the label as it changes if the output is not a
+-            # TTY. Use file=stderr if you expect to be piping stdout.
++        if self.hidden:
++            return
++
++        if not self._is_atty:
++            # Only output the label once if the output is not a TTY.
+             if self._last_line != self.label:
+                 self._last_line = self.label
+                 echo(self.label, file=self.file, color=self.color)
+-
+             return
+ 
+         buf = []
+@@ -342,7 +345,7 @@ def generator(self) -> cabc.Iterator[V]:
+         if not self.entered:
+             raise RuntimeError("You need to use progress bars in a with block.")
+ 
+-        if self.is_hidden:
++        if not self._is_atty:
+             yield from self.iter
+         else:
+             for rv in self.iter:
+diff --git a/src/click/termui.py b/src/click/termui.py
+index 12d6edf5fe..e14e6701ce 100644
+--- a/src/click/termui.py
++++ b/src/click/termui.py
+@@ -288,6 +288,7 @@ def progressbar(
+     iterable: cabc.Iterable[V] | None = None,
+     length: int | None = None,
+     label: str | None = None,
++    hidden: bool = False,
+     show_eta: bool = True,
+     show_percent: bool | None = None,
+     show_pos: bool = False,
+@@ -363,6 +364,9 @@ def progressbar(
+                    length.  If an iterable is not provided the progress bar
+                    will iterate over a range of that length.
+     :param label: the label to show next to the progress bar.
++    :param hidden: hide the progressbar. Defaults to ``False``. When no tty is
++        detected, it will only print the progressbar label. Setting this to
++        ``False`` also disables that.
+     :param show_eta: enables or disables the estimated time display.  This is
+                      automatically disabled if the length cannot be
+                      determined.
+@@ -395,6 +399,9 @@ def progressbar(
+     :param update_min_steps: Render only when this many updates have
+         completed. This allows tuning for very fast iterators.
+ 
++    .. versionadded:: 8.2
++        The ``hidden`` argument.
++
+     .. versionchanged:: 8.0
+         Output is shown even if execution time is less than 0.5 seconds.
+ 
+@@ -406,11 +413,10 @@ def progressbar(
+         in 7.0 that removed all output.
+ 
+     .. versionadded:: 8.0
+-       Added the ``update_min_steps`` parameter.
++       The ``update_min_steps`` parameter.
+ 
+-    .. versionchanged:: 4.0
+-        Added the ``color`` parameter. Added the ``update`` method to
+-        the object.
++    .. versionadded:: 4.0
++        The ``color`` parameter and ``update`` method.
+ 
+     .. versionadded:: 2.0
+     """
+@@ -420,6 +426,7 @@ def progressbar(
+     return ProgressBar(
+         iterable=iterable,
+         length=length,
++        hidden=hidden,
+         show_eta=show_eta,
+         show_percent=show_percent,
+         show_pos=show_pos,

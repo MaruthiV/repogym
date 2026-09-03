@@ -1,0 +1,23 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f4c27de5f6..d2e7906004 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ - Fixed empty print ignoring the `end` parameter
+ - Fixed `Text.from_ansi` removing newlines https://github.com/Textualize/rich/pull/4076
++- Fixed `FileProxy.isatty` not proxying https://github.com/Textualize/rich/pull/4077
+ 
+ ## [14.3.4] - 2026-04-11
+ 
+diff --git a/rich/file_proxy.py b/rich/file_proxy.py
+index 4b0b0da6c2..e32523bd6b 100644
+--- a/rich/file_proxy.py
++++ b/rich/file_proxy.py
+@@ -55,3 +55,6 @@ def flush(self) -> None:
+ 
+     def fileno(self) -> int:
+         return self.__file.fileno()
++
++    def isatty(self) -> bool:
++        return self.__file.isatty()

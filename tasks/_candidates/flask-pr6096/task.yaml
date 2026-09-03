@@ -1,0 +1,44 @@
+id: flask-pr6096
+repo: pallets/flask
+base_commit: 514fc6b3e8402e4c646d5284e97a4f0ab50a7c4b
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "IPv6 addresses parsed incorrectly because of `.partition(\":\")`?\n\nHi,\
+  \ I checked the code and saw that two places use `.partition(\":\")` on addresses,\
+  \ and IPv6 addresses contain \":\".\n\nThis breaks 1. `session_transaction` value\
+  \ setting, and 2. `Flask.run()` if `SERVER_NAME` is set. I've already prepared two\
+  \ tests that fail, you can use them to reproduce:\n\n1. In `test_testing.py`\n```\n\
+  def test_session_transaction_ipv6(app):\n    base_url = \"http://[::1]:8000/\"\n\
+  \    client = app.test_client()\n\n    @app.get(\"/\")\n    def index():\n     \
+  \   return str(flask.session.get(\"value\"))\n\n    with client.session_transaction(base_url=base_url)\
+  \ as sess:\n        sess[\"value\"] = 42\n\n    assert client.get(\"/\", base_url=base_url).text\
+  \ == \"42\"\n```\n\n2. Add one case to `test_run_from_config`\n```\n(None, None,\
+  \ \"[::1]:8080\", \"::1\", 8080),\n```\n\nIs this known and intended? I could send\
+  \ the patches for these two places.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_testing.py::test_session_transaction_ipv6
+  - tests/test_testing.py::test_session_transactions_no_null_sessions
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 6096
+  issue: 6093
+  merged_at: '2026-08-11T19:48:41Z'
+  issue_url: https://github.com/pallets/flask/issues/6093

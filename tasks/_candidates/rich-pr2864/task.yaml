@@ -1,0 +1,81 @@
+id: rich-pr2864
+repo: Textualize/rich
+base_commit: f14920de99cd5a92f1657c3603739ebb57e1ac4e
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] `rich.pretty` is not showing `maxlen` for `collections.deque`\n\n-\
+  \ [X] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [X] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nEdit this with a clear and concise description\
+  \ of what the bug.\r\n\r\nProvide a minimal code example that demonstrates the issue\
+  \ if you can. If the issue is visual in nature, consider posting a screenshot.\r\
+  \n\r\nI add `rich.pretty` in my `ipython` startup script and overwrite `builtins.print`\
+  \ with `rich.print`. It work as expected when I print a large collection object.\
+  \ However, it not works well with `collections.deque`. `rich.print` and `builtins.print`\
+  \ are showing non-whitespace differences.\r\n\r\n```python\r\nIn [1]: import rich\r\
+  \n   ...: import rich.pretty\r\n   ...: from rich import print\r\n   ...: \r\n \
+  \  ...: rich.pretty.install(indent_guides=True)\r\n\r\nIn [2]: print\r\nOut[2]:\
+  \ <function rich.print(*objects: Any, sep: str = ' ', end: str = '\\n', file: Optional[IO[str]]\
+  \ = None, flush: bool = False) -> None>\r\n\r\nIn [3]: from collections import deque\r\
+  \n\r\nIn [4]: import builtins\r\n\r\nIn [5]: d = deque([1, 2, 3])\r\n\r\nIn [6]:\
+  \ print(d)\r\ndeque([1, 2, 3])\r\n\r\nIn [7]: builtins.print(d)\r\ndeque([1, 2,\
+  \ 3])\r\n\r\nIn [8]: d\r\nOut[8]: deque([1, 2, 3])\r\n\r\nIn [9]: repr(d)\r\nOut[9]:\
+  \ 'deque([1, 2, 3])'\r\n\r\nIn [10]: d = deque([1, 2, 3], maxlen=5)\r\n\r\nIn [11]:\
+  \ print(d)\r\ndeque([1, 2, 3])\r\n\r\nIn [12]: builtins.print(d)\r\ndeque([1, 2,\
+  \ 3], maxlen=5)\r\n\r\nIn [13]: d\r\nOut[13]: deque([1, 2, 3])\r\n\r\nIn [14]: repr(d)\r\
+  \nOut[14]: 'deque([1, 2, 3], maxlen=5)'\r\n```\r\n\r\n**Platform**\r\n<details>\r\
+  \n<summary>Click to expand</summary>\r\n\r\nWhat platform (Win/Linux/Mac) are you\
+  \ running on? What terminal software are you using?\r\n\r\nI may ask you to copy\
+  \ and paste the output of the following commands. It may save some time if you do\
+  \ it now.\r\n\r\nIf you're using Rich in a terminal:\r\n\r\n```\r\npython -m rich.diagnose\r\
+  \npip freeze | grep rich\r\n```\r\n\r\n```text\r\n╭───────────────────────── <class\
+  \ 'rich.console.Console'> ─────────────────────────╮\r\n│ A high level console interface.\
+  \                                                  │\r\n│                      \
+  \                                                            │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=221 ColorSystem.TRUECOLOR>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = 'truecolor'                              \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 67                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=221, height=67),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=221, \
+  \                                           │\r\n│  \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_pretty.py::test_deque
+  - tests/test_pretty.py::test_array
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2864
+  issue: 2863
+  merged_at: '2024-07-01T10:52:21Z'
+  issue_url: https://github.com/Textualize/rich/issues/2863

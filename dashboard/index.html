@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RepoGym</title>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e;
+          --ok:#3fb950; --bad:#f85149; --warn:#d29922; --accent:#58a6ff; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--fg); font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; padding:2rem; }
+  h1 { font-size:1.4rem; margin-bottom:.2rem; }
+  .sub { color:var(--dim); margin-bottom:1.5rem; }
+  table { border-collapse:collapse; width:100%; margin-bottom:2rem; }
+  th,td { text-align:left; padding:.45rem .8rem; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:600; }
+  tr.trial { cursor:pointer; } tr.trial:hover { background:var(--panel); }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  #detail { background:var(--panel); border:1px solid var(--line); border-radius:8px;
+            padding:1rem 1.2rem; margin-bottom:2rem; display:none; white-space:pre-wrap; }
+  .tag { display:inline-block; padding:0 .5rem; border:1px solid var(--line);
+         border-radius:999px; color:var(--dim); margin-right:.4rem; font-size:12px; }
+  h2 { font-size:1rem; color:var(--accent); margin:1.2rem 0 .6rem; }
+</style>
+</head>
+<body>
+<h1>RepoGym</h1>
+<div class="sub">reproducible benchmark for coding agents on real repositories</div>
+<div id="content">loading report.json…</div>
+<div id="detail"></div>
+<div id="trials"></div>
+<script>
+const outcomeClass = o => o === "resolved" ? "ok" : (o === "partial" ? "warn" : "bad");
+const fmt = (v, d=2) => v == null ? "–" : (+v).toFixed(d);
+
+fetch("report.json").then(r => r.json()).then(rep => {
+  const agents = Object.entries(rep.leaderboard || {});
+  let html = "<h2>leaderboard</h2><table><tr><th>agent</th><th>solve</th><th>trials</th><th>$/task</th><th>tokens out</th><th>regressions</th></tr>";
+  for (const [name, s] of agents) {
+    html += `<tr><td>${name}</td><td class="ok">${(s.solve_rate*100).toFixed(0)}%</td><td>${s.trials}</td><td>$${fmt(s.cost_per_task)}</td><td>${s.tokens_out.toLocaleString()}</td><td>${(s.regression_rate*100).toFixed(0)}%</td></tr>`;
+  }
+  html += "</table>";
+  if (!agents.length) html += `<div class="sub">no graded trials yet — run <span class="tag">repogym run</span> then <span class="tag">repogym grade</span> then <span class="tag">repogym report</span></div>`;
+  document.getElementById("content").innerHTML = html;
+
+  const trials = rep.trials || [];
+  if (!trials.length) return;
+  let t = "<h2>trials</h2><table><tr><th>task</th><th>agent</th><th>t</th><th>outcome</th><th>wall s</th><th>$</th><th>tool calls</th></tr>";
+  trials.forEach((row, i) => {
+    const tele = row.telemetry || {};
+    t += `<tr class="trial" onclick="show(${i})"><td>${row.task}</td><td>${row.agent||"?"}</td><td>${row.trial||""}</td><td class="${outcomeClass(row.outcome)}">${row.outcome}</td><td>${fmt(row.agent_wall_s,0)}</td><td>${fmt(tele.cost_usd)}</td><td>${tele.n_tool_calls ?? "–"}</td></tr>`;
+  });
+  document.getElementById("trials").innerHTML = t + "</table>";
+  window._trials = trials;
+});
+
+function show(i) {
+  const row = window._trials[i], d = document.getElementById("detail");
+  d.style.display = "block";
+  d.textContent = JSON.stringify(row, null, 2);
+  d.scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>

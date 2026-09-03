@@ -1,0 +1,34 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index ae674ef1be..31ce391190 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ - Fixed Text.expand_tabs not expanding spans.
+ - Fixed TimeElapsedColumn from showing negative.
++- Fix for escaping strings with a trailing backslash https://github.com/Textualize/rich/issues/2987
+ 
+ ### Added
+ 
+diff --git a/rich/markup.py b/rich/markup.py
+index 0ffd056dde..cb927edd1f 100644
+--- a/rich/markup.py
++++ b/rich/markup.py
+@@ -64,6 +64,9 @@ def escape_backslashes(match: Match[str]) -> str:
+         return f"{backslashes}{backslashes}\\{text}"
+ 
+     markup = _escape(escape_backslashes, markup)
++    if markup.endswith("\\") and not markup.endswith("\\\\"):
++        return markup + "\\"
++
+     return markup
+ 
+ 
+@@ -226,7 +229,6 @@ def pop_style(style_name: str) -> Tuple[int, Tag]:
+ 
+ 
+ if __name__ == "__main__":  # pragma: no cover
+-
+     MARKUP = [
+         "[red]Hello World[/red]",
+         "[magenta]Hello [b]World[/b]",

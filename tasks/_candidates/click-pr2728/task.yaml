@@ -1,0 +1,45 @@
+id: click-pr2728
+repo: pallets/click
+base_commit: e88c11239971d309744fd3f9139259f64787f45a
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Broken message about invalid argument value for template \"File ... is a\
+  \ directory\"\n\n**User Actions**\r\n```sh\r\nmkdir $'my\\ndir'\r\nmy-tool $'my\\\
+  ndir'\r\n```\r\n\r\n**Expected Output**\r\n```\r\nInvalid value for 'PATH': File\
+  \ 'my\\ndir' is a directory.\r\n```\r\n\r\n\r\n**Actual Output**\r\n```\r\nInvalid\
+  \ value for 'PATH': File 'my\r\ndir' is a directory.\r\n```\r\n\r\n\r\n**Code**\r\
+  \n```python\r\nfrom pathlib import Path\r\nfrom typing import Annotated\r\n\r\n\
+  import typer\r\n\r\n\r\ndef main(path: Annotated[Path, typer.Argument(dir_okay=False)])\
+  \ -> None:\r\n    pass\r\n\r\n\r\nif __name__ == '__main__':\r\n    typer.run(main)\r\
+  \n```\r\n\r\n**Cause**\r\nYou clearly forgot `!r` on [this](https://github.com/pallets/click/blob/f8857cb03268b5b952b88b2acb3e11d9f0f7b6e4/src/click/types.py#L896)\
+  \ line and are using quotes instead.\r\n\r\nJust compare these lines in [click.types](https://github.com/pallets/click/blob/f8857cb03268b5b952b88b2acb3e11d9f0f7b6e4/src/click/types.py#L870-L928):\r\
+  \n```python\r\n_(\"{name} {filename!r} does not exist.\").format(\r\n_(\"{name}\
+  \ {filename!r} is a file.\").format(\r\n_(\"{name} '{filename}' is a directory.\"\
+  ).format(\r\n_(\"{name} {filename!r} is not readable.\").format(\r\n_(\"{name} {filename!r}\
+  \ is not writable.\").format(\r\n_(\"{name} {filename!r} is not executable.\").format(\r\
+  \n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_types.py::test_invalid_path_with_esc_sequence
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2728
+  issue: 2697
+  merged_at: '2024-05-21T14:46:21Z'
+  issue_url: https://github.com/pallets/click/issues/2697

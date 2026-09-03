@@ -1,0 +1,36 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 4b2800e89e..4b95a4790e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,8 +5,13 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++
+ ## [Unreleased]
+ 
++### Added
++
++- Add support for `FORCE_COLOR` env var https://github.com/Textualize/rich/pull/2449
++
+ ### Fixed
+ 
+ - Fix NO_COLOR support on legacy Windows https://github.com/Textualize/rich/pull/2458
+diff --git a/rich/console.py b/rich/console.py
+index 4f4675b10f..4a3ebb5592 100644
+--- a/rich/console.py
++++ b/rich/console.py
+@@ -697,7 +697,12 @@ def __init__(
+         self._height = height
+ 
+         self._color_system: Optional[ColorSystem]
+-        self._force_terminal = force_terminal
++
++        if force_terminal is not None:
++            self._force_terminal = force_terminal
++        else:
++            self._force_terminal = self._environ.get("FORCE_COLOR") is not None
++
+         self._file = file
+         self.quiet = quiet
+         self.stderr = stderr

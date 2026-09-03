@@ -1,0 +1,63 @@
+id: click-pr2930
+repo: pallets/click
+base_commit: 011b9f9d190c71310264e6c54bae6259f5e38a9f
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Click 8.2.0 ignores is_flag options that have a type\n\nClick 8.2.0 ignores\
+  \ the use of options defined with `is_flag` and `type=str`.\n\nOf course, combining\
+  \ `is_flag` and `type=str` does not make sense, but it happened in one of our projects.\
+  \ Click before 8.2.0 ignored `type=str` and processed this as expected for `is_flag`.\n\
+  \nClick 8.2.0 does not set a value for such an option.\n\nI could trace this change\
+  \ to PR #2829 - If I install click 8.2.0 and manually undo the change in `core.py`\
+  \ that is done by that PR, it works as before.\n\nTo reproduce:\n\n1. Have a file\
+  \ `main.py` with:\n\n```\nimport click\n\n@click.group(invoke_without_command=True)\n\
+  @click.option('-x', '--transpose', type=str, is_flag=True,\n              help='Transpose\
+  \ the output table.')\ndef cli(transpose):\n    print(f\"Debug: transpose={transpose}\"\
+  )\n    return 0\n```\n\n2. Reproduce with click 8.2.0:\n```\n$ pip install click==8.2.0\n\
+  $ python -c \"import main,sys; sys.argv=['cli', '--transpose']; main.cli()\"\nDebug:\
+  \ transpose=None\n```\n\n3. Verify that click 8.2.0 with PR #2829 undone works:\n\
+  ```\n# perform the undo in core.py (see below)\n$ python -c \"import main,sys; sys.argv=['cli',\
+  \ '--transpose']; main.cli()\"\nDebug: transpose=True\n```\n\n4. Verify that click\
+  \ 8.1.8 works:\n```\n$ pip install click==8.1.8\n$ python -c \"import main,sys;\
+  \ sys.argv=['cli', '--transpose']; main.cli()\"\nDebug: transpose=True\n```\n\n\
+  The \"undo\" of PR #2829 has the following changes in `core.py`, starting at line\
+  \ 2613:\n```\n        # Undo PR 2829: Added the following two lines\n        if\
+  \ flag_value is None:\n            flag_value = not self.default\n        self.type:\
+  \ types.ParamType\n        if is_flag and type is None:\n            # Undo PR 2829:\
+  \ Removed the following two lines\n            # if flag_value is None:\n      \
+  \      #     flag_value = not self.default\n            # Re-guess the type from\
+  \ the flag value instead of the\n            # default.\n            self.type =\
+  \ types.convert_type(None, flag_value)\n```\n\nEnvironment:\n\n- Python version:\
+  \ 3.12.7 on macOS (it happens on all Python versions supported by click 8.2.0, but\
+  \ not on all OSs)\n- Click version: 8.2.0\n\nBased on our CI test run, the issue\
+  \ happens only on macOS and Windows, but not on Ubuntu: \nhttps://github.com/zhmcclient/zhmccli/actions/runs/14949544297.\
+  \ I did not investigate why it does not happen on Ubuntu.\n\nThe fix for projects\
+  \ using click is of course to remove `type` when `is_flag` is used.\n\nEven though\
+  \ this is basically an incorrect use of click, I would expect click to surface this\
+  \ as an incorrect use, instead of silently not setting a value for the option.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_flag_value_is_correctly_set
+  - tests/test_options.py::test_non_flag_with_non_negatable_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2930
+  issue: 2894
+  merged_at: '2025-05-20T14:55:39Z'
+  issue_url: https://github.com/pallets/click/issues/2894

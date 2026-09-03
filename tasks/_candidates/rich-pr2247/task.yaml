@@ -1,0 +1,33 @@
+id: rich-pr2247
+repo: Textualize/rich
+base_commit: 5a999f49f9e1617ab6d31381a4c862caa0a75873
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Add padding to Syntax\n\nWe often want to add padding around Syntax. This\
+  \ can be done with `Padding` but it would be better if Syntax itself supported padding\
+  \ so we could use the theme colors.\r\n\r\nThe Syntax object should grow a `padding`\
+  \ argument on the constructor.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_syntax.py::test_syntax_padding
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2247
+  issue: 2240
+  merged_at: '2022-05-03T15:32:50Z'
+  issue_url: https://github.com/Textualize/rich/issues/2240

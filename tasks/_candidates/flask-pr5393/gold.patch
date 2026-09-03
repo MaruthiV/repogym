@@ -1,0 +1,28 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 302abec441..edbaa963ae 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -4,6 +4,8 @@ Version 3.0.2
+ Unreleased
+ 
+ -   Correct type for ``jinja_loader`` property. :issue:`5388`
++-   Fix error with ``--extra-files`` and ``--exclude-patterns`` CLI options.
++    :issue:`5391`
+ 
+ 
+ Version 3.0.1
+diff --git a/src/flask/cli.py b/src/flask/cli.py
+index ffdcb182a7..d4df2802b2 100644
+--- a/src/flask/cli.py
++++ b/src/flask/cli.py
+@@ -858,7 +858,9 @@ def convert(
+         self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None
+     ) -> t.Any:
+         items = self.split_envvar_value(value)
+-        return [super().convert(item, param, ctx) for item in items]
++        # can't call no-arg super() inside list comprehension until Python 3.12
++        super_convert = super().convert
++        return [super_convert(item, param, ctx) for item in items]
+ 
+ 
+ @click.command("run", short_help="Run a development server.")

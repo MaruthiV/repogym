@@ -1,0 +1,41 @@
+id: rich-pr2031
+repo: Textualize/rich
+base_commit: 8e649fea51859e426b2f6300e0a9c88c9c4b6415
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[REQUEST] Add explicit support for NamedTuples\n\nThe Pretty class doesn't\
+  \ support pretty printing NamedTuples.\r\n\r\nWe should attempt to auto detect named\
+  \ tuples in order to expand these on to multiple lines as appropriate.\r\n\r\nNamedTuples\
+  \ inherit from `tuple` and don't have a common base class. They have a `_fields`\
+  \ attribute which could identify them as a named tuple. \r\n\r\nWe will also need\
+  \ to check if a custom __repr__ has been provided (in the same was as we do dataclasses).\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_pretty.py::test_pretty_namedtuple
+  - tests/test_pretty.py::test_pretty_namedtuple_length_one_no_trailing_comma
+  - tests/test_pretty.py::test_pretty_namedtuple_empty
+  - tests/test_pretty.py::test_pretty_namedtuple_custom_repr
+  - tests/test_pretty.py::test_pretty_namedtuple_fields_invalid_type
+  - tests/test_pretty.py::test_pretty_namedtuple_max_depth
+  - tests/test_pretty.py::test_small_width
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2031
+  issue: 2012
+  merged_at: '2022-03-08T14:14:32Z'
+  issue_url: https://github.com/Textualize/rich/issues/2012

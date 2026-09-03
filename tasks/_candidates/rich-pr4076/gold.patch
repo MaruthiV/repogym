@@ -1,0 +1,47 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index ab758b1cec..f4c27de5f6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ ### Fixed
+ 
+ - Fixed empty print ignoring the `end` parameter
++- Fixed `Text.from_ansi` removing newlines https://github.com/Textualize/rich/pull/4076
+ 
+ ## [14.3.4] - 2026-04-11
+ 
+diff --git a/docs/source/console.rst b/docs/source/console.rst
+index 4d79886c24..dbb09603c3 100644
+--- a/docs/source/console.rst
++++ b/docs/source/console.rst
+@@ -351,9 +351,6 @@ Since the default pager on most platforms don't support color, Rich will strip c
+ Alternate screen
+ ----------------
+ 
+-.. warning::
+-    This feature is currently experimental. You might want to wait before using it in production.
+-
+ Terminals support an 'alternate screen' mode which is separate from the regular terminal and allows for full-screen applications that leave your stream of input and commands intact. Rich supports this mode via the :meth:`~rich.console.Console.set_alt_screen` method, although it is recommended that you use :meth:`~rich.console.Console.screen` which returns a context manager that disables alternate mode on exit.
+ 
+ Here's an example of an alternate screen::
+diff --git a/rich/ansi.py b/rich/ansi.py
+index 7de86ce504..7bbcb0bfcc 100644
+--- a/rich/ansi.py
++++ b/rich/ansi.py
+@@ -127,13 +127,13 @@ def decode(self, terminal_text: str) -> Iterable[Text]:
+         """Decode ANSI codes in an iterable of lines.
+ 
+         Args:
+-            lines (Iterable[str]): An iterable of lines of terminal output.
++            terminal_text: Output potentially containing ANSI escape sequences.
+ 
+         Yields:
+             Text: Marked up Text.
+         """
+-        for line in terminal_text.splitlines():
+-            yield self.decode_line(line)
++        for line in re.split(r"(?<=\n)", terminal_text):
++            yield self.decode_line(line.rstrip("\n"))
+ 
+     def decode_line(self, line: str) -> Text:
+         """Decode a line containing ansi codes.

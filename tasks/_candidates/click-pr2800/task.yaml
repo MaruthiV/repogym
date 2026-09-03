@@ -1,0 +1,64 @@
+id: click-pr2800
+repo: pallets/click
+base_commit: d8763b93021c416549b5f8b4b5497234619410db
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Click doesn't close file options during shell completion\n\nClick doesn't\
+  \ close file options during shell completion, which causes a resource warning if\
+  \ a program uses a file option.\r\n\r\nFor example, I have group like this:\r\n\r\
+  \n```python\r\n@click.group()\r\n@click.option('--config_file',\r\n            \
+  \  default=CONFIG,\r\n              type=click.File(mode='r'),\r\n             \
+  \ help='help')\r\n@click.pass_context\r\ndef cli(ctx, config_file: typing.TextIO):\r\
+  \n```\r\n\r\nand I get this warning:\r\n\r\n```\r\n/Users/grzesiek/Library/Caches/pypoetry/virtualenvs/findata-fetcher-3hK6JJJX-py3.12/lib/python3.12/site-packages/click/shell_completion.py:293:\
+  \ ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/grzesiek/.config/findata/fetcher.json'\
+  \ mode='r' encoding='UTF-8'>\r\n  completions = self.get_completions(args, incomplete)\r\
+  \n```\r\n\r\n## Details\r\n\r\nI don't come with reproduction steps, but I can give\
+  \ something equally valuable, I can explain how this bug comes to be.\r\n\r\nThe\
+  \ issue stems from allocating a context in `core.py` outside of a `with` statement\
+  \ during shell completion. Here's a stack-trace of how that happens:\r\n\r\n```\r\
+  \n  File \"/Users/grzesiek/.local/bin/findata-fetcher\", line 8, in <module>\r\n\
+  \    sys.exit(main())\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/fetcher/tool.py\"\
+  , line 576, in main\r\n    cli(obj={})\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/core.py\"\
+  , line 1171, in __call__\r\n    return self.main(*args, **kwargs)\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/core.py\"\
+  , line 1084, in main\r\n    self._main_shell_completion(extra, prog_name, complete_var)\r\
+  \n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/core.py\"\
+  , line 1165, in _main_shell_completion\r\n    rv = shell_complete(self, ctx_args,\
+  \ prog_name, complete_var,\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/shell_completion.py\"\
+  , line 49, in shell_complete\r\n    echo(comp.complete())\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/shell_completion.py\"\
+  , line 296, in complete\r\n    completions = self.get_completions(args, incomplete)\r\
+  \n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/shell_completion.py\"\
+  , line 273, in get_completions\r\n    ctx = _resolve_context(self.cli, self.ctx_args,\
+  \ self.prog_name, args)\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/shell_completion.py\"\
+  , line 513, in _resolve_context\r\n    ctx = cli.make_context(prog_name, args.copy(),\
+  \ **ctx_args)\r\n  File \"/Users/grzesiek/.local/pipx/venvs/findata-fetcher/lib/python3.12/site-packages/click/core.py\"\
+  , line 952, in make_context\r\n    with ctx.scope(cleanup=False):\r\n```\r\n\r\n\
+  This context gets [returned](https://github.com/pallets/click/blob/ca5e1c3d75e95cbc70fa6ed51ef263592e9ac0d0/src/click/core.py#L1147C19-L1147C19)\
+  \ to `get_completions`, but `get_completions` or its caller never call the context's\
+  \ `__exit__` function. \r\n\r\nCalling the `__exit__` function is essential, because\
+  \ `types.File` depends on it for cleanup: https://github.com/pallets/click/blob/ca5e1c3d75e95cbc70fa6ed51ef263592e9ac0d0/src/click/types.py#L740.\r\
+  \n\r\n## Environment\r\n\r\n- Python version: 3.12\r\n- Click version: 8.1.7\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_shell_completion.py::test_files_closed
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2800
+  issue: 2644
+  merged_at: '2024-11-03T20:38:31Z'
+  issue_url: https://github.com/pallets/click/issues/2644

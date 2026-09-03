@@ -1,0 +1,47 @@
+id: rich-pr2923
+repo: Textualize/rich
+base_commit: 076e0d208eb0b4e74cd8639e11a558b9319bd799
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] COLORTERM in combination with FORCE_COLOR does not work anymore\n\n\
+  - [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nCommit 1ebf82300fdf4960fd9a04afc60fdecee7ab50da\
+  \ broke the combination of \"FORCE_COLOR\" and \"COLORTERM\" taken from the environment\
+  \ variables.\r\n\r\nI've created a simple test:\r\n\r\n```python\r\nimport io\r\n\
+  \r\nfrom rich.console import Console\r\n\r\n\r\ndef test_force_color():\r\n    console\
+  \ = Console(file=io.StringIO(), _environ={\r\n        \"FORCE_COLOR\": \"1\",\r\n\
+  \        \"COLORTERM\": \"truecolor\",\r\n    })\r\n    assert console.is_terminal\r\
+  \n    assert console.color_system == \"truecolor\"\r\n```\r\n\r\nIf `master` or\
+  \ 1ebf82300fdf4960fd9a04afc60fdecee7ab50da is checked out it fails, because the\
+  \ `color_system` is `None`. If the commit before (b89d0362e8ebcb18902f0f0a206879f1829b5c0b)\
+  \ is checked out the test succeeds.\r\n\r\nI guess that the order of when `FORCE_COLOR`\
+  \ and `COLORTERM` are interpreted got changed.\r\n\r\n**Platform**\r\n<details>\r\
+  \n<summary>Click to expand</summary>\r\n\r\n* What platform (Win/Linux/Mac) are\
+  \ you running on? Linux (Manjaro)\r\n* What terminal software are you using? kitty\r\
+  \n\r\n</details>\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_force_color
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2923
+  issue: 2859
+  merged_at: '2023-04-12T16:48:19Z'
+  issue_url: https://github.com/Textualize/rich/issues/2859

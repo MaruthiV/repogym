@@ -1,0 +1,62 @@
+id: flask-pr4642
+repo: pallets/flask
+base_commit: 97298e06fe19298c3ff9d2e0ed9ba70bb3fda2c8
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "FlaskGroup does not work when nested in a click.group\n\n### Expected Behavior\r\
+  \nWhen using Flask CLI, I came to the case that we have a group of commands for\
+  \ a big program that uses `click`.\r\n```python\r\n# main group\r\n@click.group()\r\
+  \n@click.pass_context\r\ndef my_big_cli_group(ctx):\r\n    pass\r\n\r\n# sub group\r\
+  \n@my_big_cli_group.group()\r\n@click.pass_context\r\ndef my_nested_group(ctx):\r\
+  \n    pass\r\n\r\n# command for sub group\r\n@my_nested_group.command()\r\n@click.pass_context\r\
+  \n@click.option('-s', '--start', is_flag=True)\r\ndef my_command(ctx, start):\r\n\
+  \    click.echo(start)\r\n```\r\n\r\nThe issue comes when nesting my flask app into\
+  \ the bigger group using `cls=FlaskGroup` and passing my `create_app` factory function.\r\
+  \n\r\n```python\r\n# flask app sub group\r\n@my_big_cli_group.group(cls=FlaskGroup,\
+  \ create_app=create_app)\r\n@click.pass_context\r\ndef my_flask_app(ctx):\r\n  \
+  \  pass\r\n```\r\n\r\nAfter running my `setup.py` pointing my entry point to `'my_big_cli\
+  \ = path.to:my_big_cli_group'`, I should expect the app to start once I do:\r\n\
+  ```bash\r\n$ my_big_cli my_flask_app run\r\n```\r\n\r\n### Actual Behavior\r\nInstead,\
+  \ I get a `flask.cli.NoAppException`. It seems that `create_app` does not get passed\
+  \ on to `Group.group` instances on `click`.\r\n\r\n```pytb\r\nTraceback (most recent\
+  \ call last):\r\n File “/Users/the_user/Desktop/venv/lib/python3.7/site-packages/flask/cli.py”,\
+  \ line 540, in list_commands\r\n   rv.update(info.load_app().cli.list_commands(ctx))\r\
+  \n File “/Users/the_user/Desktop/venv/lib/python3.7/site-packages/flask/cli.py”,\
+  \ line 393, in load_app\r\n   ‘Could not locate a Flask application. You did not\
+  \ provide ’\r\nflask.cli.NoAppException: Could not locate a Flask application. You\
+  \ did not provide the “FLASK_APP” environment variable, and a “wsgi.py” or “app.py”\
+  \ module was not found in the current directory.\r\n```\r\n\r\n### Work around\r\
+  \nIf I don't nest the flask app into a group but rather make it a new `click.group`,\
+  \ then after changing my `setup.py` to point to this new entry point as well, everything\
+  \ works as expected.\r\n\r\n```python\r\n# flask app group\r\n@click.group(cls=FlaskGroup,\
+  \ create_app=create_app)\r\n@click.pass_context\r\ndef my_flask_app(ctx):\r\n  \
+  \  pass\r\n```\r\nThen\r\n```bash\r\n$ my_flask_app run\r\n```\r\nworks perfectly\
+  \ fine\r\n\r\n\r\n### Environment\r\n\r\n* Python version: 3.7.3\r\n* Flask version:\
+  \ 1.0.3\r\n* Werkzeug version: 0.15.4\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_cli.py::test_flaskgroup_nested
+  - tests/test_cli.py::test_no_command_echo_loading_error
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4642
+  issue: 3263
+  merged_at: '2022-06-15T21:17:45Z'
+  issue_url: https://github.com/pallets/flask/issues/3263

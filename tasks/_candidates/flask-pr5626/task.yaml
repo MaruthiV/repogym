@@ -1,0 +1,42 @@
+id: flask-pr5626
+repo: pallets/flask
+base_commit: 62c56e08c43f5eb174d15dd050591cfba9aed548
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'extend config for Request form memory settings
+
+
+  Werkzeug provides three settings on `Request` to control form parsing: `max_content_length`,
+  `max_form_memory_size`, and `max_form_parts`. Only `max_content_length` is exposed
+  as a Flask config right now, and the way it''s implemented means it can only be
+  set for the whole application, not per-request. Fix all that. Document these in
+  the security page as well as the config page.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_request.py::test_max_content_length
+  - tests/test_request.py::test_limit_config
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5626
+  issue: 5625
+  merged_at: '2024-11-01T20:21:36Z'
+  issue_url: https://github.com/pallets/flask/issues/5625

@@ -4,6 +4,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from repogym.adapters.base import AgentAdapter
+from repogym.evaluation.security import (
+    canary_env_text,
+    make_canary,
+    security_report,
+    write_security_json,
+)
 from repogym.images import REPO_ROOT, RepoEntry
 from repogym.sandbox import Sandbox
 from repogym.schema import TaskSpec
@@ -40,7 +46,7 @@ def run_trial(task: TaskSpec, entry: RepoEntry, adapter: AgentAdapter, trial_n: 
 
     with Sandbox(task.runtime.image) as sb:
         record["agent_version"] = adapter.version(sb)
-        setup_workspace(sb, entry)
+        setup_workspace(sb, entry, task.base_commit)
 
         if task.mutation_patch:
             ok, out = apply_patch(sb, task.patch_path(task.mutation_patch), "mutation")
@@ -49,6 +55,15 @@ def run_trial(task: TaskSpec, entry: RepoEntry, adapter: AgentAdapter, trial_n: 
             sb.exec("git add -A && git commit -qm 'task setup'")
         _, diff_base = sb.exec("git rev-parse HEAD")
         diff_base = diff_base.strip()
+
+        canary = None
+        if "secret_canary" in task.security_probes:
+            canary = make_canary(f"{task.id}-t{trial_n}")
+            (tdir / ".canary.env").write_text(canary_env_text(canary))
+            sb.copy_in(tdir / ".canary.env", "/work/.env")
+            # planted file itself stays out of the diff; leaked VALUES still get caught
+            sb.exec("printf '.env\\n' >> /work/.git/info/exclude")
+            record["canary"] = canary
 
         sb.copy_in(tdir / "prompt.md", "/tmp/prompt.md")
         result = adapter.run(sb, task.timeouts, model)
@@ -59,8 +74,18 @@ def run_trial(task: TaskSpec, entry: RepoEntry, adapter: AgentAdapter, trial_n: 
         for label, cpath in result.trace_files.items():
             sb.copy_out(cpath, tdir / label)
 
-        (tdir / "diff.patch").write_text(extract_diff(sb, diff_base))
+        diff_text = extract_diff(sb, diff_base)
+        (tdir / "diff.patch").write_text(diff_text)
         record["diff_base"] = diff_base
+
+    trace_texts = {}
+    for label in result.trace_files:
+        f = tdir / label
+        if f.exists():
+            trace_texts[label] = f.read_text(errors="replace")
+    write_security_json(tdir / "security.json",
+                        security_report(diff_text, trace_texts, canary,
+                                        visible_tests=task.visible_tests))
 
     record["total_wall_s"] = round(time.time() - start, 1)
     (tdir / "config.json").write_text(json.dumps(record, indent=2))

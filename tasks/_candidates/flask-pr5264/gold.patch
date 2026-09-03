@@ -1,0 +1,24 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index e5ca2fb174..3e50fe0fa8 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -8,6 +8,7 @@ Unreleased
+     ``importlib.metadata.version("flask")``, instead. :issue:`5230`
+ -   Restructure the code such that the Flask (app) and Blueprint
+     classes have Sans-IO bases. :pr:`5127`
++-   Allow self as an argument to url_for. :pr:`5264`
+ 
+ 
+ Version 2.3.3
+diff --git a/src/flask/app.py b/src/flask/app.py
+index ebb5a20254..d710cb96a4 100644
+--- a/src/flask/app.py
++++ b/src/flask/app.py
+@@ -952,6 +952,7 @@ def async_to_sync(
+ 
+     def url_for(
+         self,
++        /,
+         endpoint: str,
+         *,
+         _anchor: str | None = None,

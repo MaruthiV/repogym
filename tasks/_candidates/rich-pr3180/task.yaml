@@ -1,0 +1,56 @@
+id: rich-pr3180
+repo: Textualize/rich
+base_commit: b32e42bda00c6275d4e18dcbe298268094359549
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Chunks of text go missing when writing Asian text (wrapping issue)\n\
+  \n### Description\r\n\r\n(Originally reported in Textual: https://github.com/Textualize/textual/issues/3567)\r\
+  \n\r\nWhen you print Asian text (specifically Chinese and Japanese, which do not\
+  \ use spaces), portions of the text go missing, making it unreadable.\r\n\r\nThis\
+  \ seems to be related to wrapping, as the characters which go missing are at the\
+  \ end of a line.\r\nInstead of being wrapped on to a new line, they disappear.\r\
+  \n\r\nThere are [rules for wrapping](https://en.m.wikipedia.org/wiki/Line_breaking_rules_in_East_Asian_languages)\
+  \ in these languages which would take more effort to adhere to, but at the very\
+  \ least, text should not go missing when printed.\r\n\r\n### Examples\r\n\r\nFor\
+  \ example, running the snippet below, the `7` in `1670` disappears:\r\n\r\n```python\r\
+  \nfrom rich.console import Console\r\nconsole = Console(width=20)\r\nconsole.print(\"\
+  アプリケーションは1670万色を使用でき\")\r\n```\r\n\r\nOutput:\r\n\r\n```\r\nアプリケーションは16\r\n0万色を使用でき\r\
+  \n```\r\n\r\nAnd in many cases, like those reported in this issue, multiple characters\
+  \ disappear:\r\n\r\n```python\r\nfrom rich.console import Console\r\nconsole = Console(width=20)\r\
+  \nconsole.print(\"TextualはPythonの高速アプリケーション開発フレームワークです\")\r\n```\r\n\r\nOutput:\r\
+  \n\r\n```\r\nTextualはPy\r\nthonの高速アプリ\r\nケーション開発フレー\r\n```\r\n\r\nNotice that many\
+  \ of the characters at the end of the text are completely missing (`ムワークです`).\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_cells.py::test_chop_cells_double_width_boundary
+  - tests/test_cells.py::test_chop_cells_mixed_width
+  - tests/test_text.py::test_wrap_cjk_mixed
+  - tests/test_text.py::test_wrap_long
+  - tests/test_text.py::test_wrap_long_words_followed_by_other_words
+  - tests/test_text.py::test_wrap_long_word_preceeded_by_word_of_full_line_length
+  - tests/test_text.py::test_wrap_multiple_consecutive_spaces
+  - tests/test_text.py::test_wrap_long_words_justify_left
+  - tests/test_text.py::test_wrap_leading_and_trailing_whitespace
+  - tests/test_text.py::test_no_wrap_no_crop
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3180
+  issue: 3176
+  merged_at: '2023-11-14T10:03:55Z'
+  issue_url: https://github.com/Textualize/rich/issues/3176

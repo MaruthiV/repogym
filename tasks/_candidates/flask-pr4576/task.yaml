@@ -1,0 +1,41 @@
+id: flask-pr4576
+repo: pallets/flask
+base_commit: a25d234cdddf584528dd6af21db736b6faad27af
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'Move `abort` to the `Flask` app object
+
+
+  Add an `abort` method to the `Flask` app object. Similar to functions like `flask.json.dumps`,
+  `flask.abort` should look for a `current_app` and call its `abort` method. This
+  will allow applications to override the abort behavior.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_helpers.py::test_abort_no_app
+  - tests/test_helpers.py::test_app_aborter_class
+  - tests/test_helpers.py::test_abort_with_app
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4576
+  issue: 4567
+  merged_at: '2022-05-12T20:45:38Z'
+  issue_url: https://github.com/pallets/flask/issues/4567

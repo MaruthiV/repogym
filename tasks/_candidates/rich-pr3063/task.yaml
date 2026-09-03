@@ -1,0 +1,80 @@
+id: rich-pr3063
+repo: Textualize/rich
+base_commit: 368e8ad77c95a6bef8f9d332039091d1417296bc
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Escape vs trailing backslash\n\n- [☑️ ] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [☑️ ] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Description**\r\nUsing escape to print something with a trailing slash does\
+  \ not escape the trailing slash:\r\n\r\n```\r\nfrom rich import print; from rich.markup\
+  \ import escape\r\nvalue = \"C:\\\\\"; print(value)\r\nrich.print(f\"[red]{value}[/red]\"\
+  )  # <-- [ gets escaped\r\nrich.print(f\"[red]{escape(value)}[/red]\")  # <-- [\
+  \ still gets escaped\r\n```\r\noutputs\r\n```\r\nC:\\\r\nC:[/red]\r\nC:[/red]\r\n\
+  ```\r\n\r\n**Possible solution**\r\n\r\n```\r\n# Previous character is NOT a slash:\
+  \ (?<![\\\\])\r\n# some number of escaped slashes: (?:[\\\\][\\\\])*\r\n# followed\
+  \ by a lone slash at end-of-string: [\\\\]$\r\nIn [40]: _odd_trailing_escape_re\
+  \ = r'(?<![\\\\])(?:[\\\\][\\\\])*[\\\\]$'\r\n    ...: def escape(text: str, trailing_slash_check\
+  \ = re.compile(_odd_trailing_escape_re, flags=re.S).search) -> str:\r\n    ...:\r\
+  \n    ...:   if text.endswith('\\\\') and trailing_slash_check(text):\r\n    ...:\
+  \     text += '\\\\'\r\n    ...:   return text\r\n    ...:\r\n\r\nIn [41]: escape(\"\
+  C:\\\\\")\r\nOut[41]: 'C:\\\\\\\\'\r\n\r\nIn [42]: escape(\"C:\\\\\\\\\")\r\nOut[42]:\
+  \ 'C:\\\\\\\\'\r\n\r\nIn [43]: escape(\"C:\\\\\\\\\\\\\")\r\nOut[43]: 'C:\\\\\\\\\
+  \\\\\\\\'```\r\n\r\n**Platform**\r\nUsing Rich in a terminal:\r\n\r\n```\r\nWin|PS>\
+  \ python -m rich.diagnose ; pip freeze | sls rich\r\n╭─────────────────────────\
+  \ <class 'rich.console.Console'> ─────────────────────────╮\r\n│ A high level console\
+  \ interface.                                                  │\r\n│           \
+  \                                                                       │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=118 ColorSystem.TRUECOLOR>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = 'truecolor'                              \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 30                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=118, height=30),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=118, \
+  \                                           │\r\n│                        is_terminal=True,\
+  \                                         │\r\n│                        encoding='utf-8',\
+  \                                         │\r\n│                        max_height=30,\
+  \                                            │\r\n│                        justify=None,\
+  \                                             │\r\n│                        overflow=None,\
+  \                                            │\r\n│                        no_wrap=False,\
+  \                                            │\r\n│                        highlight=None,\
+  \                         \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_markup.py::test_escape_backslash_end
+  - tests/test_markup.py::test_render_escape
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3063
+  issue: 2987
+  merged_at: '2023-07-29T08:50:15Z'
+  issue_url: https://github.com/Textualize/rich/issues/2987

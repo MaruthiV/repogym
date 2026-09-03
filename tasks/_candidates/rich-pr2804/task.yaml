@@ -1,0 +1,80 @@
+id: rich-pr2804
+repo: Textualize/rich
+base_commit: 155bd04b12580aee94b2bc04c46a3856065273a3
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Double rendering of notebook output with `rich>=12.6.0`\n\n- [x] I've\
+  \ checked [docs](https://rich.readthedocs.io/en/latest/introduction.html) and [closed\
+  \ issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed) for\
+  \ possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\nIt appears the double rendering issue referenced in\
+  \ #1737 has returned starting in version 12.6.0.\r\n\r\nWith a poetry environment\
+  \ given by:\r\n\r\n```toml\r\n[tool.poetry]\r\nname = \"rich-bug-repro\"\r\nversion\
+  \ = \"0.0.1\"\r\ndescription = \"...\"\r\nauthors = [\"John Doe\"]\r\n\r\n[tool.poetry.dependencies]\r\
+  \npython = \"^3.9\"\r\njupyter = \"^1.0.0\"\r\nrich = {version = \"x.x.x\", extras=[\"\
+  jupyter\"]}  # fill out with desired version\r\n```\r\n\r\na simple reproducing\
+  \ example is (from a jupyter notebook)\r\n\r\n```python\r\nfrom rich.progress import\
+  \ track\r\nimport time\r\n\r\nfor i in track(range(100)):\r\n    time.sleep(0.01)\r\
+  \n```\r\n\r\nwhen `version` is set to any of `12.6.0,13.0.0,13.0.1` in the `pyproject.toml`\
+  \ above, the output of this example looks like\r\n\r\n\r\n\r\nWhen using `<12.6.0`,\
+  \ you get the expected\r\n\r\n\r\nNote that this is strictly a jupyter problem:\
+  \ for any of these versions, running e.g.\r\n```console\r\npython -c 'from rich.progress\
+  \ import track;import time;[time.sleep(0.01) for _ in track(range(100))]'\r\n```\r\
+  \nresults in just a single progress bar being printed, as expected.\r\n\r\n**Platform**\r\
+  \n<details>\r\n<summary>Click to expand</summary>\r\n\r\nWhat platform (Win/Linux/Mac)\
+  \ are you running on? What terminal software are you using?\r\nLinux, both natively\
+  \ and in WSL2 on Windows.\r\n\r\nI may ask you to copy and paste the output of the\
+  \ following commands. It may save some time if you do it now.\r\n\r\nIf you're using\
+  \ Rich in a terminal:\r\n\r\n```\r\npython -m rich.diagnose\r\npip freeze | grep\
+  \ rich\r\n```\r\n\r\nIf you're using Rich in a Jupyter Notebook, run the following\
+  \ snippet in a cell\r\nand paste the output in your bug report.\r\n\r\n```python\r\
+  \nfrom rich.diagnose import report\r\nreport()\r\n```\r\n```console\r\n╭──────────────────────\
+  \ <class 'rich.console.Console'> ──────────────────────╮\r\n│ A high level console\
+  \ interface.                                            │\r\n│                 \
+  \                                                           │\r\n│ ╭────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=115 ColorSystem.TRUECOLOR>                           \
+  \   │ │\r\n│ ╰────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \     │\r\n│     color_system = 'truecolor'                                    \
+  \         │\r\n│         encoding = 'utf-8'                                    \
+  \             │\r\n│             file = <ipykernel.iostream.OutStream object at\
+  \ 0x7f3f783203d0> │\r\n│           height = 100                                \
+  \                     │\r\n│    is_alt_screen = False                          \
+  \                         │\r\n│ is_dumb_terminal = False                      \
+  \                             │\r\n│   is_interactive = True                   \
+  \                                 │\r\n│       is_jupyter = True               \
+  \                                     │\r\n│      is_terminal = True           \
+  \                                         │\r\n│   legacy_windows = False      \
+  \                                             │\r\n│         no_color = False  \
+  \                                                 │\r\n│          options = ConsoleOptions(\
+  \                                         │\r\n│                        size=ConsoleDimensions(width=115,\
+  \ height=100),      │\r\n│                        legacy_windows=False,        \
+  \                       │\r\n│                        min_width=1,             \
+  \                           │\r\n│                        max_width=115,       \
+  \                               │\r\n│                        is_terminal=True,\
+  \                                   │\r\n│                        encoding='utf-8',\
+  \                                   │\r\n│                        max_h\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_force_color_jupyter
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2804
+  issue: 2740
+  merged_at: '2023-03-04T10:25:36Z'
+  issue_url: https://github.com/Textualize/rich/issues/2740

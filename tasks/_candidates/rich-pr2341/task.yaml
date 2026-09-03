@@ -1,0 +1,33 @@
+id: rich-pr2341
+repo: Textualize/rich
+base_commit: 3d8897ace406f2326d4b9621d9f1c1fa161db061
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Add stylised range support to Syntax\n\nIn order to support https://github.com/Textualize/rich/issues/2286\
+  \ we will need to be able to add arbitrary ranges to Syntax.\r\n\r\nA new API method\
+  \ to apply a style from (LINE A, COLUMN A) to (LINE B, COLUMN B).\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_syntax.py::test_syntax_highlight_ranges
+  - tests/test_syntax.py::test_ansi_theme
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2341
+  issue: 2329
+  merged_at: '2022-06-28T13:35:18Z'
+  issue_url: https://github.com/Textualize/rich/issues/2329

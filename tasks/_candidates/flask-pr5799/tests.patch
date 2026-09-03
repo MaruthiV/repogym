@@ -1,0 +1,34 @@
+diff --git a/tests/test_helpers.py b/tests/test_helpers.py
+index ee77f1760c..efd22aa909 100644
+--- a/tests/test_helpers.py
++++ b/tests/test_helpers.py
+@@ -306,6 +306,29 @@ def gen():
+         rv = client.get("/")
+         assert rv.data == b"flask"
+ 
++    def test_async_view(self, app, client):
++        @app.route("/")
++        async def index():
++            flask.session["test"] = "flask"
++
++            @flask.stream_with_context
++            def gen():
++                yield flask.session["test"]
++
++            return flask.Response(gen())
++
++        # response is closed without reading stream
++        client.get().close()
++        # response stream is read
++        assert client.get().text == "flask"
++
++        # same as above, but with client context preservation
++        with client:
++            client.get().close()
++
++        with client:
++            assert client.get().text == "flask"
++
+ 
+ class TestHelpers:
+     @pytest.mark.parametrize(

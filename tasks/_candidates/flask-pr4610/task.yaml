@@ -1,0 +1,57 @@
+id: flask-pr4610
+repo: pallets/flask
+base_commit: fb89745408cc02515815c792355c7e883b2d08a4
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Flask.auto_find_instance_path() can return wrong path for namespace packages\
+  \ installed in development mode\n\nhttps://github.com/pallets/flask/blob/bd56d19b167822a9a23e2e9e2a07ccccc36baa8d/src/flask/scaffold.py#L798\r\
+  \n\r\nIf there are several packages under the same namespace, all installed in development\
+  \ mode, like:\r\n\r\n```\r\n~/namespace-package1/\r\n    namespace/\r\n        package1/\r\
+  \n            __init__.py\r\n            app.py\r\n    instance/\r\n\r\n~/namespace-package2/\r\
+  \n    namespace/\r\n        package2/\r\n            __init__.py\r\n           \
+  \ app.py\r\n    instance/\r\n```\r\nand the code in `namespace.package2` uses `app.instance_path`,\
+  \ then its expected value is `~/namespace-package2/instance` ([\"Uninstalled package\"\
+  \ decision path](https://flask.palletsprojects.com/en/2.1.x/config/#instance-folders)).\r\
+  \n\r\nInstead of that the following happens:\r\n* `find_package()` [cuts import\
+  \ info](https://github.com/pallets/flask/blob/bd56d19b167822a9a23e2e9e2a07ccccc36baa8d/src/flask/scaffold.py#L846)\
+  \ to the very top package name, `namespace`,\r\n* then `_find_package_path()` finds\
+  \ module specification for the whole namespace package, which contains several submodule\
+  \ search locations, like `ModuleSpec(name='namespace', loader=<_frozen_importlib_external._NamespaceLoader\
+  \ object at ...>, submodule_search_locations=_NamespacePath(['~/namespace-package1/namespace',\
+  \ '~/namespace-package2/namespace']))`\r\n* and then the quoted line returns first,\
+  \ i.e. _arbitrary_, package from that namespace, e.g. `~/namespace-package1`, which\
+  \ produces wrong instance path.\r\n\r\nSuggestion: pass also `import_name` into\
+  \ `_find_package_path` and use it for resolving ambiguity at this point, like:\r\
+  \n\r\n```\r\ndef _find_package_path(root_mod_name, import_name):\r\n...\r\n    \
+  \        if spec.origin in {\"namespace\", None}:\r\n                package_spec\
+  \ = importlib.util.find_spec(import_name)\r\n                package_path = os.path.commonpath(package_spec.submodule_search_locations)\r\
+  \n                return os.path.dirname(next(\r\n                    location for\
+  \ location in spec.submodule_search_locations\r\n                    if package_path.startswith(location)\r\
+  \n                ))\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_instance_config.py::test_uninstalled_namespace_paths
+  - tests/test_instance_config.py::test_installed_module_paths
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4610
+  issue: 4602
+  merged_at: '2022-06-06T16:26:53Z'
+  issue_url: https://github.com/pallets/flask/issues/4602

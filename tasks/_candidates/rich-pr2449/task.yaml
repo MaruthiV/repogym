@@ -1,0 +1,58 @@
+id: rich-pr2449
+repo: Textualize/rich
+base_commit: 5d3f600f43796393a2c3e4cb20d807c5cf147f44
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[REQUEST] Enable colours when FORCE_COLOR env var is set\n\nHave you checked\
+  \ the issues for a similar suggestions?\r\n\r\nYes, initially rejected at https://github.com/Textualize/rich/issues/343\
+  \ but further discussed more favourably at https://github.com/pypa/pip/issues/10909#issuecomment-1125169879.\r\
+  \n\r\n**How would you improve Rich?**\r\n\r\nIf the `FORCE_COLOR` environment variable\
+  \ is set -- to any value -- then enable the use of colour.\r\n\r\n(I'm not specifically\
+  \ requesting it here, but could be worth considering: If the `NO_COLOR` environment\
+  \ variable is set -- to any value -- then disable the use of colour. `NO_COLOR`\
+  \ should override `FORCE_COLOR`. Re: https://no-color.org/)\r\n\r\n**What problem\
+  \ does it solve for you?**\r\n\r\nWhat problem do you have that this feature would\
+  \ solve? I may be able to suggest an existing way of solving it.\r\n\r\npip 22 now\
+  \ uses Rich for installation progress bars and some error handling, which gives\
+  \ us pretty colours! And more of pip's interface is being switched over to use Rich\
+  \ for improved usability.\r\n\r\n\r\n\r\nColour can help diagnose problems, and\
+  \ a common place for pip and the need to diagnose problems is on a CI, where you\
+  \ get a big wall of text.\r\n\r\nHowever, because [GitHub Actions isn't a tty](https://github.com/actions/runner/issues/241),\
+  \ output of tools which autodetect the terminal output is usually monochrome. That's\
+  \ why many tools and CI setups use the `FORCE_COLOR` environment variable, and/or\
+  \ command-line options to turn it back on.\r\n\r\nFor example, pip's CI ([#10830](https://github.com/pypa/pip/pull/10830)):\r\
+  \n\r\nhttps://github.com/pypa/pip/blob/4a508c268ee4be5bc279f1522954b78fa9e25050/.github/workflows/ci.yml#L14-L17\
+  \ \r\n\r\nHowever, Rich doesn't support `FORCE_COLOR`, meaning we get monochrome\
+  \ output:\r\n\r\n\r\n\r\nCompare with nox:\r\n\r\n\r\n\r\nhttps://github.com/pypa/pip/runs/5177210581?check_suite_focus=true\r\
+  \n\r\nAnd pytest:\r\n\r\n\r\n\r\nhttps://github.com/pytest-dev/pytest/runs/5185781927?check_suite_focus=true\r\
+  \n\r\nFor reference:\r\n\r\n* pytest [issue](https://github.com/pytest-dev/pytest/issues/7464),\
+  \ [PR](https://github.com/pytest-dev/pytest/pull/7466) and [docs](https://pytest.org/en/7.0.x/reference/reference.html#environment-variables)\r\
+  \n* nox [issue](https://github.com/theacodes/nox/issues/502) and [PR](https://github.com/theacodes/nox/pull/524)\r\
+  \n* tox [PR](https://github.com/tox-dev/tox/pull/1630)\r\n* pypa/build [PR](https://github.com/pypa/build/pull/335)\r\
+  \n\r\nThis would benefit not just users of pip, but users of other software which\
+  \ uses Rich as a colour/style library, and mean they do not need to implement it\
+  \ themselves, and Rich would be on par with other colour libraries.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_force_color
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2449
+  issue: 2425
+  merged_at: '2022-08-17T13:52:39Z'
+  issue_url: https://github.com/Textualize/rich/issues/2425

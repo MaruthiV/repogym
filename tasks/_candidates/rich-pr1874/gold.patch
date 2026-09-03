@@ -1,0 +1,63 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index eb80f1dad9..613fca7a7f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Workaround for edge case of object from Faiss with no `__class__` https://github.com/Textualize/rich/issues/1838
+ - Add `Syntax.guess_lexer`, add support for more lexers (e.g. Django templates etc.) https://github.com/Textualize/rich/pull/1869
+ - Ensure `Syntax` always justifies left https://github.com/Textualize/rich/pull/1872
+-
++- Handle classes in inspect when methods=True https://github.com/Textualize/rich/pull/1874
+ 
+ ### Added
+ 
+diff --git a/rich/_inspect.py b/rich/_inspect.py
+index 07b1b623b8..b3652bfbdb 100644
+--- a/rich/_inspect.py
++++ b/rich/_inspect.py
+@@ -1,5 +1,6 @@
+ from __future__ import absolute_import
+ 
++import inspect
+ from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
+ from typing import Any, Iterable, Optional, Tuple
+ 
+@@ -106,8 +107,17 @@ def _get_signature(self, name: str, obj: Any) -> Optional[Text]:
+         signature_text = self.highlighter(_signature)
+ 
+         qualname = name or getattr(obj, "__qualname__", name)
++
++        # If obj is a module, there may be classes (which are callable) to display
++        if inspect.isclass(obj):
++            prefix = "class"
++        else:
++            prefix = "def"
++
+         qual_signature = Text.assemble(
+-            ("def ", "inspect.def"), (qualname, "inspect.callable"), signature_text
++            (f"{prefix} ", f"inspect.{prefix}"),
++            (qualname, "inspect.callable"),
++            signature_text,
+         )
+ 
+         return qual_signature
+diff --git a/rich/default_styles.py b/rich/default_styles.py
+index 63290bcaba..d803eec91d 100644
+--- a/rich/default_styles.py
++++ b/rich/default_styles.py
+@@ -2,7 +2,6 @@
+ 
+ from .style import Style
+ 
+-
+ DEFAULT_STYLES: Dict[str, Style] = {
+     "none": Style.null(),
+     "reset": Style(
+@@ -41,6 +40,7 @@
+     "inspect.attr.dunder": Style(color="yellow", italic=True, dim=True),
+     "inspect.callable": Style(bold=True, color="red"),
+     "inspect.def": Style(italic=True, color="bright_cyan"),
++    "inspect.class": Style(italic=True, color="bright_cyan"),
+     "inspect.error": Style(bold=True, color="red"),
+     "inspect.equals": Style(),
+     "inspect.help": Style(color="cyan"),

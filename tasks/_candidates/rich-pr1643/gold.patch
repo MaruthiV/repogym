@@ -1,0 +1,13 @@
+diff --git a/rich/console.py b/rich/console.py
+index 7c4be7fcf8..b188dc98e0 100644
+--- a/rich/console.py
++++ b/rich/console.py
+@@ -770,7 +770,7 @@ def _detect_color_system(self) -> Optional[ColorSystem]:
+             if color_term in ("truecolor", "24bit"):
+                 return ColorSystem.TRUECOLOR
+             term = self._environ.get("TERM", "").strip().lower()
+-            _term_name, _hyphen, colors = term.partition("-")
++            _term_name, _hyphen, colors = term.rpartition("-")
+             color_system = _TERM_COLORS.get(colors, ColorSystem.STANDARD)
+             return color_system
+ 

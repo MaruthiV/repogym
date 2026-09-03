@@ -1,0 +1,34 @@
+id: click-pr2696
+repo: pallets/click
+base_commit: 0e0c00324a5af35f8995c7ff88df67b0f5594a58
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "show envvar in error hint\n\n```py\r\n@click.command()\r\n@click.option('--a',\
+  \ required=True, envvar=\"b\", show_envvar=True)\r\ndef f(a): ...\r\nf()\r\n```\r\
+  \nHere I would want the error message to show the env var.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_options.py::test_missing_envvar
+  - tests/test_options.py::test_case_insensitive_choice
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2696
+  issue: 2695
+  merged_at: '2024-11-03T12:21:04Z'
+  issue_url: https://github.com/pallets/click/issues/2695

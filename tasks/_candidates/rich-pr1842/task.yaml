@@ -1,0 +1,64 @@
+id: rich-pr1842
+repo: Textualize/rich
+base_commit: 991f13d247fbb81c5984505f18b57616c4117e9e
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] rich.inspect on a module: AttributeError: Unknown C global variable\
+  \ '__class__'\n\n**Describe the bug**\r\n\r\nTrying to use `rich.inspect` on the\
+  \ module [Faiss](https://github.com/facebookresearch/faiss), (built by [these guys](https://github.com/kyamagu/faiss-wheels))\
+  \ raises an `AttributeError` exception.\r\n\r\nrepro:\r\n\r\n```shell\r\npip install\
+  \ --user faiss-cpu rich\r\npython -c 'import rich, faiss; rich.inspect(faiss)'\r\
+  \n```\r\noutput:\r\n\r\n<details>\r\n<summary>Click to expand</summary>\r\n\r\n\
+  ```python\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 1,\
+  \ in <module>\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/__init__.py\"\
+  , line 168, in inspect\r\n    _console.print(_inspect)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/console.py\"\
+  , line 1621, in print\r\n    extend(render(renderable, render_options))\r\n  File\
+  \ \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/console.py\"\
+  , line 1259, in render\r\n    for render_output in iter_render:\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/panel.py\"\
+  , line 160, in __rich_console__\r\n    else console.measure(\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/console.py\"\
+  , line 1212, in measure\r\n    measurement = Measurement.get(self, options or self.options,\
+  \ renderable)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 107, in get\r\n    get_console_width(console, options)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/padding.py\"\
+  , line 132, in __rich_measure__\r\n    measure_min, measure_max = Measurement.get(console,\
+  \ options, self.renderable)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 107, in get\r\n    get_console_width(console, options)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/console.py\"\
+  , line 468, in __rich_measure__\r\n    return measure_renderables(console, options,\
+  \ self.renderables)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 142, in measure_renderables\r\n    measurements = [\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 143, in <listcomp>\r\n    get_measurement(console, options, renderable) for\
+  \ renderable in renderables\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 107, in get\r\n    get_console_width(console, options)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/table.py\"\
+  , line 296, in __rich_measure__\r\n    self._calculate_column_widths(\r\n  File\
+  \ \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/table.py\"\
+  , line 482, in _calculate_column_widths\r\n    width_ranges = [\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/table.py\"\
+  , line 483, in <listcomp>\r\n    self._measure_column(console, options, column)\
+  \ for column in columns\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/table.py\"\
+  , line 678, in _measure_column\r\n    _min, _max = get_render_width(console, options,\
+  \ cell.renderable)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/measure.py\"\
+  , line 107, in get\r\n    get_console_width(console, options)\r\n  File \"/home/pbsds/.cache/pypoetry/virtualenvs/foobar-u94_3CgC-py3.9/lib/python3.9/site-packages/rich/padding.py\"\
+  , line 132, in __rich_measure__\r\n    measure_min, measure_max = Measurement.get(console,\
+  \ options, self.renderable)\r\n  File \"/home/pbsds/.cache/pypoetry/virtual\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_inspect.py::test_inspect_swig_edge_case
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 1842
+  issue: 1838
+  merged_at: '2022-01-19T16:06:58Z'
+  issue_url: https://github.com/Textualize/rich/issues/1838

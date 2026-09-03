@@ -1,0 +1,95 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index c4a823078e..0b093843a3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++## [14.3.2] - 2026-02-01
++
++### Fixed
++
++- Fixed solo ZWJ crash https://github.com/Textualize/rich/pull/3953
++- Fixed control codes reporting width of 1 https://github.com/Textualize/rich/pull/3953
++
+ ## [14.3.1] - 2026-01-24
+ 
+ ### Fixed
+diff --git a/pyproject.toml b/pyproject.toml
+index 267fdc91c8..23e86e4006 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -2,7 +2,7 @@
+ name = "rich"
+ homepage = "https://github.com/Textualize/rich"
+ documentation = "https://rich.readthedocs.io/en/latest/"
+-version = "14.3.1"
++version = "14.3.2"
+ description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
+ authors = ["Will McGugan <willmcgugan@gmail.com>"]
+ license = "MIT"
+diff --git a/rich/cells.py b/rich/cells.py
+index 15fe7b65cd..31165957b9 100644
+--- a/rich/cells.py
++++ b/rich/cells.py
+@@ -55,23 +55,26 @@ def get_character_cell_size(character: str, unicode_version: str = "auto") -> in
+         int: Number of cells (0, 1 or 2) occupied by that character.
+     """
+     codepoint = ord(character)
++    if codepoint and codepoint < 32 or 0x07F <= codepoint < 0x0A0:
++        return 0
+     table = load_cell_table(unicode_version).widths
+-    if codepoint > table[-1][1]:
++
++    last_entry = table[-1]
++    if codepoint > last_entry[1]:
+         return 1
++
+     lower_bound = 0
+     upper_bound = len(table) - 1
+-    index = (lower_bound + upper_bound) // 2
+-    while True:
++
++    while lower_bound <= upper_bound:
++        index = (lower_bound + upper_bound) >> 1
+         start, end, width = table[index]
+         if codepoint < start:
+             upper_bound = index - 1
+         elif codepoint > end:
+             lower_bound = index + 1
+         else:
+-            return 0 if width == -1 else width
+-        if upper_bound < lower_bound:
+-            break
+-        index = (lower_bound + upper_bound) // 2
++            return width
+     return 1
+ 
+ 
+@@ -135,12 +138,14 @@ def _cell_len(text: str, unicode_version: str) -> int:
+ 
+     SPECIAL = {"\u200d", "\ufe0f"}
+ 
+-    iter_characters = iter(text)
++    index = 0
++    character_count = len(text)
+ 
+-    for character in iter_characters:
++    while index < character_count:
++        character = text[index]
+         if character in SPECIAL:
+             if character == "\u200d":
+-                next(iter_characters)
++                index += 1
+             elif last_measured_character:
+                 total_width += last_measured_character in cell_table.narrow_to_wide
+                 last_measured_character = None
+@@ -148,6 +153,7 @@ def _cell_len(text: str, unicode_version: str) -> int:
+             if character_width := get_character_cell_size(character, unicode_version):
+                 last_measured_character = character
+                 total_width += character_width
++        index += 1
+ 
+     return total_width
+ 

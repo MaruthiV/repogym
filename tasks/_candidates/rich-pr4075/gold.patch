@@ -1,0 +1,103 @@
+diff --git a/.github/workflows/pythonpackage.yml b/.github/workflows/pythonpackage.yml
+index ab8745fd6d..87eee0895d 100644
+--- a/.github/workflows/pythonpackage.yml
++++ b/.github/workflows/pythonpackage.yml
+@@ -9,7 +9,7 @@ jobs:
+       fail-fast: false
+       matrix:
+         os: [windows-latest, ubuntu-latest, macos-latest]
+-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
++        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+         exclude:
+           - { os: windows-latest, python-version: "3.13" }
+     defaults:
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 20ec85bd5b..ab758b1cec 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++
++# Unreleased
++
++### Changed
++
++- Dropped support for Python3.9
++
++### Fixed
++
++- Fixed empty print ignoring the `end` parameter
++
+ ## [14.3.4] - 2026-04-11
+ 
+ ### Changed
+diff --git a/pyproject.toml b/pyproject.toml
+index 85f0f353b5..7e0d3dd9da 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -15,7 +15,6 @@ classifiers = [
+     "Operating System :: Microsoft :: Windows",
+     "Operating System :: MacOS",
+     "Operating System :: POSIX :: Linux",
+-    "Programming Language :: Python :: 3.8",
+     "Programming Language :: Python :: 3.9",
+     "Programming Language :: Python :: 3.10",
+     "Programming Language :: Python :: 3.11",
+@@ -28,7 +27,7 @@ include = ["rich/py.typed"]
+ 
+ 
+ [tool.poetry.dependencies]
+-python = ">=3.8.0"
++python = ">=3.9.0"
+ pygments = "^2.13.0"
+ ipywidgets = { version = ">=7.5.1,<9", optional = true }
+ markdown-it-py = ">=2.2.0"
+diff --git a/rich/console.py b/rich/console.py
+index 58eaee22c0..0bdce76987 100644
+--- a/rich/console.py
++++ b/rich/console.py
+@@ -7,6 +7,7 @@
+ from functools import wraps
+ from itertools import islice
+ from math import ceil
++from os import PathLike
+ from time import monotonic
+ from types import FrameType, ModuleType, TracebackType
+ from typing import (
+@@ -29,7 +30,6 @@
+     cast,
+     runtime_checkable,
+ )
+-from os import PathLike
+ 
+ from rich._null_file import NULL_FILE
+ 
+@@ -1687,7 +1687,10 @@ def print(
+             new_line_start (bool, False): Insert a new line at the start if the output contains more than one line. Defaults to ``False``.
+         """
+         if not objects:
+-            objects = (NewLine(),)
++            if end == "\n":
++                objects = (NewLine(),)
++            else:
++                objects = ("",)
+ 
+         if soft_wrap is None:
+             soft_wrap = self.soft_wrap
+@@ -2218,7 +2221,13 @@ def export_text(self, *, clear: bool = True, styles: bool = False) -> str:
+                 del self._record_buffer[:]
+         return text
+ 
+-    def save_text(self, path: Union[str, PathLike[str]], *, clear: bool = True, styles: bool = False) -> None:
++    def save_text(
++        self,
++        path: Union[str, PathLike[str]],
++        *,
++        clear: bool = True,
++        styles: bool = False,
++    ) -> None:
+         """Generate text from console and save to a given location (requires record=True argument in constructor).
+ 
+         Args:

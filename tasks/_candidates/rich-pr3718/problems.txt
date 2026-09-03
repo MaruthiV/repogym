@@ -1,0 +1,2 @@
+run1: f2p test not failing pre-fix: tests/test_panel.py::test_title_text_with_border_color -> pass
+run2: f2p test not failing pre-fix: tests/test_panel.py::test_title_text_with_border_color -> pass

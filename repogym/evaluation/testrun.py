@@ -1,12 +1,24 @@
 import shlex
 
+from repogym.images import RepoEntry
 from repogym.sandbox import Sandbox
 
 PASS, FAIL, ERROR = "pass", "fail", "error"
 
 
-def run_test(sb: Sandbox, test_base: str, test_id: str, timeout: int) -> str:
-    rc, _ = sb.exec(f"{test_base} {shlex.quote(test_id)}", timeout=timeout)
+def test_cmd(entry: RepoEntry, test_id: str) -> str:
+    if entry.test_style == "vitest":
+        # id is "path" or "path::full test name"
+        path, _, name = test_id.partition("::")
+        cmd = f"{entry.test_base} {shlex.quote(path)}"
+        if name:
+            cmd += f" -t {shlex.quote(name)}"
+        return cmd
+    return f"{entry.test_base} {shlex.quote(test_id)}"
+
+
+def run_test(sb: Sandbox, entry: RepoEntry, test_id: str, timeout: int) -> str:
+    rc, _ = sb.exec(test_cmd(entry, test_id), timeout=timeout)
     if rc == 0:
         return PASS
     if rc == 1:
@@ -14,8 +26,8 @@ def run_test(sb: Sandbox, test_base: str, test_id: str, timeout: int) -> str:
     return ERROR
 
 
-def run_tests(sb: Sandbox, test_base: str, test_ids: list[str], timeout: int) -> dict[str, str]:
-    return {tid: run_test(sb, test_base, tid, timeout) for tid in test_ids}
+def run_tests(sb: Sandbox, entry: RepoEntry, test_ids: list[str], timeout: int) -> dict[str, str]:
+    return {tid: run_test(sb, entry, tid, timeout) for tid in test_ids}
 
 
 def all_pass(results: dict[str, str]) -> bool:

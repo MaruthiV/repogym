@@ -1,0 +1,82 @@
+id: rich-pr3938
+repo: Textualize/rich
+base_commit: 05ff970926cbd0b5d0acb6fc18cdbd1fc971e582
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Background color carries over onto the following line when soft wrapping\
+  \ is enabled.\n\n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n\n\n**Describe the bug**\n\nWhen printing text with a background color and soft\
+  \ wrapping enabled, the background color incorrectly carries over onto the following\
+  \ line. This means an ANSI reset isn't being placed before the newline.\n\nThis\
+  \ issue does not occur when `soft_wrap` is set to `False`.\n\nHere is code to reproduce\
+  \ it.\n\n**Note:** To visually reproduce this issue, you must run the code with\
+  \ your prompt at the bottom of the terminal window, forcing the terminal to scroll.\n\
+  \n```Python\nfrom rich.console import Console\n\nconsole = Console()\n\n# Print\
+  \ with soft_wrap enabled. The background color carries over to the next line.\n\
+  console.print(\"soft wrap is on\", style=\"blue on white\", soft_wrap=True)\nconsole.print(\"\
+  still has background color from previous line\")\n\nconsole.print()\n\n# Print with\
+  \ soft_wrap disabled. The background color does not carry over.\nconsole.print(\"\
+  soft wrap is off\", style=\"blue on white\", soft_wrap=False)\nconsole.print(\"\
+  correctly has no color from previous line\")\n```\n\nHere is a screenshot of the\
+  \ behavior.\n\n<img width=\"575\" height=\"99\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/e7b55a01-9199-49a8-b7cf-168d46eb73ed\"\
+  \ />\n\n**Platform**\n<details>\n<summary>Click to expand</summary>\n\nWhat platform\
+  \ (Win/Linux/Mac) are you running on? What terminal software are you using?\nLinux\n\
+  \nI may ask you to copy and paste the output of the following commands. It may save\
+  \ some time if you do it now.\n\nIf you're using Rich in a terminal:\n\n```\npython\
+  \ -m rich.diagnose\npip freeze | grep rich\n```\n\n```Console\n(.venv) user@host:~/source/rich$$\
+  \ python -m rich.diagnose\n╭───────────────────────── <class 'rich.console.Console'>\
+  \ ─────────────────────────╮\n│ A high level console interface.                \
+  \                                  │\n│                                        \
+  \                                          │\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\n│ │ <console width=237 ColorSystem.EIGHT_BIT>                             \
+  \       │ │\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\n│                                                                         \
+  \         │\n│     color_system = '256'                                        \
+  \                 │\n│         encoding = 'utf-8'                              \
+  \                         │\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\n│           height = 54                        \
+  \                                    │\n│    is_alt_screen = False             \
+  \                                            │\n│ is_dumb_terminal = False     \
+  \                                                    │\n│   is_interactive = True\
+  \                                                          │\n│       is_jupyter\
+  \ = False                                                         │\n│      is_terminal\
+  \ = True                                                          │\n│   legacy_windows\
+  \ = False                                                         │\n│         no_color\
+  \ = False                                                         │\n│         \
+  \ options = ConsoleOptions(                                               │\n│ \
+  \                       size=ConsoleDimensions(width=237, height=54),          \
+  \   │\n│                        legacy_windows=False,                          \
+  \           │\n│                        min_width=1,                           \
+  \                   │\n│                        max_width=237,                 \
+  \                           │\n│                        is_terminal=True,      \
+  \                                   │\n│                        encoding='utf-8',\
+  \                                   \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_segment.py::test_split_lines_terminator
+  - tests/test_segment.py::test_split_lines_terminator_single_line
+  - tests/test_segment.py::test_split_and_crop_lines
+  - tests/test_text.py::test_soft_wrap_styled
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3938
+  issue: 3838
+  merged_at: '2026-01-23T15:33:08Z'
+  issue_url: https://github.com/Textualize/rich/issues/3838

@@ -1,0 +1,7 @@
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: gold patch failed to apply: error: patch failed: CHANGELOG.md:10
+error: CHANGELOG.md: patch does not apply
+
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: gold patch failed to apply: error: patch failed: CHANGELOG.md:10
+error: CHANGELOG.md: patch does not apply

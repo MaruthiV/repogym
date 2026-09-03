@@ -1,0 +1,31 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 2870fdf605..1c41e34b37 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -3,6 +3,9 @@ Version 3.1.2
+ 
+ Unreleased
+ 
++-   When using ``follow_redirects`` in the test client, the final state
++    of ``session`` is correct. :issue:`5786`
++
+ 
+ Version 3.1.1
+ -------------
+diff --git a/src/flask/testing.py b/src/flask/testing.py
+index ded2391b02..55eb12fe75 100644
+--- a/src/flask/testing.py
++++ b/src/flask/testing.py
+@@ -240,10 +240,10 @@ def open(
+         response.json_module = self.application.json  # type: ignore[assignment]
+ 
+         # Re-push contexts that were preserved during the request.
+-        while self._new_contexts:
+-            cm = self._new_contexts.pop()
++        for cm in self._new_contexts:
+             self._context_stack.enter_context(cm)
+ 
++        self._new_contexts.clear()
+         return response
+ 
+     def __enter__(self) -> FlaskClient:

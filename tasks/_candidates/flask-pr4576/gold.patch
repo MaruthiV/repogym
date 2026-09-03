@@ -1,0 +1,148 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 711003555f..153e964b5e 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -5,6 +5,10 @@ Version 2.2.0
+ 
+ Unreleased
+ 
++-   Add ``aborter_class`` and ``aborter`` attributes to the Flask app
++    object. ``flask.abort`` will call ``app.aborter``. This makes it
++    possible for an app to override how aborts work, including custom
++    status codes. :issue:`4567`
+ -   Add an ``app.redirect`` method, which ``flask.redirect`` will call.
+     This makes it possible for an app to override how redirects work.
+     :issue:`4569`
+diff --git a/src/flask/__init__.py b/src/flask/__init__.py
+index f71a7d42b2..bc93e0a34b 100644
+--- a/src/flask/__init__.py
++++ b/src/flask/__init__.py
+@@ -1,6 +1,5 @@
+ from markupsafe import escape
+ from markupsafe import Markup
+-from werkzeug.exceptions import abort as abort
+ 
+ from . import json as json
+ from .app import Flask as Flask
+@@ -18,6 +17,7 @@
+ from .globals import g as g
+ from .globals import request as request
+ from .globals import session as session
++from .helpers import abort as abort
+ from .helpers import flash as flash
+ from .helpers import get_flashed_messages as get_flashed_messages
+ from .helpers import get_template_attribute as get_template_attribute
+diff --git a/src/flask/app.py b/src/flask/app.py
+index 8ce14301ac..219cde242a 100644
+--- a/src/flask/app.py
++++ b/src/flask/app.py
+@@ -12,6 +12,7 @@
+ 
+ from werkzeug.datastructures import Headers
+ from werkzeug.datastructures import ImmutableDict
++from werkzeug.exceptions import Aborter
+ from werkzeug.exceptions import BadRequest
+ from werkzeug.exceptions import BadRequestKeyError
+ from werkzeug.exceptions import HTTPException
+@@ -201,6 +202,16 @@ class Flask(Scaffold):
+     #: :class:`~flask.Response` for more information.
+     response_class = Response
+ 
++    #: The class of the object assigned to :attr:`aborter`, created by
++    #: :meth:`create_aborter`. That object is called by
++    #: :func:`flask.abort` to raise HTTP errors, and can be
++    #: called directly as well.
++    #:
++    #: Defaults to :class:`werkzeug.exceptions.Aborter`.
++    #:
++    #: .. versionadded:: 2.2
++    aborter_class = Aborter
++
+     #: The class that is used for the Jinja environment.
+     #:
+     #: .. versionadded:: 0.11
+@@ -421,6 +432,13 @@ def __init__(
+         #: to load a config from files.
+         self.config = self.make_config(instance_relative_config)
+ 
++        #: An instance of :attr:`aborter_class` created by
++        #: :meth:`make_aborter`. This is called by :func:`flask.abort`
++        #: to raise HTTP errors, and can be called directly as well.
++        #:
++        #: .. versionadded:: 2.2
++        self.aborter = self.make_aborter()
++
+         #: A list of functions that are called when :meth:`url_for` raises a
+         #: :exc:`~werkzeug.routing.BuildError`.  Each function registered here
+         #: is called with `error`, `endpoint` and `values`.  If a function
+@@ -628,6 +646,18 @@ def make_config(self, instance_relative: bool = False) -> Config:
+         defaults["DEBUG"] = get_debug_flag()
+         return self.config_class(root_path, defaults)
+ 
++    def make_aborter(self) -> Aborter:
++        """Create the object to assign to :attr:`aborter`. That object
++        is called by :func:`flask.abort` to raise HTTP errors, and can
++        be called directly as well.
++
++        By default, this creates an instance of :attr:`aborter_class`,
++        which defaults to :class:`werkzeug.exceptions.Aborter`.
++
++        .. versionadded:: 2.2
++        """
++        return self.aborter_class()
++
+     def auto_find_instance_path(self) -> str:
+         """Tries to locate the instance path if it was not provided to the
+         constructor of the application class.  It will basically calculate
+diff --git a/src/flask/helpers.py b/src/flask/helpers.py
+index e3883ed601..070a4dafd5 100644
+--- a/src/flask/helpers.py
++++ b/src/flask/helpers.py
+@@ -10,6 +10,7 @@
+ from threading import RLock
+ 
+ import werkzeug.utils
++from werkzeug.exceptions import abort as _wz_abort
+ from werkzeug.routing import BuildError
+ from werkzeug.urls import url_quote
+ from werkzeug.utils import redirect as _wz_redirect
+@@ -24,6 +25,7 @@
+ if t.TYPE_CHECKING:  # pragma: no cover
+     from werkzeug.wrappers import Response as BaseResponse
+     from .wrappers import Response
++    import typing_extensions as te
+ 
+ 
+ def get_env() -> str:
+@@ -364,6 +366,31 @@ def redirect(
+     return _wz_redirect(location, code=code, Response=Response)
+ 
+ 
++def abort(  # type: ignore[misc]
++    code: t.Union[int, "BaseResponse"], *args: t.Any, **kwargs: t.Any
++) -> "te.NoReturn":
++    """Raise an :exc:`~werkzeug.exceptions.HTTPException` for the given
++    status code.
++
++    If :data:`~flask.current_app` is available, it will call its
++    :attr:`~flask.Flask.aborter` object, otherwise it will use
++    :func:`werkzeug.exceptions.abort`.
++
++    :param code: The status code for the exception, which must be
++        registered in ``app.aborter``.
++    :param args: Passed to the exception.
++    :param kwargs: Passed to the exception.
++
++    .. versionadded:: 2.2
++        Calls ``current_app.aborter`` if available instead of always
++        using Werkzeug's default ``abort``.
++    """
++    if current_app:
++        current_app.aborter(code, *args, **kwargs)
++
++    _wz_abort(code, *args, **kwargs)
++
++
+ def get_template_attribute(template_name: str, attribute: str) -> t.Any:
+     """Loads a macro (or variable) a template exports.  This can be used to
+     invoke a macro from within Python code.  If you for example have a

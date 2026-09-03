@@ -1,0 +1,42 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 314c1b1c8d..c21439d946 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Allow a `max_depth` argument to be passed to the `install()` hook https://github.com/Textualize/rich/issues/2486
+ - Document using `None` as name in `__rich_repr__` for tuple positional args https://github.com/Textualize/rich/pull/2379
+ - Add `font_aspect_ratio` parameter in SVG export https://github.com/Textualize/rich/pull/2539/files
++- Added `Table.add_section` method. https://github.com/Textualize/rich/pull/2544
+ 
+ ### Fixed
+ 
+diff --git a/docs/source/tables.rst b/docs/source/tables.rst
+index 9cebe60c63..c4a1b7913d 100644
+--- a/docs/source/tables.rst
++++ b/docs/source/tables.rst
+@@ -96,7 +96,7 @@ Lines
+ 
+ By default, Tables will show a line under the header only. If you want to show lines between all rows add ``show_lines=True`` to the constructor.
+ 
+-You can also force a line on the next row by setting ``end_section=True`` on the call to ``add_row()``.
++You can also force a line on the next row by setting ``end_section=True`` on the call to :meth:`~rich.table.Table.add_row`, or by calling the :meth:`~rich.table.Table.add_section` to add a line between the current and subsequent rows.
+ 
+ 
+ Empty Tables
+diff --git a/rich/table.py b/rich/table.py
+index 9d067ba562..578d3d63c8 100644
+--- a/rich/table.py
++++ b/rich/table.py
+@@ -462,6 +462,12 @@ def add_cell(column: Column, renderable: "RenderableType") -> None:
+                 )
+         self.rows.append(Row(style=style, end_section=end_section))
+ 
++    def add_section(self) -> None:
++        """Add a new section (draw a line after current row)."""
++
++        if self.rows:
++            self.rows[-1].end_section = True
++
+     def __rich_console__(
+         self, console: "Console", options: "ConsoleOptions"
+     ) -> "RenderResult":

@@ -1,0 +1,35 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 1897c96c1b..019a81ee2f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Use `Console(stderr=True)` in `rich.traceback.install` to support io redirection.
+ - Fixes superfluous spaces in html output https://github.com/Textualize/rich/issues/2832
+ - Fixed duplicate output in Jupyter https://github.com/Textualize/rich/pulls/2804
++- Filter ANSI character-encoding-change codes in `Text.from_ansi` parser
+ - Fixes traceback failing when a frame filename is unreadable https://github.com/Textualize/rich/issues/2821
+ 
+ ### Added
+diff --git a/CONTRIBUTORS.md b/CONTRIBUTORS.md
+index 51b79b2a9e..6db5677537 100644
+--- a/CONTRIBUTORS.md
++++ b/CONTRIBUTORS.md
+@@ -64,3 +64,4 @@ The following people have contributed to the development of Rich:
+ - [Zhe Huang](https://github.com/onlyacat)
+ - [Ke Sun](https://github.com/ksun212)
+ - [Qiming Xu](https://github.com/xqm32)
++- [James Addison](https://github.com/jayaddison)
+diff --git a/rich/ansi.py b/rich/ansi.py
+index 92ef519411..66365e6536 100644
+--- a/rich/ansi.py
++++ b/rich/ansi.py
+@@ -43,6 +43,9 @@ def _ansi_tokenize(ansi_text: str) -> Iterable[_AnsiToken]:
+         if start > position:
+             yield _AnsiToken(ansi_text[position:start])
+         if sgr:
++            if sgr == "(":
++                position = end + 1
++                continue
+             if sgr.endswith("m"):
+                 yield _AnsiToken("", sgr[1:-1], osc)
+         else:

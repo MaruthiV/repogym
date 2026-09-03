@@ -1,0 +1,40 @@
+id: click-pr2622
+repo: pallets/click
+base_commit: 1787497713fa389435ed732c9b26274c3cdc458d
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Allow customizing fail message for invalid choice in `click.types.Choice`\n\
+  \nMove the fail art of `convert()` in the `Choice` class to a new method `get_invalid_choice_fail_message(self)`\
+  \ so in my subclass of `click.Choice` I can customize the way it shows the failing\
+  \ value for the choice\r\n\r\nSome CLI option choices are multi-part meaning they\
+  \ are separated by some value, like a comma separated list for example. Maybe each\
+  \ section of this value represents a different part of a schema and it is nice to\
+  \ show a custom message about the specific part.\r\n\r\nContrived version:\r\nLet\
+  \ says my choices are `[\"maine::goat\", \"maine::themepark\"]` and I give it \"\
+  maine::toast\"`, it'd be nice to say the `maine` part was correct and the `toast`\
+  \ part was not.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_types.py::test_choice_get_invalid_choice_message
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2622
+  issue: 2621
+  merged_at: '2024-11-03T14:54:03Z'
+  issue_url: https://github.com/pallets/click/issues/2621

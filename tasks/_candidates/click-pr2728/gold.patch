@@ -1,0 +1,27 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 4188303edf..aba1bbe07c 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -6,6 +6,9 @@ Version 8.1.8
+ Unreleased
+ 
+ -   Fix an issue with type hints for ``click.open_file()``. :issue:`2717`
++-   Fix issue where error message for invalid ``click.Path`` displays on
++    multiple lines. :issue:`2697`
++
+ 
+ Version 8.1.7
+ -------------
+diff --git a/src/click/types.py b/src/click/types.py
+index dc52bac3d4..c310377a06 100644
+--- a/src/click/types.py
++++ b/src/click/types.py
+@@ -892,7 +892,7 @@ def convert(
+                 )
+             if not self.dir_okay and stat.S_ISDIR(st.st_mode):
+                 self.fail(
+-                    _("{name} '{filename}' is a directory.").format(
++                    _("{name} {filename!r} is a directory.").format(
+                         name=self.name.title(), filename=format_filename(value)
+                     ),
+                     param,

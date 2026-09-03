@@ -1,0 +1,29 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 26effda4d2..b8cfd5145c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+ 
++## [13.3.2] - Unreleased
++
++### Fixed
++
++- Fixed pretty printing of empty dataclass https://github.com/Textualize/rich/issues/2819
++
+ ## [13.3.1] - 2023-01-28
+ 
+ ### Fixed
+diff --git a/rich/pretty.py b/rich/pretty.py
+index 83c6c1e67d..f257b15ac8 100644
+--- a/rich/pretty.py
++++ b/rich/pretty.py
+@@ -793,6 +793,7 @@ def iter_attrs() -> Iterable[
+                     close_brace=")",
+                     children=children,
+                     last=root,
++                    empty=f"{obj.__class__.__name__}()",
+                 )
+ 
+                 for last, field in loop_last(

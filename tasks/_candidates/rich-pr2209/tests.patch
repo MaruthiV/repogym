@@ -1,0 +1,19 @@
+diff --git a/tests/test_file_proxy.py b/tests/test_file_proxy.py
+index 2218d03b76..51c530aa31 100644
+--- a/tests/test_file_proxy.py
++++ b/tests/test_file_proxy.py
+@@ -25,3 +25,14 @@ def test_flush():
+     assert file.getvalue() == ""
+     file_proxy.flush()
+     assert file.getvalue() == "foo\n"
++
++
++def test_new_lines():
++
++    file = io.StringIO()
++    console = Console(file=file)
++    file_proxy = FileProxy(console, file)
++    file_proxy.write("-\n-")
++    assert file.getvalue() == "-\n"
++    file_proxy.flush()
++    assert file.getvalue() == "-\n-\n"

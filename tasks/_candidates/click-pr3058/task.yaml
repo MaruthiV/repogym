@@ -1,0 +1,55 @@
+id: click-pr3058
+repo: pallets/click
+base_commit: 16fe802a3f96c4c8fa3cd382f1a7577fda0c5321
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Exception information isn't passed through to context.with_resource managed\
+  \ resources\n\nWhen writing a simple tool with a bunch of commands updating a database,\
+  \ I was using a context manager in each command that would begin a transaction,\
+  \ and then commit it on success, or rollback on error.\r\n\r\nInitially, I thought\
+  \ I'd be able to avoid some boilerplate on every subcommand by adding the session\
+  \ as a managed resource via ctx.with_resource(context_manager).  However, while\
+  \ this works in the success case, it will also commit the transaction if an unexpected\
+  \ exception occurs, since the exception information doesn't seem to be being passed\
+  \ through to the context manager.\r\n\r\nEg. given the below context manager:\r\n\
+  \r\n    class TestContextManager:\r\n        def __enter__(self):\r\n          \
+  \  print(\"ENTER\")\r\n\r\n        def __exit__(self, exc_type, exc_val, traceback):\r\
+  \n            print(\"EXIT\", exc_type, exc_val, traceback)\r\n\r\nUsing it in a\
+  \ regular context manager via:\r\n\r\n    with TestContextManager():\r\n       \
+  \ raise Exception()\r\n\r\nwill correctly print the exc_type, exc_val and traceback\
+  \ parameters when an exception occurs.  But using it via:\r\n\r\n    @click.group()\r\
+  \n    @click.pass_context\r\n    def cli(ctx):\r\n        ctx.obj = ctx.with_resource(TestContextManager())\r\
+  \n\r\nThese will always be `None`, and so any context manager that needs to act\
+  \ differently on the occurrence of an exception vs success will always treat this\
+  \ as success.  (And likewise, try/except blocks will never trigger in function-style\
+  \ ones using the `@contextmanager` decorator.)\r\n\r\nWould it be possible for the\
+  \ exception information to be passed through to managed resources so that context\
+  \ managers that treat success/failure cases differently operate correctly?\r\n\r\
+  \nEnvironment:\r\n\r\n- Python version: 3.10.9\r\n- Click version: 8.1.3\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_context.py::test_with_resource_exception
+  - tests/test_context.py::test_with_resource_nested_exception
+  - tests/test_context.py::test_make_pass_decorator_args
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3058
+  issue: 2447
+  merged_at: '2025-09-12T17:16:56Z'
+  issue_url: https://github.com/pallets/click/issues/2447

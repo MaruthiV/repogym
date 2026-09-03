@@ -1,0 +1,45 @@
+id: click-pr2788
+repo: pallets/click
+base_commit: 380008389b32ca2b7de7c73f670a9eee1562004e
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "`flag_value` is not taken into account with `envvar`\n\nWhen using the ~~--debug\
+  \ option~~ `DEBUG` environment variable in the sample command, the debug value is\
+  \ not correctly set (`flag_value`). It is expected to be either `logging.DEBUG`\
+  \ or `None`, but it seems to be getting the integer value directly from the environment\
+  \ variable.\r\n\r\nSample:\r\n\r\n```python\r\nimport logging\r\nimport os\r\nimport\
+  \ sys\r\n\r\nimport click\r\n\r\n\r\n# Works as expected\r\n# sys.argv = ['', '--debug']\r\
+  \n\r\n# Does not work as expected\r\n# os.environ['DEBUG'] = '1'\r\n\r\n@click.command()\r\
+  \n@click.option('--debug', is_flag=True, flag_value=logging.DEBUG, envvar='DEBUG')\r\
+  \ndef sample(debug):\r\n    click.echo(f\"DEBUG: {debug}\")\r\n    assert debug\
+  \ in [logging.DEBUG, None], f\"Invalid debug value: {debug} - expected >{logging.DEBUG}<\
+  \ or None\"\r\n\r\n\r\nif __name__ == '__main__':\r\n    sample()\r\n\r\n```\r\n\
+  \r\nThere is no different in using `os.environ` or  `DEBUG=1 python cli.py`.\r\n\
+  \r\n`DEBUG=8 python cli.py` prints out: `8`\r\n\r\nEnvironment:\r\n\r\n- Python\
+  \ version: 3.12.4\r\n- Click version: 8.1.7\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_arguments.py::test_envvar_flag_value
+  - tests/test_arguments.py::test_nargs_envvar_only_if_values_empty
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2788
+  issue: 2746
+  merged_at: '2024-11-03T14:40:46Z'
+  issue_url: https://github.com/pallets/click/issues/2746

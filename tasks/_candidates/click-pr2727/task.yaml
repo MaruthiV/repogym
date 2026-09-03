@@ -1,0 +1,40 @@
+id: click-pr2727
+repo: pallets/click
+base_commit: c326df95e9e3da0425360e030413f6a3ee25fdee
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "`progressbar(hide=True)` option for hiding the progress bar\n\nOften when\
+  \ I use the Click `progressbar` I find myself wanting to conditionally hide it.\
+  \ Sometimes it's because there's another option in play which means I have output\
+  \ to display in place of it - others it's because I added a `--silent` option (as\
+  \ seen in `curl`) for disabling it entirely.\r\n\r\nIt's actually a bit tricky doing\
+  \ this at the moment, due to its use as a context manager.\r\n\r\nWhat I'd really\
+  \ like to be able to do is this:\r\n\r\n```python\r\nhide = True  # or False depending\
+  \ on various things\r\n\r\nwith click.progressbar(items, show_eta=True, hide=hide):\r\
+  \n    for item in items:\r\n        process_item(item)\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_termui.py::test_progressbar_no_tty
+  - tests/test_termui.py::test_progressbar_hidden_manual
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2727
+  issue: 2609
+  merged_at: '2024-11-03T13:12:06Z'
+  issue_url: https://github.com/pallets/click/issues/2609

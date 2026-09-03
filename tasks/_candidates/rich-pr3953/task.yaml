@@ -1,0 +1,80 @@
+id: rich-pr3953
+repo: Textualize/rich
+base_commit: 1d402e0c59f8765e420a5a4440eb2fca7465d1ae
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] If the text contains '\\u200d', console.print may throw a RuntimeError\n\
+  \n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n\n\n**Describe the bug**\n\nAs the title says\n\n```python\nfrom rich import get_console\n\
+  console = get_console()\nconsole.print('1\\u200d2') \n\n# --- Or a simpler one ---\n\
+  from rich import print as rich_print\nrich_print('\\u200d') \n\n# --- This can output\
+  \ normally, but b has been stretched---\nfrom rich import print as rich_print\n\
+  rich_print('a\\u200db') \n\n# --- But this still throws a RuntimeError --\nfrom\
+  \ rich import print as rich_print\nrich_print('a\\u200d\\nb') \n\n# --- Including\
+  \ this...---\nfrom rich import print as rich_print\nrich_print('a\\u200db(') \n\
+  ```\nPerhaps it's missing a check for whether \\u200d is the last character here?\n\
+  https://github.com/Textualize/rich/blob/1d402e0c59f8765e420a5a4440eb2fca7465d1ae/rich/cells.py#L138-L150\n\
+  \nTraceback (show_locals=True)\n<details>\n<summary>Click to expand</summary>\n\n\
+  ```\n╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮\n\
+  │ /usr/local/python3.14/lib/python3.14/site-packages/rich/segment.py:375 in <genexpr>\
+  \              │\n│                                                            \
+  \                                      │\n│   372 │   │   Returns:             \
+  \                                                              │\n│   373 │   │\
+  \   │   List[Segment]: A line of segments with the desired length.             \
+  \        │\n│   374 │   │   \"\"\"                                             \
+  \                                   │\n│ ❱ 375 │   │   line_length = sum(segment.cell_length\
+  \ for segment in line)                         │\n│   376 │   │   new_line: List[Segment]\
+  \                                                            │\n│   377 │   │  \
+  \                                                                              \
+  \      │\n│   378 │   │   if line_length < length:                             \
+  \                              │\n│                                            \
+  \                                                      │\n│ ╭─────────────────────\
+  \ locals ─────────────────────╮                                             │\n\
+  │ │      .0 = <list_iterator object at 0x74b7f85870> │                         \
+  \                    │\n│ │ segment = Segment('\\u200d', Style())             │\
+  \                                             │\n│ ╰──────────────────────────────────────────────────╯\
+  \                                             │\n│                             \
+  \                                                                     │\n│ /usr/local/python3.14/lib/python3.14/site-packages/rich/segment.py:89\
+  \ in cell_length             │\n│                                              \
+  \                                                    │\n│    86 │   │   │   int:\
+  \ A number of cells.                                                        │\n\
+  │    87 │   │   \"\"\"                                                         \
+  \                       │\n│    88 │   │   text, _style, control = self        \
+  \                                               │\n│ ❱  89 │   │   return 0 if control\
+  \ else cell_len(text)                                            │\n│    90 │  \
+  \                                                                              \
+  \          │\n│    91 │   def __rich_repr__(self) -> Result:                   \
+  \                                  │\n│    92 │   │   yield self.text          \
+  \                                                          │\n│                \
+  \                                                                              \
+  \    │\n│ ╭─────────────── locals ───────────────╮                             \
+  \                            │\n│ │  _style = Style()                    │     \
+  \                                                    │\n│ │ control = None     \
+  \                  │                              \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_cells.py::test_zwj
+  - tests/test_cells.py::test_non_printable
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3953
+  issue: 3947
+  merged_at: '2026-02-01T16:19:21Z'
+  issue_url: https://github.com/Textualize/rich/issues/3947

@@ -1,0 +1,80 @@
+id: rich-pr1874
+repo: Textualize/rich
+base_commit: 232c8aaa66f8ce95af89fc7d776ce81a53eab9d0
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] rich.inspect shows classes as functions\n\n**Describe the bug**\r\n\
+  `rich.inspect(pygments_solarized.dark256)` incorrectly shows a class as a function\
+  \ (`SolarizedDark256Style = def SolarizedDark256Style()`).\r\n\r\nThis might be\
+  \ intended behavior when `inspect()`ing modules, but it's unexpected that `methods=True`\
+  \ would cause classes to be shown.  I might even be so bold as to say when expecting\
+  \ a module, that classes and methods should be displayed by default, but I understand\
+  \ if the current behavior is preferred.\r\n\r\n**To Reproduce**\r\n\r\n```\r\n$\
+  \ pip3 install -U --user pygments_solarized\r\n```\r\n\r\nThe class is declared\
+  \ as:\r\n\r\n```\r\nclass SolarizedDark256Style(Style):\r\n\r\n    \"\"\" Dark 256-color\
+  \ version solarized theme (http://ethanschoonover.com/solarized). \"\"\"\r\n   \
+  \ ...\r\n```\r\n\r\nNote that `SolarizedDark256Style` is not shown.\r\n\r\n```\r\
+  \n>>> rich.inspect(pygments_solarized.dark256)\r\n>>> rich.inspect(pygments_solarized.dark256)\r\
+  \n╭─ <module 'pygments_solarized.dark256' from '/Users/zachriggle/Library/Python/3.8/lib/python/site-─╮\r\
+  \n│    BASE0 = '#808080'                                                       \
+  \                       │\r\n│   BASE00 = '#585858'                            \
+  \                                                  │\r\n│   BASE01 = '#4e4e4e' \
+  \                                                                             │\r\
+  \n│   BASE02 = '#262626'                                                       \
+  \                       │\r\n│   BASE03 = '#1c1c1c'                            \
+  \                                                  │\r\n│    BASE1 = '#8a8a8a' \
+  \                                                                             │\r\
+  \n│    BASE2 = '#d7d7af'                                                       \
+  \                       │\r\n│    BASE3 = '#ffffd7'                            \
+  \                                                  │\r\n│     BLUE = '#0087ff' \
+  \                                                                             │\r\
+  \n│  Comment = Token.Comment                                                   \
+  \                       │\r\n│     CYAN = '#00afaf'                            \
+  \                                                  │\r\n│  Generic = Token.Generic\
+  \                                                                          │\r\n\
+  │    GREEN = '#5f8700'                                                         \
+  \                     │\r\n│  Keyword = Token.Keyword                          \
+  \                                                │\r\n│  MAGENTA = '#af005f'   \
+  \                                                                           │\r\n\
+  │     Name = Token.Name                                                        \
+  \                     │\r\n│   Number = Token.Literal.Number                   \
+  \                                                │\r\n│ Operator = Token.Operator\
+  \                                                                         │\r\n\
+  │   ORANGE = '#d75f00'                                                         \
+  \                     │\r\n│      RED = '#af0000'                              \
+  \                                                │\r\n│   String = Token.Literal.String\
+  \                                                                   │\r\n│    Token\
+  \ = Token                                                                      \
+  \            │\r\n│   VIOLET = '#5f5faf'                                       \
+  \                                       │\r\n│   YELLOW = '#af8700'            \
+  \                                                                  │\r\n╰───────────────────────────────────────────────────────────────────────────────────────────────────╯\r\
+  \n```\r\n\r\nHowever, it is shown when specifying `methods=True`.\r\n\r\n```\r\n\
+  >>> rich.inspect(pygments_solarized.dark256, methods=True)\r\n╭─ <module 'pygments_solarized.dark256'\
+  \ from '/Users/zachriggle/Library/Python/3.8/lib/python/site-─╮\r\n│           \
+  \      BASE0 = '#808080'                                                       \
+  \          │\r\n│                BASE00 = '#585858'                            \
+  \                                     │\r\n│    \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_inspect.py::test_inspect_module_with_class
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 1874
+  issue: 1658
+  merged_at: '2022-01-27T16:46:00Z'
+  issue_url: https://github.com/Textualize/rich/issues/1658

@@ -1,0 +1,72 @@
+id: rich-pr3772
+repo: Textualize/rich
+base_commit: 2809954800af15b4027364cebf82390fe23dc194
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] RecursionError when attempting to capture a traceback from an error\
+  \ (Rich v14.0.0)\n\n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n**Describe the bug**\n\nAfter updating to Rich v14.0.0 I get a `RecursionError`\
+  \ when attempting to capture a traceback from an error.\n\nHere's my function along\
+  \ with the helper function to create the traceback:\n\n```python\n\ndef eval_error(\n\
+  \    exception: BaseException,\n    exc_type: Type[Any],\n    exc_value: BaseException,\n\
+  \    exc_traceback: TracebackType | None,\n) -> EvalError:\n    # create ansi traceback\n\
+  \    with open(os.devnull, \"w\") as f:\n        console = Console(record=True,\
+  \ file=f, legacy_windows=True)\n        console.print(rich_traceback(exc_type, exc_value,\
+  \ exc_traceback))\n        traceback_ansi = console.export_text(styles=True)\n \
+  \  \n    # return error\n    return EvalError(\n        message=exception_message(exception),\n\
+  \        traceback=traceback_text,\n        traceback_ansi=traceback_ansi,\n   \
+  \ )\n\ndef rich_traceback(\n    exc_type: Type[Any], exc_value: BaseException, exc_traceback:\
+  \ TracebackType | None\n) -> RenderableType:\n    rich_tb = Traceback.from_exception(\n\
+  \        exc_type=exc_type,\n        exc_value=exc_value,\n        traceback=exc_traceback,\n\
+  \        suppress=[click, asyncio, tenacity, sys.modules[PKG_NAME]],\n        show_locals=False,\n\
+  \        width=CONSOLE_DISPLAY_WIDTH,\n    )\n    return rich_tb\n```\n\nHere's\
+  \ the stack trace for the `RecursionError`:\n\n```\n      | \n      | Traceback\
+  \ (most recent call last):\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/src/inspect_ai/_eval/run.py\"\
+  , line 280, in run_task\n      |     result = await task_run(tasks[index])\n   \
+  \   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/src/inspect_ai/_eval/task/run.py\"\
+  , line 389, in task_run\n      |     error = eval_error(ex, type, value, traceback)\n\
+  \      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/src/inspect_ai/log/_log.py\"\
+  , line 649, in eval_error\n      |     console.print(rich_traceback(exc_type, exc_value,\
+  \ exc_traceback))\n      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\
+  \      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/src/inspect_ai/log/_log.py\"\
+  , line 665, in rich_traceback\n      |     rich_tb = Traceback.from_exception(\n\
+  \      |               ^^^^^^^^^^^^^^^^^^^^^^^^^\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/.venv/lib/python3.12/site-packages/rich/traceback.py\"\
+  , line 381, in from_exception\n      |     rich_traceback = cls.extract(\n     \
+  \ |                      ^^^^^^^^^^^^\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/.venv/lib/python3.12/site-packages/rich/traceback.py\"\
+  , line 466, in extract\n      |     Traceback.extract(\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/.venv/lib/python3.12/site-packages/rich/traceback.py\"\
+  , line 466, in extract\n      |     Traceback.extract(\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/.venv/lib/python3.12/site-packages/rich/traceback.py\"\
+  , line 466, in extract\n      |     Traceback.extract(\n      |   [Previous line\
+  \ repeated 2950 more times]\n      |   File \"/home/parallels/UKGovernmentBEIS/inspect_ai/.venv/lib/python3.12/site-packages/rich/traceback.py\"\
+  , line 491, in extract\n      |     iter_locals: Iterable[Tuple[str, object]],\n\
+  \      |                  ~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n      |   File \"/usr/lib/python3.12/typing.py\"\
+  , line 395, in inner\n      |     return _caches[func](*args, **kwds)\n      | \
+  \           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n      | RecursionError: maximum recursion\
+  \ depth exceeded\n```\n\n\n**Platform**\n\nWhat platform (Win/Linux/Mac) are you\
+  \ running on? What terminal software are you using?\n\n\n<details>\n\n<summary>Running\
+  \ on Linux, running in the VS Code integrated terminal</summ\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_traceback.py::test_recursive_exception
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3772
+  issue: 3682
+  merged_at: '2025-06-19T14:39:18Z'
+  issue_url: https://github.com/Textualize/rich/issues/3682

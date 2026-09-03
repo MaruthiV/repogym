@@ -1,0 +1,43 @@
+id: flask-pr4577
+repo: pallets/flask
+base_commit: ca8e6217fe450435e024bcff3082d2a37445f7e1
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'Unify `setupmethod` behavior between `Flask` and `Blueprint`
+
+
+  Many of the methods in the `Flask` app object are decorated with `setupmethod`,
+  which prevents registering things with the application after it starts running.
+  A similar behavior is in `Blueprint`, we want to prevent modifying it after registering
+  it at least once. However, the blueprint checking is much less consistent, it''s
+  divided up into two parts, is only a warning sometimes, and has a different message.
+  Figure out how we can make `Flask` and `Blueprint` more consistent with this error.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_trap_bad_request_key_error
+  - tests/test_basic.py::test_no_setup_after_first_request
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4577
+  issue: 4571
+  merged_at: '2022-05-23T16:12:45Z'
+  issue_url: https://github.com/pallets/flask/issues/4571

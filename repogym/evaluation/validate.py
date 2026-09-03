@@ -9,7 +9,7 @@ def validate_once(task: TaskSpec, entry: RepoEntry) -> list[str]:
     problems: list[str] = []
     t = task.timeouts.eval_s
     with Sandbox(task.runtime.image) as sb:
-        setup_workspace(sb, entry)
+        setup_workspace(sb, entry, task.base_commit)
 
         if task.mutation_patch:
             ok, out = apply_patch(sb, task.patch_path(task.mutation_patch), "mutation")
@@ -21,12 +21,12 @@ def validate_once(task: TaskSpec, entry: RepoEntry) -> list[str]:
         if not ok:
             return [f"hidden tests patch failed to apply: {out[-500:]}"]
 
-        f2p = testrun.run_tests(sb, entry.test_base, task.hidden_tests.fail_to_pass, t)
+        f2p = testrun.run_tests(sb, entry, task.hidden_tests.fail_to_pass, t)
         for tid, r in f2p.items():
             if r != testrun.FAIL:
                 problems.append(f"f2p test not failing pre-fix: {tid} -> {r}")
 
-        p2p = testrun.run_tests(sb, entry.test_base, task.hidden_tests.pass_to_pass, t)
+        p2p = testrun.run_tests(sb, entry, task.hidden_tests.pass_to_pass, t)
         for tid, r in p2p.items():
             if r != testrun.PASS:
                 problems.append(f"p2p test not passing pre-fix: {tid} -> {r}")
@@ -40,12 +40,12 @@ def validate_once(task: TaskSpec, entry: RepoEntry) -> list[str]:
             problems.append(f"gold patch failed to apply: {out[-500:]}")
             return problems
 
-        f2p_post = testrun.run_tests(sb, entry.test_base, task.hidden_tests.fail_to_pass, t)
+        f2p_post = testrun.run_tests(sb, entry, task.hidden_tests.fail_to_pass, t)
         for tid, r in f2p_post.items():
             if r != testrun.PASS:
                 problems.append(f"f2p test not passing post-gold: {tid} -> {r}")
 
-        p2p_post = testrun.run_tests(sb, entry.test_base, task.hidden_tests.pass_to_pass, t)
+        p2p_post = testrun.run_tests(sb, entry, task.hidden_tests.pass_to_pass, t)
         for tid, r in p2p_post.items():
             if r != testrun.PASS:
                 problems.append(f"p2p test not passing post-gold: {tid} -> {r}")

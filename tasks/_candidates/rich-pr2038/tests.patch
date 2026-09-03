@@ -1,0 +1,101 @@
+diff --git a/tests/test_console.py b/tests/test_console.py
+index 0989d8ba16..06fb4a8359 100644
+--- a/tests/test_console.py
++++ b/tests/test_console.py
+@@ -14,8 +14,8 @@
+     Console,
+     ConsoleDimensions,
+     ConsoleOptions,
+-    group,
+     ScreenUpdate,
++    group,
+ )
+ from rich.control import Control
+ from rich.measure import measure_renderables
+@@ -185,6 +185,15 @@ def test_print_json_ensure_ascii():
+     assert result == expected
+ 
+ 
++def test_print_json_indent_none():
++    console = Console(file=io.StringIO(), color_system="truecolor")
++    data = {"name": "apple", "count": 1}
++    console.print_json(data=data, indent=None)
++    result = console.file.getvalue()
++    expected = '\x1b[1m{\x1b[0m\x1b[1;34m"name"\x1b[0m: \x1b[32m"apple"\x1b[0m, \x1b[1;34m"count"\x1b[0m: \x1b[1;36m1\x1b[0m\x1b[1m}\x1b[0m\n'
++    assert result == expected
++
++
+ def test_log():
+     console = Console(
+         file=io.StringIO(),
+diff --git a/tests/test_highlighter.py b/tests/test_highlighter.py
+index c5303b5c0c..a34334e3d3 100644
+--- a/tests/test_highlighter.py
++++ b/tests/test_highlighter.py
+@@ -1,8 +1,10 @@
+ """Tests for the highlighter classes."""
+-import pytest
++import json
+ from typing import List
+ 
+-from rich.highlighter import NullHighlighter, ReprHighlighter
++import pytest
++
++from rich.highlighter import JSONHighlighter, NullHighlighter, ReprHighlighter
+ from rich.text import Span, Text
+ 
+ 
+@@ -92,3 +94,53 @@ def test_highlight_regex(test: str, spans: List[Span]):
+     highlighter.highlight(text)
+     print(text.spans)
+     assert text.spans == spans
++
++
++def test_highlight_json_with_indent():
++    json_string = json.dumps({"name": "apple", "count": 1}, indent=4)
++    text = Text(json_string)
++    highlighter = JSONHighlighter()
++    highlighter.highlight(text)
++    assert text.spans == [
++        Span(0, 1, "json.brace"),
++        Span(6, 12, "json.str"),
++        Span(14, 21, "json.str"),
++        Span(27, 34, "json.str"),
++        Span(36, 37, "json.number"),
++        Span(38, 39, "json.brace"),
++        Span(6, 12, "json.key"),
++        Span(27, 34, "json.key"),
++    ]
++
++
++def test_highlight_json_string_only():
++    json_string = '"abc"'
++    text = Text(json_string)
++    highlighter = JSONHighlighter()
++    highlighter.highlight(text)
++    assert text.spans == [Span(0, 5, "json.str")]
++
++
++def test_highlight_json_empty_string_only():
++    json_string = '""'
++    text = Text(json_string)
++    highlighter = JSONHighlighter()
++    highlighter.highlight(text)
++    assert text.spans == [Span(0, 2, "json.str")]
++
++
++def test_highlight_json_no_indent():
++    json_string = json.dumps({"name": "apple", "count": 1}, indent=None)
++    text = Text(json_string)
++    highlighter = JSONHighlighter()
++    highlighter.highlight(text)
++    assert text.spans == [
++        Span(0, 1, "json.brace"),
++        Span(1, 7, "json.str"),
++        Span(9, 16, "json.str"),
++        Span(18, 25, "json.str"),
++        Span(27, 28, "json.number"),
++        Span(28, 29, "json.brace"),
++        Span(1, 7, "json.key"),
++        Span(18, 25, "json.key"),
++    ]

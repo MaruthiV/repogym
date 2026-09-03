@@ -1,0 +1,40 @@
+id: click-pr2604
+repo: pallets/click
+base_commit: b63ace28d50b53e74b5260f6cb357ccfe5560133
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "strip \"_command\" suffix when generating command name\n\nYou often want\
+  \ a command to have the same name as a function it is wrapping. However, this will\
+  \ cause a name collision, if your command is going to call `init_data` its function\
+  \ can't also be called `init_data`. So instead it's written as `init_data_command`,\
+  \ and then the command name has to be specified manually `@command(\"init-data\"\
+  )`. Click should remove a `_command` suffix when generating the command name from\
+  \ the function name.\r\n\r\n```python\r\ndef init_data(external=False):\r\n    ...\r\
+  \n\r\n@cli.command\r\n@click.option(\"--external/--internal\")\r\ndef init_data_command(external):\r\
+  \n    init_data(external=external)\r\n\r\n```\r\n\r\nCurrently this command would\
+  \ be named `init-data-command`. After the change, it would be `init-data`.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_command_decorators.py::test_generate_name
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2604
+  issue: 2322
+  merged_at: '2023-09-01T21:17:53Z'
+  issue_url: https://github.com/pallets/click/issues/2322

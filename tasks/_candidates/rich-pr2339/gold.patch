@@ -1,0 +1,77 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 4549ab1b82..88e045948c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ### Fixed
+ 
++- Fix Rich clobbering cursor style on Windows https://github.com/Textualize/rich/pull/2339
+ - Fix text wrapping edge case https://github.com/Textualize/rich/pull/2296
+ - Allow exceptions that are raised while a Live is rendered to be displayed and/or processed https://github.com/Textualize/rich/pull/2305
+ - Fix crashes that can happen with `inspect` when docstrings contain some special control codes https://github.com/Textualize/rich/pull/2294
+diff --git a/rich/_win32_console.py b/rich/_win32_console.py
+index f642279c55..e969d81643 100644
+--- a/rich/_win32_console.py
++++ b/rich/_win32_console.py
+@@ -263,6 +263,30 @@ def SetConsoleCursorPosition(
+     return bool(_SetConsoleCursorPosition(std_handle, coords))
+ 
+ 
++_GetConsoleCursorInfo = windll.kernel32.GetConsoleCursorInfo
++_GetConsoleCursorInfo.argtypes = [
++    wintypes.HANDLE,
++    ctypes.POINTER(CONSOLE_CURSOR_INFO),
++]
++_GetConsoleCursorInfo.restype = wintypes.BOOL
++
++
++def GetConsoleCursorInfo(
++    std_handle: wintypes.HANDLE, cursor_info: CONSOLE_CURSOR_INFO
++) -> bool:
++    """Get the cursor info - used to get cursor visibility and width
++
++    Args:
++        std_handle (wintypes.HANDLE): A handle to the console input buffer or the console screen buffer.
++        cursor_info (CONSOLE_CURSOR_INFO): CONSOLE_CURSOR_INFO ctype struct that receives information
++            about the console's cursor.
++
++    Returns:
++          bool: True if the function succeeds, otherwise False.
++    """
++    return bool(_GetConsoleCursorInfo(std_handle, byref(cursor_info)))
++
++
+ _SetConsoleCursorInfo = windll.kernel32.SetConsoleCursorInfo
+ _SetConsoleCursorInfo.argtypes = [
+     wintypes.HANDLE,
+@@ -523,12 +547,14 @@ def move_cursor_backward(self) -> None:
+ 
+     def hide_cursor(self) -> None:
+         """Hide the cursor"""
+-        invisible_cursor = CONSOLE_CURSOR_INFO(dwSize=100, bVisible=0)
++        current_cursor_size = self._get_cursor_size()
++        invisible_cursor = CONSOLE_CURSOR_INFO(dwSize=current_cursor_size, bVisible=0)
+         SetConsoleCursorInfo(self._handle, cursor_info=invisible_cursor)
+ 
+     def show_cursor(self) -> None:
+         """Show the cursor"""
+-        visible_cursor = CONSOLE_CURSOR_INFO(dwSize=100, bVisible=1)
++        current_cursor_size = self._get_cursor_size()
++        visible_cursor = CONSOLE_CURSOR_INFO(dwSize=current_cursor_size, bVisible=1)
+         SetConsoleCursorInfo(self._handle, cursor_info=visible_cursor)
+ 
+     def set_title(self, title: str) -> None:
+@@ -540,6 +566,12 @@ def set_title(self, title: str) -> None:
+         assert len(title) < 255, "Console title must be less than 255 characters"
+         SetConsoleTitle(title)
+ 
++    def _get_cursor_size(self) -> int:
++        """Get the percentage of the character cell that is filled by the cursor"""
++        cursor_info = CONSOLE_CURSOR_INFO()
++        GetConsoleCursorInfo(self._handle, cursor_info=cursor_info)
++        return int(cursor_info.dwSize)
++
+ 
+ if __name__ == "__main__":
+     handle = GetStdHandle()

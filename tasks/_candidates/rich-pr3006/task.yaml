@@ -1,0 +1,78 @@
+id: rich-pr3006
+repo: Textualize/rich
+base_commit: 0c8bb032ad3b54a32fdb8a43f5ab457c8cd6dcb1
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Class of default value may change behavior of repr auto generation\n\
+  \n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\r\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\r\
+  \n\r\n**Describe the bug**\r\n\r\nThanks for developing rich! I noticed that when\
+  \ automatically generating `__rich_repr__`, parameters are compared to inspects\
+  \ `Parameter.empty` via `==`. For various reasons I use a class which overwrites\
+  \ equality when comparing to `Parameter.empty` and therefore breaks the automatically\
+  \ generated representation.\r\n\r\nHere is a minimal working example based on the\
+  \ examples provided in the docs:\r\n```python\r\nimport rich\r\nfrom rich.pretty\
+  \ import pprint\r\nfrom inspect import Parameter\r\n\r\nclass StupidClass:\r\n \
+  \   def __init__(self, a):\r\n        self.a = a\r\n\r\n    def __eq__(self, other)\
+  \ -> bool:\r\n        if other is Parameter.empty:\r\n            return True\r\n\
+  \        try:\r\n            return self.a == other.a\r\n        except Exception:\r\
+  \n            return False\r\n    \r\n    def __ne__(self, other: object) -> bool:\r\
+  \n        return not self.__eq__(other)\r\n\r\nclass NotStupid:\r\n    pass\r\n\r\
+  \n@rich.repr.auto\r\nclass Bird:\r\n    def __init__(self, name, eats, fly=True,\
+  \ another=StupidClass(2), extinct=NotStupid()):\r\n        self.name = name\r\n\
+  \        self.eats = eats\r\n        self.fly = fly\r\n        self.another = another\r\
+  \n        self.extinct = extinct\r\n\r\npprint(Bird(\"penguin\", [\"fish\"], another=StupidClass(9),\
+  \ extinct=NotStupid()))\r\n```\r\nOutput:\r\n```\r\nBird('penguin', ['fish'], <__main__.StupidClass\
+  \ object at 0x7f8201c35610>, extinct=<__main__.NotStupid object at 0x7f82005ae4f0>)\r\
+  \n```\r\n\r\nExpected Output:\r\n```\r\nBird('penguin', ['fish'], another=<__main__.StupidClass\
+  \ object at 0x7fbcc1e44610>, extinct=<__main__.NotStupid object at 0x7fbcc07bd4f0>)\r\
+  \n```\r\n\r\n**Possible Fix**\r\n\r\nrepr.py\r\n```diff\r\ndef auto_rich_repr(self:\
+  \ Type[T]) -> Result:\r\n            \"\"\"Auto generate __rich_rep__ from signature\
+  \ of __init__\"\"\"\r\n            try:\r\n                signature = inspect.signature(self.__init__)\r\
+  \n                for name, param in signature.parameters.items():\r\n         \
+  \           if param.kind == param.POSITIONAL_ONLY:\r\n                        yield\
+  \ getattr(self, name)\r\n                    elif param.kind in (\r\n          \
+  \              param.POSITIONAL_OR_KEYWORD,\r\n                        param.KEYWORD_ONLY,\r\
+  \n                    ):\r\n-                        if param.default == param.empty:\r\
+  \n+                        if param.default is param.empty:\r\n                \
+  \            yield getattr(self, param.name)\r\n                        else:\r\n\
+  \                            yield param.name, getattr(self, param.name), param.default\r\
+  \n            except Exception as error:\r\n                raise ReprError(\r\n\
+  \                    f\"Failed to auto generate __rich_repr__; {error}\"\r\n   \
+  \             ) from None\r\n```\r\n\r\n**Platform**\r\n<details>\r\n<summary>Click\
+  \ to expand</summary>\r\n\r\nWhat platform (Win/Linux/Mac) are you running on? Ubuntu\r\
+  \n What terminal software are you using? Xfce Terminal Emulator\r\n\r\nI may ask\
+  \ you to copy and paste the output of the following commands. It may save some time\
+  \ if you do it now.\r\n\r\nIf you're using Rich in a terminal:\r\n\r\n```\r\npython\
+  \ -m rich diagnose\r\n                                                         \
+  \                          Rich features                                       \
+  \                                             \r\n                             \
+  \                                                                              \
+  \                                                                         \r\n \
+  \   Colors    ✓ 4-bit color                 ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\
+  \ \r\n              ✓ 8-bit color                 ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_repr.py::test_rich_repr
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3006
+  issue: 2875
+  merged_at: '2023-07-29T15:50:01Z'
+  issue_url: https://github.com/Textualize/rich/issues/2875

@@ -1,0 +1,31 @@
+id: rich-pr3480
+repo: Textualize/rich
+base_commit: 9ec419154102acce7363e3958bec6c261864d7fb
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Infinite loop in Text.append\n\nOccurs when appending to self.\r\n\r\
+  \n```python\r\na = Text(\"one\", \"blue\")\r\na.append(a)\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_text.py::test_append_loop_regression
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3480
+  issue: 3479
+  merged_at: '2024-09-06T09:56:57Z'
+  issue_url: https://github.com/Textualize/rich/issues/3479

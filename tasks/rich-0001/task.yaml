@@ -1,0 +1,44 @@
+id: rich-0001
+repo: Textualize/rich
+base_commit: 9d8f9a372cc5916fd4781fec207ced7ddac2f08f
+language: python
+category: bug_fix
+level: L2
+source: mutated
+prompt: |
+  Text containing CJK / double-width characters wraps one column too early.
+  A line of wide characters that should exactly fill the available width gets
+  broken before the last character, so panels and tables render with a ragged
+  right edge and waste a column. Pure-ASCII text wraps correctly.
+
+  Example: wrapping "あ1り234が5と6う78" to width 3 should give
+  ["あ1", "り2", "34", "が5", "と6", "う7", "8"] but the first chunk comes out
+  as just "あ" and everything after is shifted.
+
+  Find and fix the wrapping bug.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - tests/test_cells.py::test_chop_cells_mixed_width
+    - tests/test_text.py::test_wrap_cjk
+    - tests/test_text.py::test_wrap_cjk_mixed
+    - tests/test_text.py::test_wrap_long_multi_codepoint
+    - tests/test_repogym_chop_cells.py::test_chop_cells_exact_fit_mixed_width
+    - tests/test_repogym_chop_cells.py::test_chop_cells_double_width_exact_fill
+  pass_to_pass:
+    - tests/test_cells.py::test_chop_cells
+    - tests/test_cells.py::test_chop_cells_double_width_boundary
+    - tests/test_text.py::test_split
+    - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

@@ -1,0 +1,85 @@
+id: rich-pr2038
+repo: Textualize/rich
+base_commit: b9b99ad77068bd51eec321fd01a080cb98a132b7
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] `rich.print_json()` produces incorrect syntax highlighting with `indent=None`\n\
+  \n**Describe the bug**\r\n\r\nWhen using the `indent=None` parameter to `rich.print_json()`,\
+  \ it results in incorrect highlighting.\r\n\r\nMinimal example:\r\n```py\r\ndata\
+  \ = {\"items\": [{\"name\": \"apple\", \"count\": 1}]}\r\nrich.print_json(data=data)\
+  \  # Good\r\nrich.print_json(data=data, indent=None)  # Bad\r\n```\r\n\r\nScreenshot:\r\
+  \n\r\n\r\n**Platform**\r\n<details>\r\n<summary>Click to expand</summary>\r\n\r\n\
+  * Environment (SSH): Debian 11, Python 3.10.2\r\n* Terminal: GNOME Terminal 3.38.1,\
+  \ Ubuntu 21.10\r\n\r\n```\r\n╭───────────────────────── <class 'rich.console.Console'>\
+  \ ─────────────────────────╮\r\n│ A high level console interface.              \
+  \                                    │\r\n│                                    \
+  \                                              │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=162 ColorSystem.EIGHT_BIT>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = '256'                                    \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='utf-8'> │\r\n│           height = 39                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=162, height=39),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=162, \
+  \                                           │\r\n│                        is_terminal=True,\
+  \                                         │\r\n│                        encoding='utf-8',\
+  \                                         │\r\n│                        max_height=39,\
+  \                                            │\r\n│                        justify=None,\
+  \                                             │\r\n│                        overflow=None,\
+  \                                            │\r\n│                        no_wrap=False,\
+  \                                            │\r\n│                        highlight=None,\
+  \                                           │\r\n│                        markup=None,\
+  \                                              │\r\n│                        height=None\
+  \                                               │\r\n│                    )    \
+  \                                                         │\r\n│            quiet\
+  \ = False                                                         │\r\n│       \
+  \    record = False                                                         │\r\n\
+  │         safe_box = True                                                      \
+  \    │\r\n│             size = ConsoleDimensions(width=162, height=39)         \
+  \              │\r\n│        soft_wrap = False                                 \
+  \                        │\r\n│           stderr = False                       \
+  \                                  │\r\n│            style = None              \
+  \                                            │\r\n│         tab_size = 8       \
+  \                                                     \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_print_json_indent_none
+  - tests/test_console.py::test_log
+  - tests/test_highlighter.py::test_highlight_json_with_indent
+  - tests/test_highlighter.py::test_highlight_json_string_only
+  - tests/test_highlighter.py::test_highlight_json_empty_string_only
+  - tests/test_highlighter.py::test_highlight_json_no_indent
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2038
+  issue: 2027
+  merged_at: '2022-03-08T16:30:45Z'
+  issue_url: https://github.com/Textualize/rich/issues/2027

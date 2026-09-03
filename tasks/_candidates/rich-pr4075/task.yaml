@@ -1,0 +1,53 @@
+id: rich-pr4075
+repo: Textualize/rich
+base_commit: 1fc7cb210ae52eb099df39818ddb9569e5b14c7b
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] test_assemble_meta fails with Python 3.14.0b1\n\n- [x] I've checked\
+  \ [docs](https://rich.readthedocs.io/en/latest/introduction.html) and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n**Describe the bug**\n\nWith Python 3.14 and various fixes from open PRs applied,\
+  \ I'm down to one failing test with beta 1.\nI try to build rich for Fedora Linux.\n\
+  \n```\n______________________________ test_assemble_meta ______________________________\n\
+  \n    def test_assemble_meta():\n        text = Text.assemble(\"foo\", (\"bar\"\
+  , \"bold\"), meta={\"foo\": \"bar\"})\n        assert str(text) == \"foobar\"\n\
+  >       assert text._spans == [Span(3, 6, \"bold\"), Span(0, 6, Style(meta={\"foo\"\
+  : \"bar\"}))]\nE       AssertionError: assert [Span(3, 6, 'bold'), Span(0, 6, Style(meta={'foo':\
+  \ 'bar'}))] == [Span(3, 6, 'bold'), Span(0, 6, Style(meta={'foo': 'bar'}))]\nE \
+  \        \nE         At index 1 diff: Span(0, 6, Style(meta={'foo': 'bar'})) !=\
+  \ Span(0, 6, Style(meta={'foo': 'bar'}))\nE         \nE         Full diff:\nE  \
+  \         [\nE               Span(3, 6, 'bold'),\nE               Span(0, 6, Style(meta={'foo':\
+  \ 'bar'})),\nE           ]\n\ntests/test_text.py:846: AssertionError\n===========================\
+  \ short test summary info ============================\nFAILED tests/test_text.py::test_assemble_meta\
+  \ - AssertionError: assert [Span(3, 6, 'bold'), Span(0, 6, Style(meta={'foo': 'bar'}))]\
+  \ == [Span(3, 6, 'bold'), Span(0, 6, Style(meta={'foo': 'bar'}))]\n  \n  At index\
+  \ 1 diff: Span(0, 6, Style(meta={'foo': 'bar'})) != Span(0, 6, Style(meta={'foo':\
+  \ 'bar'}))\n  \n  Full diff:\n    [\n        Span(3, 6, 'bold'),\n        Span(0,\
+  \ 6, Style(meta={'foo': 'bar'})),\n    ]\n```\n**Platform**\n<details>\n<summary>Click\
+  \ to expand</summary>\n\nIt's the test run during the build of Fedora Linux.\n\n\
+  </details>\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_print_empty_with_end
+  - tests/test_console.py::test_print_multiple
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4075
+  issue: 3740
+  merged_at: '2026-04-11T09:34:48Z'
+  issue_url: https://github.com/Textualize/rich/issues/3740

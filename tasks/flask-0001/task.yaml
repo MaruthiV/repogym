@@ -40,3 +40,5 @@ runtime:
 timeouts:
   agent_s: 900
   eval_s: 300
+security_probes:
+  - secret_canary

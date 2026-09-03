@@ -1,0 +1,46 @@
+id: click-pr2775
+repo: pallets/click
+base_commit: 2cabbe3175026695210fe0bf9b179fd62d52634f
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "echo_via_pager with generators leaves terminal in broken state\n\n# Steps\
+  \ to reproduce\r\n\r\nRun the following test case:\r\n```\r\nimport click\r\n\r\n\
+  def output_generator():\r\n    counter = 0\r\n    while True:\r\n        yield \"\
+  this is a line of output\\n\"\r\n        if counter == 1024:\r\n            click.echo(\"\
+  kaboom\", err=True)\r\n            click.get_current_context().exit(0)\r\n     \
+  \   counter += 1\r\n\r\n@click.command\r\ndef kaboom():\r\n    click.echo_via_pager(output_generator)\r\
+  \n\r\nif __name__ == \"__main__\":\r\n    kaboom()\r\n```\r\n\r\nAttempt to use\
+  \ the terminal afterwards\r\n\r\n# Expected result\r\n\r\nA working terminal.\r\n\
+  \r\n# Actual behavior\r\n\r\nNewlines and output are obscured.  Commands may be\
+  \ entered, but they are not displayed.\r\n\r\n# Workaround\r\n\r\nRun the `reset`\
+  \ command after the command terminates.\r\n\r\nEnvironment:\r\n\r\nReproducible\
+  \ on OS X and Ubuntu (x86_64):\r\n\r\n```\r\n$ sw_vers\r\nProductName:         \
+  \   macOS\r\nProductVersion:         14.3.1\r\nBuildVersion:           23D60\r\n\
+  ```\r\n- Python version: 3.11.2\r\n- Click version: 8.1.7\r\n\r\n```\r\n# cat /etc/lsb-release\r\
+  \nDISTRIB_ID=Ubuntu\r\nDISTRIB_RELEASE=22.04\r\nDISTRIB_CODENAME=jammy\r\nDISTRIB_DESCRIPTION=\"\
+  Ubuntu 22.04.3 LTS\"\r\n```\r\n- Python version: 3.10.12\r\n- Click version: 8.1.7\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_utils.py::test_echo_via_pager
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2775
+  issue: 2674
+  merged_at: '2024-11-09T00:22:59Z'
+  issue_url: https://github.com/pallets/click/issues/2674

@@ -1,0 +1,42 @@
+id: rich-pr1643
+repo: Textualize/rich
+base_commit: eb673d1204340738d3084ebc2e4c789a35a4e49b
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "[BUG] Need better detection of terminal color capabilities\n\n**Describe\
+  \ the bug**\r\nThe terminal 'rxvt-unicode-256color' is not correctly identified\
+  \ as having 256 color support, because the code doesn't expect the base terminal\
+  \ name (rxvt-unicode) to have a hyphen (https://github.com/willmcgugan/rich/blob/master/rich/console.py#L773).\r\
+  \n\r\n**To Reproduce**\r\nRun urxvt from the rxvt-unicode-256 package.\r\n\r\n**Platform**\r\
+  \nLinux\r\n\r\n**Diagnose**\r\n```\r\n$ python -m rich.diagnose\r\n│ color_system\
+  \ = 'standard' │\r\n│   is_interactive = True   │\r\n│      is_terminal = True \
+  \  │\r\n│         no_color = False  |\r\n$ python -m rich._windows\r\nplatform=\"\
+  Linux\"\r\nWindowsConsoleFeatures(vt=False, truecolor=False)\r\n$ pip freeze | grep\
+  \ rich\r\nrich==8.0.0\r\n```\r\n\r\n**Recommendation**\r\nQuery the terminal capabilities\
+  \ more directly, e.g.:\r\n```\r\ntry:\r\n    import curses\r\n    curses.setupterm()\r\
+  \n    num_colors = curses.tigetnum('colors')\r\nexcept ModuleNotFoundError:\r\n\
+  \    pass\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_detect_color_system
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 1643
+  issue: 1640
+  merged_at: '2021-11-05T10:27:43Z'
+  issue_url: https://github.com/Textualize/rich/issues/1640

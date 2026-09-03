@@ -1,0 +1,88 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index a3b06bdaef..33d7734cd0 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fixed extraneous blank line on non-interactive disabled `Progress` https://github.com/Textualize/rich/pull/3905
+ - Fixed extra padding on first cell in columns https://github.com/Textualize/rich/pull/3935
+ - Fixed trailing whitespace removed when soft_wrap=True https://github.com/Textualize/rich/pull/3937
++- Fixed style new-lines when soft_wrap = True and a print style is set https://github.com/Textualize/rich/pull/3938
+ 
+ ### Added
+ 
+@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Added support for `UNICODE_VERSION` environment variable https://github.com/Textualize/rich/pull/3930
+ - Added `last_render_height` property to LiveRender https://github.com/Textualize/rich/pull/3934
+ - Expose locals_max_depth and locals_overflow in traceback.install https://github.com/Textualize/rich/pull/3906/
++- Added `Segment.split_lines_terminator` https://github.com/Textualize/rich/pull/3938
+ 
+ ### Changed
+ 
+diff --git a/rich/console.py b/rich/console.py
+index 994adfc069..ad92d529c0 100644
+--- a/rich/console.py
++++ b/rich/console.py
+@@ -1723,12 +1723,16 @@ def print(
+                 for renderable in renderables:
+                     extend(render(renderable, render_options))
+             else:
++                render_style = self.get_style(style)
++                new_line = Segment.line()
+                 for renderable in renderables:
+-                    extend(
+-                        Segment.apply_style(
+-                            render(renderable, render_options), self.get_style(style)
+-                        )
+-                    )
++                    for line, add_new_line in Segment.split_lines_terminator(
++                        render(renderable, render_options)
++                    ):
++                        extend(Segment.apply_style(line, render_style))
++                        if add_new_line:
++                            new_segments.append(new_line)
++
+             if new_line_start:
+                 if (
+                     len("".join(segment.text for segment in new_segments).splitlines())
+diff --git a/rich/segment.py b/rich/segment.py
+index edcb52dd3f..0df63fdefe 100644
+--- a/rich/segment.py
++++ b/rich/segment.py
+@@ -275,6 +275,37 @@ def split_lines(cls, segments: Iterable["Segment"]) -> Iterable[List["Segment"]]
+         if line:
+             yield line
+ 
++    @classmethod
++    def split_lines_terminator(
++        cls, segments: Iterable["Segment"]
++    ) -> Iterable[Tuple[List["Segment"], bool]]:
++        """Split a sequence of segments in to a list of lines and a boolean to indicate if there was a new line.
++
++        Args:
++            segments (Iterable[Segment]): Segments potentially containing line feeds.
++
++        Yields:
++            Iterable[List[Segment]]: Iterable of segment lists, one per line.
++        """
++        line: List[Segment] = []
++        append = line.append
++
++        for segment in segments:
++            if "\n" in segment.text and not segment.control:
++                text, style, _ = segment
++                while text:
++                    _text, new_line, text = text.partition("\n")
++                    if _text:
++                        append(cls(_text, style))
++                    if new_line:
++                        yield (line, True)
++                        line = []
++                        append = line.append
++            else:
++                append(segment)
++        if line:
++            yield (line, False)
++
+     @classmethod
+     def split_and_crop_lines(
+         cls,

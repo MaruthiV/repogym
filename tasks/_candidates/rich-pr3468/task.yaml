@@ -1,0 +1,78 @@
+id: rich-pr3468
+repo: Textualize/rich
+base_commit: ae15db600976a7999d21653002f338d0761b180c
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Writing JSON to STDOUT\n\n**Describe the bug**\r\nA clear and concise\
+  \ description of what the bug is.\r\n\r\nI have been attempting to use rich to output\
+  \ a very large JSON into STDOUT.\r\n\r\n**To Reproduce**\r\nA minimal code example\
+  \ that reproduces the problem would be a big help if you can provide it. If the\
+  \ issue is visual in nature, consider posting a screenshot.\r\n\r\n`test_rich.py`\r\
+  \n```python\r\nfrom rich.console import Console\r\n\r\nconsole = Console()\r\nconsole.print_json(data=[{\"\
+  hello\": {\"big wide\": \"world\"}} for _ in range(50000)])\r\n# Please note that\
+  \ my data is a decent bit larger\r\n```\r\n\r\n```sh\r\n$ python test_rich.py |\
+  \ jq\r\nparse error: Invalid string: control characters from U+0000 through U+001F\
+  \ must be escaped at line 14, column 9\r\nTraceback (most recent call last):\r\n\
+  \  File \"<string>\", line 1, in <module>\r\n  File \"my_module/cli/__init__.py\"\
+  , line 21, in main\r\n    args.func(args)\r\n  File \"my_module/cli/commands/search.py\"\
+  , line 143, in cli_search\r\n    write_file(results, **write_args)\r\n  File \"\
+  my_module/cli/utils.py\", line 115, in write_file\r\n    _write_screen(results_list)\r\
+  \n  File \"my_module/cli/utils.py\", line 82, in _write_screen\r\n    console.print_json(data=search_results)\r\
+  \n  File \"./.venv/lib/python3.9/site-packages/rich/console.py\", line 1643, in\
+  \ print_json\r\n    self.print(json_renderable)\r\n  File \"./.venv/lib/python3.9/site-packages/rich/console.py\"\
+  , line 1615, in print\r\n    self._buffer.extend(new_segments)\r\n  File \"./.venv/lib/python3.9/site-packages/rich/console.py\"\
+  , line 825, in __exit__\r\n    self._exit_buffer()\r\n  File \"./.venv/lib/python3.9/site-packages/rich/console.py\"\
+  , line 784, in _exit_buffer\r\n    self._check_buffer()\r\n  File ./.venv/lib/python3.9/site-packages/rich/console.py\"\
+  , line 1872, in _check_buffer\r\n    self.file.write(text)\r\nBrokenPipeError: [Errno\
+  \ 32] Broken pipe\r\n```\r\n\r\n**Platform**\r\nWhat platform (Win/Linux/Mac) are\
+  \ you running on? What terminal software are you using?\r\n\r\nmacOS, I have tried\
+  \ the normal Terminal,  iTerm 2, and VSCode Integrated Terminal.\r\n\r\n**Diagnose**\r\
+  \n\r\n```sh\r\n$ python -m rich.diagnose\r\n╭─────────────────────── <class 'rich.console.Console'>\
+  \ ───────────────────────╮\r\n│ A high level console interface.                \
+  \                              │\r\n│                                          \
+  \                                    │\r\n│ ╭──────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=80 ColorSystem.TRUECOLOR>                            \
+  \     │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \       │\r\n│     color_system = 'truecolor'                                  \
+  \             │\r\n│         encoding = 'utf-8'                                \
+  \                   │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w'               │\r\n│                    encoding='utf-8'>           \
+  \                              │\r\n│           height = 40                    \
+  \                                    │\r\n│    is_alt_screen = False           \
+  \                                          │\r\n│ is_dumb_terminal = False     \
+  \                                                │\r\n│   is_interactive = True\
+  \                                                      │\r\n│       is_jupyter =\
+  \ False                                                     │\r\n│      is_terminal\
+  \ = True                                                      │\r\n│   legacy_windows\
+  \ = False                                                     │\r\n│         no_color\
+  \ = False                                                     │\r\n│          options\
+  \ = ConsoleOptions(                                           │\r\n│           \
+  \             size=ConsoleDimensions(width=80, height=40),          │\r\n│     \
+  \                   legacy_windows=False,                                 │\r\n\
+  │                        min_width=1,                                          │\r\
+  \n│                        max_width=80,                                       \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_brokenpipeerror
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3468
+  issue: 1591
+  merged_at: '2024-08-26T13:28:30Z'
+  issue_url: https://github.com/Textualize/rich/issues/1591

@@ -1,0 +1,81 @@
+id: rich-pr2133
+repo: Textualize/rich
+base_commit: 15b4dd6446152dccff4998f5739aff4ca879d58f
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] rich.traceback: no lexer for filename X found\n\n**Describe the bug**\r\
+  \n\r\nThe rich.traceback doesn't know how to render tracebacks originating from\
+  \ inside jinja2 templates.\r\nThe issue is twofold: (1) rich doesn't recognize the\
+  \ `.yaml.j2` extension as `jinja2+yaml`,  and (2) the fallback isn't to print the\
+  \ file contents without highlighting but instead to **simply not print it at all**.\r\
+  \nAs such this bug likely also affects other languages to compile to python bytecode,\
+  \ such as [dg](http://pyos.github.io/dg/), [Hylang](https://docs.hylang.org/en/stable/)\
+  \ and [hissp/hebigo](https://github.com/gilch/hissp).\r\n\r\nRepro:\r\n\r\ntest.py:\r\
+  \n```python\r\nimport jinja2, os\r\nfrom rich.traceback import install\r\ninstall()\r\
+  \ndef raiser():\r\n    raise Exception\r\nenv = jinja2.Environment(\r\n    loader\
+  \ = jinja2.FileSystemLoader([os.getcwd(), \"/\"], followlinks=True),\r\n)\r\nenv.globals[\"\
+  raiser\"] = raiser    \r\ntemplate = env.get_template(\"test.yaml.j2\")\r\nprint(template.render())\r\
+  \n```\r\ntest.yaml.j2:\r\n```jinja2\r\nfoobar:\r\n    something: {{ raiser() }}\r\
+  \n    else: {{ 5 + 5 }}\r\n```\r\n\r\nVanilla traceback:\r\n\r\n```\r\nTraceback\
+  \ (most recent call last):\r\n  File \"/home/pbsds/tmp/repro/test.py\", line 13,\
+  \ in <module>\r\n    print(template.render())\r\n  File \"/usr/lib/python3.10/site-packages/jinja2/environment.py\"\
+  , line 1291, in render\r\n    self.environment.handle_exception()\r\n  File \"/usr/lib/python3.10/site-packages/jinja2/environment.py\"\
+  , line 925, in handle_exception\r\n    raise rewrite_traceback_stack(source=source)\r\
+  \n  File \"/home/pbsds/tmp/repro/test.yaml.j2\", line 2, in top-level template code\r\
+  \n    something: {{ raiser() }}\r\n  File \"/home/pbsds/tmp/repro/test.py\", line\
+  \ 4, in raiser\r\n    raise Exception\r\nException\r\n```\r\n\r\nrich.traceback:\r\
+  \n```\r\n╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮\r\
+  \n│                                                                            \
+  \                      │\r\n│ /home/pbsds/tmp/repro/test.py:15 in <module>     \
+  \                                                │\r\n│                        \
+  \                                                                          │\r\n\
+  │   12                                                                         \
+  \                    │\r\n│   13 template = env.get_template(\"test.yaml.j2\") \
+  \                                                │\r\n│   14                   \
+  \                                                                          │\r\n\
+  │ ❱ 15 print(template.render())                                                \
+  \                    │\r\n│   16                                               \
+  \                                              │\r\n│ /usr/lib/python3.10/site-packages/jinja2/environment.py:1291\
+  \ in render                           │\r\n│                                   \
+  \                                                               │\r\n│   1288 │\
+  \   │   try:                                                                   \
+  \           │\r\n│   1289 │   │   │   return concat(self.root_render_func(ctx))\
+  \  # type: ignore                     │\r\n│   1290 │   │   except Exception:  \
+  \                                                               │\r\n│ ❱ 1291 │\
+  \   │   │   self.environment.handle_exception()                                \
+  \           │\r\n│   1292 │                                                    \
+  \                                     │\r\n│   1293 │   async def render_async(self,\
+  \ *args: t.Any, **kwargs: t.Any) -> str:                   │\r\n│   1294 │   │ \
+  \  \"\"\"This works similar to :meth:`render` but returns a coroutine          \
+  \         │\r\n│                                                               \
+  \                                   │\r\n│ /usr/lib/python3.10/site-packages/jinja2/environment.py:925\
+  \ in handle_exception                  │\r\n│                                  \
+  \                                                                │\r\n│    922 │\
+  \   │   \"\"\"                                                                 \
+  \              │\r\n│    923 │   │   from .debug import rewrite_traceback_stack\
+  \                     \n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_traceback.py::test_guess_lexer_yaml_j2
+  - tests/test_traceback.py::test_recursive
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2133
+  issue: 2018
+  merged_at: '2022-04-01T09:23:44Z'
+  issue_url: https://github.com/Textualize/rich/issues/2018

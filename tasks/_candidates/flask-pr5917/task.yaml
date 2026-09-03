@@ -1,0 +1,62 @@
+id: flask-pr5917
+repo: pallets/flask
+base_commit: d3b78fd18a8d9e224cb9ef58a23cec9b1ffc9ce9
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "`provide_automatic_options` is weird\n\nWhile dealing with trying to detect\
+  \ duplicate routes in https://github.com/pallets/werkzeug/issues/3105, I ran into\
+  \ an issue with Flask, which adds `OPTIONS` to every single rule by default.\n\n\
+  I started looking into Flask's `provide_automatic_options` feature, and it's just\
+  \ weird.\n\n- Why is there a `PROVIDE_AUTOMATIC_OPTIONS` config? What benefit is\
+  \ there to turning `OPTIONS` off at all, let alone configuring it for a given deployment.\n\
+  - Flask adds `OPTIONS` to every route, then has a check that runs on dispatching\
+  \ _every_ request to see if the method was `OPTIONS` and `provide_automatic_options`\
+  \ was enabled for the rule. Performing this check for every request seems wasteful,\
+  \ as opposed to adding an actual rule and endpoint so that the routing that's already\
+  \ happening handles it.\n    - But adding a rule is also sort of bad, as it results\
+  \ in a bunch of duplicate rules since Flask has no way to know what other rules\
+  \ have already been added. This can be caught with Werkzeug 3.2, and doesn't cause\
+  \ problems in earlier versions, but it's still annoying.\n- `provide_automatic_options`\
+  \ can be set as an attribute on the view function. There are some other attributes\
+  \ that are barely documented as well, such as `required_methods`. This is presumably\
+  \ mostly for `View` classes, but works on functions too, making type annotations\
+  \ unhelpful.\n- If `PROVIDE_AUTOMATIC_OPTIONS` is disabled (not the default), the\
+  \ logic for the `provide_automatic_options` argument and attribute doesn't work\
+  \ correctly to _enable_ it, it only works for _disabling_.\n- The tests for this\
+  \ were incomplete and had some issues. Some other tests were revealed to be adding\
+  \ duplicate rules as well. \n\nAt a minimum I've fixed the enabling issue. I've\
+  \ also got a change that registers a route and view for options instead of using\
+  \ special dispatch logic. We should also consider deprecating the config.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_provide_automatic_options_attr_disable
+  - tests/test_basic.py::test_provide_automatic_options_attr_enable
+  - tests/test_basic.py::test_provide_automatic_options_arg_disable
+  - tests/test_basic.py::test_provide_automatic_options_method_disable
+  - tests/test_blueprints.py::test_default_static_max_age
+  - tests/test_views.py::test_view_provide_automatic_options_attr_disable
+  - tests/test_views.py::test_view_provide_automatic_options_attr_enable
+  - tests/test_views.py::test_provide_automatic_options_method_disable
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5917
+  issue: 5916
+  merged_at: '2026-02-12T21:07:51Z'
+  issue_url: https://github.com/pallets/flask/issues/5916

@@ -4,6 +4,12 @@ flask:
   language: python
   install: "uv sync --group tests"
   test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_helpers.py::TestSendfile::test_static_file"
+    - "tests/test_instance_config.py::test_explicit_instance_paths"
+    - "tests/test_basic.py::test_static_files"
+    - "tests/test_templating.py::test_custom_template_loader"
+    - "tests/test_templating.py::test_template_filter"
 
 click:
   url: https://github.com/pallets/click
@@ -11,17 +17,41 @@ click:
   language: python
   install: "uv sync --group tests"
   test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_basic.py::test_basic_functionality"
+    - "tests/test_basic.py::test_repr"
+    - "tests/test_utils/test_format_filename.py::test_filename_formatting"
+    - "tests/test_basic.py::test_option_reusing_help_flag"
 
 httpx:
   url: https://github.com/encode/httpx
   sha: b5addb64f0161ff6bfe94c124ef76f6a1fba5254
   language: python
-  install: "uv venv .venv && VIRTUAL_ENV=$PWD/.venv uv pip install -e . -r requirements.txt"
+  install: "uv venv .venv && uv pip install --python .venv/bin/python -e . -r requirements.txt"
   test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_content.py::test_bytes_content[asyncio]"
+    - "tests/test_content.py::test_iterator_content[asyncio]"
+    - "tests/models/test_headers.py::test_sensitive_headers[authorization]"
 
 rich:
   url: https://github.com/Textualize/rich
   sha: 9d8f9a372cc5916fd4781fec207ced7ddac2f08f
   language: python
-  install: "uv venv .venv && VIRTUAL_ENV=$PWD/.venv uv pip install -e . pytest pytest-cov attrs"
+  install: "uv venv .venv && uv pip install --python .venv/bin/python -e . pytest pytest-cov attrs"
   test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_cells.py::test_chop_cells"
+    - "tests/test_text.py::test_split"
+    - "tests/test_text.py::test_fit"
+
+zod:
+  url: https://github.com/colinhacks/zod
+  sha: 7a00236683c79000dbab0d92f6faf0b7fba39f59
+  language: typescript
+  test_style: vitest
+  install: "pnpm install --frozen-lockfile --reporter=silent"
+  test_base: "npx vitest run"
+  default_p2p:
+    - "packages/zod/src/v4/classic/tests/array.test.ts"
+    - "packages/zod/src/v4/classic/tests/catch.test.ts"

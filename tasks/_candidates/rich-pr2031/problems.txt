@@ -1,0 +1,16 @@
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_length_one_no_trailing_comma -> pass
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_empty -> pass
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_custom_repr -> pass
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_fields_invalid_type -> pass
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_max_depth -> pass
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_small_width -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_length_one_no_trailing_comma -> pass
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_empty -> pass
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_custom_repr -> pass
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_fields_invalid_type -> pass
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_pretty_namedtuple_max_depth -> pass
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_small_width -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error

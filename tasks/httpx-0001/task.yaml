@@ -1,0 +1,44 @@
+id: httpx-0001
+repo: encode/httpx
+base_commit: b5addb64f0161ff6bfe94c124ef76f6a1fba5254
+language: python
+category: bug_fix
+level: L2
+source: mutated
+prompt: |
+  POST requests that pass an in-memory stream as content upload an EMPTY body.
+
+      httpx.post("https://example.org/upload", content=io.BytesIO(data))
+
+  sends zero body bytes (the server receives an empty payload), even though the
+  Content-Length header is set to the correct full size. Uploading from a real
+  file object opened from disk works fine; only in-memory streams like BytesIO
+  are affected. This worked in the previous release we were on.
+
+  Track down and fix the underlying bug.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - "tests/test_content.py::test_bytesio_content[asyncio]"
+    - "tests/test_content.py::test_bytesio_content[trio]"
+    - tests/test_decoders.py::test_zstd_multiframe
+    - tests/test_repogym_stream_length.py::test_peek_filelike_length_preserves_position
+    - tests/test_repogym_stream_length.py::test_request_content_from_bytesio_body
+  pass_to_pass:
+    - "tests/test_content.py::test_bytes_content[asyncio]"
+    - "tests/test_content.py::test_iterator_content[asyncio]"
+    - "tests/test_content.py::test_empty_content[asyncio]"
+    - "tests/models/test_headers.py::test_sensitive_headers[authorization]"
+    - "tests/models/test_headers.py::test_sensitive_headers[proxy-authorization]"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: httpx
+  image: repogym/httpx:b5addb64f016
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

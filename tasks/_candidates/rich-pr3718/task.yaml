@@ -1,0 +1,38 @@
+id: rich-pr3718
+repo: Textualize/rich
+base_commit: 7d36119f8378b36129502c3281a7faffef837e02
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG]In the latest versions rich \"Title\" without color\n\nrich v 13.0.1\
+  \  Title is painted over, see screenshot\r\nrich v13.9.4r Title unpainted, see screenshot\r\
+  \n\r\nOS GNU/Linux and OS Windows\r\n\r\n```python\r\nfrom rich.console import Console\r\
+  \nfrom rich.panel import Panel\r\nfrom rich.style import Style\r\nimport os\r\n\r\
+  \nconsole = Console()\r\nconsole.print(Panel(str(os.environ), title='[bold white]Title[/bold\
+  \ white]', style=Style(color=\"white\", bgcolor=\"blue\")))\r\n```\r\n\r\nTitle\
+  \ should be like on the first screen (white on blue), in the second case (updated\
+  \ rich) white on dark (bug?)\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_panel.py::test_title_text_with_border_color
+  - tests/test_panel.py::test_title_text_with_panel_background
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3718
+  issue: 3569
+  merged_at: '2025-06-24T12:18:52Z'
+  issue_url: https://github.com/Textualize/rich/issues/3569

@@ -1,0 +1,47 @@
+id: rich-pr2678
+repo: Textualize/rich
+base_commit: 5baaf5088e8e7cf255fc87ec98c4416be6b0b5b7
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] rich.print(\"[bright_blue uu]\" + message) crashes with NotImplementedError\n\
+  \n**Describe the bug**\r\n\r\nI'm trying to do a print statement on Windows environment\
+  \ using `rich` and I get an exception.\r\n```python\r\nrich.print(\"[bright_blue\
+  \ uu]\" + message)\r\n```\r\n\r\n\r\nProvide a minimal code example that demonstrates\
+  \ the issue if you can. If the issue is visual in nature, consider posting a screenshot.\r\
+  \n\r\nWindows 10 x64\r\nFaust streaming application.\r\nI'm using the terminal emulated\
+  \ by PyCharm.\r\n\r\nFrom what I can tell the error is in console.py, around here:\r\
+  \n```python\r\n                            try:\r\n                            \
+  \    use_legacy_windows_render = (\r\n                                    self.file.fileno()\
+  \ in _STD_STREAMS_OUTPUT\r\n                                )\r\n              \
+  \              except (ValueError, io.UnsupportedOperation):\r\n               \
+  \                 pass\r\n```\r\n\r\n\r\n\r\nThe error doesn't appear in the main\
+  \ application, it appears in a library that uses `rich`.\r\nIf I write the same\
+  \ console message from my main application, before the library does it then it works\
+  \ ok.\r\nBut if the library wants to write the message it fails with the exception\
+  \ mentioned above.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_getfileno.py::test_get_fileno
+  - tests/test_getfileno.py::test_get_fileno_missing
+  - tests/test_getfileno.py::test_get_fileno_broken
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2678
+  issue: 2645
+  merged_at: '2022-11-30T14:41:30Z'
+  issue_url: https://github.com/Textualize/rich/issues/2645

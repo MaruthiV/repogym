@@ -4,15 +4,23 @@ from repogym.images import RepoEntry
 from repogym.sandbox import Sandbox, SandboxError
 
 DIFF_EXCLUDES = "':(exclude).venv' ':(exclude)*.egg-info' ':(exclude)uv.lock'"
+FALLBACK_INSTALL = "rm -rf .venv && uv venv .venv && uv pip install --python .venv/bin/python -e . pytest"
 
 
-def setup_workspace(sb: Sandbox, entry: RepoEntry) -> None:
+def setup_workspace(sb: Sandbox, entry: RepoEntry, base_commit: str | None = None) -> None:
     rc, out = sb.exec("rm -rf /work && cp -a /repo /work && rm -rf /work/.venv", workdir="/")
     if rc != 0:
         raise SandboxError(f"workspace copy failed: {out[-1000:]}")
+    if base_commit and base_commit != entry.sha:
+        rc, out = sb.exec(f"git checkout -q {base_commit}")
+        if rc != 0:
+            raise SandboxError(f"checkout {base_commit[:12]} failed: {out[-500:]}")
     # keep venv and build junk out of git add -A no matter the repo's gitignore
     sb.exec("printf '.venv/\\n*.egg-info/\\nuv.lock\\n' >> /work/.git/info/exclude")
     rc, out = sb.exec(entry.install, timeout=900)
+    if rc != 0 and entry.language == "python":
+        # old commits predate the repo's current install layout, try a generic one
+        rc, out = sb.exec(FALLBACK_INSTALL, timeout=900)
     if rc != 0:
         raise SandboxError(f"install failed: {out[-2000:]}")
 

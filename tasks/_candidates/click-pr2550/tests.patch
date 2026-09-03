@@ -1,0 +1,44 @@
+diff --git a/tests/test_defaults.py b/tests/test_defaults.py
+index 0e438eb891..8ef5ea2922 100644
+--- a/tests/test_defaults.py
++++ b/tests/test_defaults.py
+@@ -38,3 +38,24 @@ def cli(arg):
+     result = runner.invoke(cli, [])
+     assert not result.exception
+     assert result.output.splitlines() == ["<1|2>", "<3|4>"]
++
++
++def test_multiple_flag_default(runner):
++    """Default default for flags when multiple=True should be empty tuple."""
++
++    @click.command
++    # flag due to secondary token
++    @click.option("-y/-n", multiple=True)
++    # flag due to is_flag
++    @click.option("-f", is_flag=True, multiple=True)
++    # flag due to flag_value
++    @click.option("-v", "v", flag_value=1, multiple=True)
++    @click.option("-q", "v", flag_value=-1, multiple=True)
++    def cli(y, f, v):
++        return y, f, v
++
++    result = runner.invoke(cli, standalone_mode=False)
++    assert result.return_value == ((), (), ())
++
++    result = runner.invoke(cli, ["-y", "-n", "-f", "-v", "-q"], standalone_mode=False)
++    assert result.return_value == ((True, False), (True,), (1, -1))
+diff --git a/tests/test_options.py b/tests/test_options.py
+index d4090c7255..91249b234f 100644
+--- a/tests/test_options.py
++++ b/tests/test_options.py
+@@ -911,10 +911,6 @@ def test_is_bool_flag_is_correctly_set(option, expected):
+     [
+         ({"count": True, "multiple": True}, "'count' is not valid with 'multiple'."),
+         ({"count": True, "is_flag": True}, "'count' is not valid with 'is_flag'."),
+-        (
+-            {"multiple": True, "is_flag": True},
+-            "'multiple' is not valid with 'is_flag', use 'count'.",
+-        ),
+     ],
+ )
+ def test_invalid_flag_combinations(runner, kwargs, message):

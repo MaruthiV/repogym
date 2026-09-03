@@ -1,0 +1,8 @@
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_ipy_display_hook__repr_html -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: f2p test not passing post-gold: tests/test_pretty.py::test_install_max_depth -> fail
+run1: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_ipy_display_hook__repr_html -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not passing post-gold: tests/test_pretty.py::test_install_max_depth -> fail
+run2: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error

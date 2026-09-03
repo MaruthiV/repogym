@@ -1,0 +1,57 @@
+id: rich-pr4079
+repo: Textualize/rich
+base_commit: 19c67b9a3479841e9133bea94607c89ee931d3fc
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] `TableDataElement.on_text` clobbers syntax-highlight spans for inline\
+  \ code\n\n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \nWhen using `Markdown` with `inline_code_lexer` and `inline_code_theme`, inline\
+  \ code (backticks) inside table cells loses its syntax highlighting and falls back\
+  \ to the default `markdown.code` style. The same inline code renders correctly in\
+  \ paragraphs, headings, and list items.\n\n**Root cause:**\n\n`TableDataElement.on_text`\
+  \ (markdown.py) unconditionally applies `context.current_style` over the text:\n\
+  \n```python\ndef on_text(self, context: MarkdownContext, text: TextType) -> None:\n\
+  \    text = Text(text) if isinstance(text, str) else text\n    text.stylize(context.current_style)\n\
+  \    self.content.append_text(text)\n```\n\nWhen `MarkdownContext.on_text` processes\
+  \ a `code_inline` token, it produces a `Text` object with per-character syntax-highlight\
+  \ spans. But `TableDataElement.on_text` then calls `text.stylize(context.current_style)`\
+  \ on that `Text` object, which overwrites all the highlight spans with the flat\
+  \ `markdown.code` style.\n\nCompare with `TextElement.on_text`, which correctly\
+  \ avoids this:\n\n```python\ndef on_text(self, context: MarkdownContext, text: TextType)\
+  \ -> None:\n    self.text.append(text, context.current_style if isinstance(text,\
+  \ str) else None)\n```\n\nHere, the style is only applied when `text` is a plain\
+  \ string. When it's already a highlighted `Text` object, `None` is passed, preserving\
+  \ the spans.\n\n**Fix:**\n\n`TableDataElement.on_text` should follow the same pattern:\n\
+  \n```python\ndef on_text(self, context: MarkdownContext, text: TextType) -> None:\n\
+  \    if isinstance(text, str):\n        self.content.append(text, context.current_style)\n\
+  \    else:\n        self.content.append_text(text)\n```\n\n**Repro:**\n\n```python\n\
+  from rich.console import Console\nfrom rich.markdown import Markdown\n\nmd = Markdown(\n\
+  \    \"| Col |\\n|---|\\n| `hello` |\\n\\n`hello`\",\n    inline_code_theme=\"monokai\"\
+  ,\n    inline_code_lexer=\"python\",\n)\nConsole().print(md)\n```\n\nThe standalone\
+  \ `` `hello` `` renders with the monokai theme; the one inside the table does not.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_markdown.py::test_inline_code_in_table_cells
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 4079
+  issue: 4038
+  merged_at: '2026-04-12T07:45:03Z'
+  issue_url: https://github.com/Textualize/rich/issues/4038

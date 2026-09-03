@@ -1,0 +1,29 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index a2f60d68f7..c2e019da34 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -1,5 +1,12 @@
+ .. currentmodule:: click
+ 
++Version 8.2.x
++-------------
++
++Unreleased
++
++-   show correct auto complete value for nargs option in combination with flag option :issue:`2813`
++
+ Version 8.2.2
+ -------------
+ 
+diff --git a/src/click/shell_completion.py b/src/click/shell_completion.py
+index 4cb53b91a5..5bebb5a9c7 100644
+--- a/src/click/shell_completion.py
++++ b/src/click/shell_completion.py
+@@ -552,6 +552,7 @@ def _is_incomplete_option(ctx: Context, args: list[str], param: Parameter) -> bo
+ 
+         if _start_of_option(ctx, arg):
+             last_option = arg
++            break
+ 
+     return last_option is not None and last_option in param.opts
+ 

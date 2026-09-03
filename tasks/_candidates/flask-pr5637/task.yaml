@@ -1,0 +1,38 @@
+id: flask-pr5637
+repo: pallets/flask
+base_commit: 10bdf61a0f751f3cb000f8f8ac5ac5b4bb535677
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: 'configure and check `request.trusted_hosts`
+
+
+  If `request.trusted_hosts` is set, it will be checked when accessing `request.host`/`url`/etc.
+  Add `TRUSTED_HOSTS` config, and check it during routing.
+
+  '
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_request.py::test_trusted_hosts_config
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5637
+  issue: 5636
+  merged_at: '2024-11-13T05:03:23Z'
+  issue_url: https://github.com/pallets/flask/issues/5636

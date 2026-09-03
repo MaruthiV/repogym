@@ -1,0 +1,25 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 7f9a8329d3..a45eaff0aa 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ - Fixed overriding the `background_color` of `Syntax` not including padding https://github.com/Textualize/rich/issues/3295
+ - Fixed selective enabling of highlighting when disabled in the `Console` https://github.com/Textualize/rich/issues/3419
+ - Fixed BrokenPipeError writing an error message https://github.com/Textualize/rich/pull/3468
++- Fixed superfluous space above Markdown tables https://github.com/Textualize/rich/pull/3469
+ 
+ ### Changed
+ 
+diff --git a/rich/markdown.py b/rich/markdown.py
+index a58a04fc63..26c58d1558 100644
+--- a/rich/markdown.py
++++ b/rich/markdown.py
+@@ -677,7 +677,7 @@ def __rich_console__(
+                         and context.stack.top.on_child_close(context, element)
+                     )
+                     if should_render:
+-                        if new_line:
++                        if new_line and node_type != "inline":
+                             yield _new_line_segment
+                         yield from console.render(element, context.options)
+ 

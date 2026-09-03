@@ -1,0 +1,80 @@
+id: rich-pr1950
+repo: Textualize/rich
+base_commit: 83756d624022d88082cf08ad49613d15b86ced21
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] List of numpy arrays does not print correctly\n\nThe bug is actually\
+  \ rather simple. Whenever you attempt to print a list that consists of NumPy arrays,\
+  \ it cuts off the first element of the list when combined with a string. Below is\
+  \ a minimal code example that shows the bug:\r\n\r\n```Python\r\nimport numpy as\
+  \ np\r\nfrom rich import print\r\n\r\nlist_of_arrays = [np.array([1, 0, 0]), np.array([0,\
+  \ 1, 0]), np.array([0, 0, 1])]\r\nprint(list_of_arrays)\r\nprint(f'Does something\
+  \ weird with f strings: {list_of_arrays}')\r\n```\r\noutput\r\n```\r\n[array([1,\
+  \ 0, 0]), array([0, 1, 0]), array([0, 0, 1])]\r\nDoes something weird with f strings:\
+  \ ), array([0, 1, 0]), array([0, 0, 1])]\r\n```\r\nOf course, the output should\
+  \ be that the second line also shows the complete list.\r\nI provide a screenshot\
+  \ below to show what it looks like in my terminal.\r\n\r\n\r\n**Platform**\r\nPlatform:\
+  \ Mac  \r\nTerminal: Oh-my-zsh  \r\nPython version: 3.7  \r\nRich version: 11.0.0\
+  \  \r\n\r\n<details>\r\n<summary>Click to expand</summary>\r\nThe other information\
+  \ that was asked after executing the commands:\r\n╭───────────────────────── <class\
+  \ 'rich.console.Console'> ─────────────────────────╮\r\n│ A high level console interface.\
+  \                                                  │\r\n│                      \
+  \                                                            │\r\n│ ╭──────────────────────────────────────────────────────────────────────────────╮\
+  \ │\r\n│ │ <console width=197 ColorSystem.EIGHT_BIT>                           \
+  \         │ │\r\n│ ╰──────────────────────────────────────────────────────────────────────────────╯\
+  \ │\r\n│                                                                       \
+  \           │\r\n│     color_system = '256'                                    \
+  \                     │\r\n│         encoding = 'utf-8'                        \
+  \                               │\r\n│             file = <_io.TextIOWrapper name='<stdout>'\
+  \ mode='w' encoding='UTF-8'> │\r\n│           height = 12                      \
+  \                                      │\r\n│    is_alt_screen = False         \
+  \                                                │\r\n│ is_dumb_terminal = False\
+  \                                                         │\r\n│   is_interactive\
+  \ = True                                                          │\r\n│       is_jupyter\
+  \ = False                                                         │\r\n│      is_terminal\
+  \ = True                                                          │\r\n│   legacy_windows\
+  \ = False                                                         │\r\n│       \
+  \  no_color = False                                                         │\r\n\
+  │          options = ConsoleOptions(                                           \
+  \    │\r\n│                        size=ConsoleDimensions(width=197, height=12),\
+  \             │\r\n│                        legacy_windows=False,              \
+  \                       │\r\n│                        min_width=1,             \
+  \                                 │\r\n│                        max_width=197, \
+  \                                           │\r\n│                        is_terminal=True,\
+  \                                         │\r\n│                        encoding='utf-8',\
+  \                                         │\r\n│                        max_height=12,\
+  \                                            │\r\n│                        justify=None,\
+  \                                             │\r\n│                        overflow=None,\
+  \                                            │\r\n│                        no_wrap=False,\
+  \                                            │\r\n│                        highlight=None,\
+  \                                           │\r\n│                        markup=None,\
+  \                                              │\r\n│                        height=None\
+  \                                               │\r\n│                    )    \
+  \                                                         │\r\n│            quiet\
+  \ = False                                                         │\r\n│       \
+  \    record = False                                                         │\r\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_markup.py::test_markup_escape
+  - tests/test_markup.py::test_escape_escape
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 1950
+  issue: 1876
+  merged_at: '2022-02-11T11:05:51Z'
+  issue_url: https://github.com/Textualize/rich/issues/1876

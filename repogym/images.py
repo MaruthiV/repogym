@@ -13,6 +13,8 @@ class RepoEntry(BaseModel):
     language: str
     install: str
     test_base: str
+    test_style: str = "pytest"
+    default_p2p: list[str] = []
 
 
 def load_registry() -> dict[str, RepoEntry]:

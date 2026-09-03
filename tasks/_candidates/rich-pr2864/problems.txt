@@ -1,0 +1,7 @@
+run1: f2p test not failing pre-fix: tests/test_pretty.py::test_array -> pass
+run1: gold patch failed to apply: error: patch failed: CHANGELOG.md:6
+error: CHANGELOG.md: patch does not apply
+
+run2: f2p test not failing pre-fix: tests/test_pretty.py::test_array -> pass
+run2: gold patch failed to apply: error: patch failed: CHANGELOG.md:6
+error: CHANGELOG.md: patch does not apply

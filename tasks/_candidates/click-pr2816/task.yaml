@@ -1,0 +1,50 @@
+id: click-pr2816
+repo: pallets/click
+base_commit: 1c68e531ef5e45f6facdb777c720d0f984614b81
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "_is_incomplete_option incorrectly processes last_option in loop\n\nThe _is_incomplete_option\
+  \ function in the Click library has a logic issue in its loop that sets the last_option\
+  \ variable. The function does not break the loop after assigning last_option, which\
+  \ leads to wrong shell completion.\r\n\r\n\r\n## Replication: \r\nSee https://github.com/msaipraneeth/click-tuple-param\r\
+  \n### RCA: \r\nWe can reproduce issue If we have flag option before tuple option\r\
+  \n\r\n## Environment:\r\n\r\n- Python version: 3.11\r\n- Click version: 8.1.7\r\n\
+  \r\n## Possible solution :\r\n\r\nOnce we identify the last option we have the break\
+  \ the loop in _is_incomplete_option function\r\n\r\n```python .numberLines\r\ndef\
+  \ _is_incomplete_option(ctx: Context, args: t.List[str], param: Parameter) -> bool:\r\
+  \n    \"\"\"Determine if the given parameter is an option that needs a value.\r\n\
+  \r\n    :param args: List of complete args before the incomplete value.\r\n    :param\
+  \ param: Option object being checked.\r\n    \"\"\"\r\n    if not isinstance(param,\
+  \ Option):\r\n        return False\r\n\r\n    if param.is_flag or param.count:\r\
+  \n        return False\r\n\r\n    last_option = None\r\n\r\n    for index, arg in\
+  \ enumerate(reversed(args)):\r\n        if index + 1 > param.nargs:\r\n        \
+  \    break\r\n\r\n        if _start_of_option(ctx, arg):\r\n            last_option\
+  \ = arg\r\n            break  # <--------------------------------------------------\
+  \ break the loop on finding the option\r\n\r\n    return last_option is not None\
+  \ and last_option in param.opts\r\n\r\n```\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_shell_completion.py::test_flag_option_with_nargs_option
+  - tests/test_shell_completion.py::test_option_custom
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2816
+  issue: 2813
+  merged_at: '2025-08-07T05:57:15Z'
+  issue_url: https://github.com/pallets/click/issues/2813

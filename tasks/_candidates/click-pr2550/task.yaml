@@ -1,0 +1,52 @@
+id: click-pr2550
+repo: pallets/click
+base_commit: d34d31f6dde4350f9508f0327698f851c595d91c
+language: python
+category: bug_fix
+level: L2
+source: mined
+prompt: "Flags with `multiple=True` trigger `TypeError`\n\nAdding an option with `is_flag=True`\
+  \ and `multiple=True` will trigger a `TypeError` in `Parameter.consume_value()`\
+  \ due to bad default value.\r\n\r\n```py\r\nimport click\r\n\r\n@click.command()\r\
+  \n@click.option(\"-v\", is_flag=True, multiple=True)\r\ndef main(v):\r\n    click.echo(v)\r\
+  \n\r\nif __name__ == \"__main__\":\r\n    main()\r\n```\r\n\r\nWhen run without\
+  \ the flag, a TypeError is raised:\r\n\r\n```\r\n(venv39) jreese@butterfree ~/scratch\
+  \ » python foo.py\r\nTraceback (most recent call last):\r\n  File \"/Users/jreese/scratch/foo.py\"\
+  , line 25, in <module>\r\n    main()\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 1130, in __call__\r\n    return self.main(*args, **kwargs)\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 1054, in main\r\n    with self.make_context(prog_name, args, **extra) as\
+  \ ctx:\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 920, in make_context\r\n    self.parse_args(ctx, args)\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 1378, in parse_args\r\n    value, args = param.handle_parse_result(ctx, opts,\
+  \ args)\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 2356, in handle_parse_result\r\n    value, source = self.consume_value(ctx,\
+  \ opts)\r\n  File \"/Users/jreese/scratch/venv39/lib/python3.9/site-packages/click/core.py\"\
+  , line 2903, in consume_value\r\n    and any(v is _flag_needs_value for v in value)\r\
+  \nTypeError: 'bool' object is not iterable\r\n```\r\n\r\nManually setting a better\
+  \ default value, like `default=()`, avoids the type error, but this used to work\
+  \ on 7.x without setting the default value.\r\n\r\nEnvironment:\r\n\r\n- Python\
+  \ version: tested on 3.8.6 and 3.9.3\r\n- Click version: worked on 7.1.2; errors\
+  \ on 8.0.4 and 8.1.2\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_defaults.py::test_multiple_flag_default
+  pass_to_pass:
+  - tests/test_basic.py::test_basic_functionality
+  - tests/test_basic.py::test_repr
+  - tests/test_utils/test_format_filename.py::test_filename_formatting
+  - tests/test_basic.py::test_option_reusing_help_flag
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: click
+  image: repogym/click:36baa15ff831
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 2550
+  issue: 2246
+  merged_at: '2023-07-03T16:31:19Z'
+  issue_url: https://github.com/pallets/click/issues/2246

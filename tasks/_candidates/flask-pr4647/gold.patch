@@ -1,0 +1,158 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 0dea8e3a0e..42d91ea3b2 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -33,6 +33,9 @@ Unreleased
+ -   Add ``--env-file`` option to the ``flask`` CLI. This allows
+     specifying a dotenv file to load in addition to ``.env`` and
+     ``.flaskenv``. :issue:`3108`
++-   It is no longer required to decorate custom CLI commands on
++    ``app.cli`` or ``blueprint.cli`` with ``@with_appcontext``, an app
++    context will already be active at that point. :issue:`2410`
+ 
+ 
+ Version 2.1.3
+diff --git a/docs/cli.rst b/docs/cli.rst
+index 7bab8fac26..b5724d4901 100644
+--- a/docs/cli.rst
++++ b/docs/cli.rst
+@@ -437,12 +437,14 @@ commands directly to the application's level:
+ Application Context
+ ~~~~~~~~~~~~~~~~~~~
+ 
+-Commands added using the Flask app's :attr:`~Flask.cli`
+-:meth:`~cli.AppGroup.command` decorator will be executed with an application
+-context pushed, so your command and extensions have access to the app and its
+-configuration. If you create a command using the Click :func:`~click.command`
+-decorator instead of the Flask decorator, you can use
+-:func:`~cli.with_appcontext` to get the same behavior. ::
++Commands added using the Flask app's :attr:`~Flask.cli` or
++:class:`~flask.cli.FlaskGroup` :meth:`~cli.AppGroup.command` decorator
++will be executed with an application context pushed, so your custom
++commands and parameters have access to the app and its configuration. The
++:func:`~cli.with_appcontext` decorator can be used to get the same
++behavior, but is not needed in most cases.
++
++.. code-block:: python
+ 
+     import click
+     from flask.cli import with_appcontext
+@@ -454,12 +456,6 @@ decorator instead of the Flask decorator, you can use
+ 
+     app.cli.add_command(do_work)
+ 
+-If you're sure a command doesn't need the context, you can disable it::
+-
+-    @app.cli.command(with_appcontext=False)
+-    def do_work():
+-        ...
+-
+ 
+ Plugins
+ -------
+diff --git a/docs/tutorial/database.rst b/docs/tutorial/database.rst
+index b285219703..934f6008ce 100644
+--- a/docs/tutorial/database.rst
++++ b/docs/tutorial/database.rst
+@@ -40,7 +40,6 @@ response is sent.
+ 
+     import click
+     from flask import current_app, g
+-    from flask.cli import with_appcontext
+ 
+ 
+     def get_db():
+@@ -128,7 +127,6 @@ Add the Python functions that will run these SQL commands to the
+ 
+ 
+     @click.command('init-db')
+-    @with_appcontext
+     def init_db_command():
+         """Clear the existing data and create new tables."""
+         init_db()
+diff --git a/examples/tutorial/flaskr/db.py b/examples/tutorial/flaskr/db.py
+index f1e2dc3062..acaa4ae31f 100644
+--- a/examples/tutorial/flaskr/db.py
++++ b/examples/tutorial/flaskr/db.py
+@@ -3,7 +3,6 @@
+ import click
+ from flask import current_app
+ from flask import g
+-from flask.cli import with_appcontext
+ 
+ 
+ def get_db():
+@@ -39,7 +38,6 @@ def init_db():
+ 
+ 
+ @click.command("init-db")
+-@with_appcontext
+ def init_db_command():
+     """Clear existing data and create new tables."""
+     init_db()
+diff --git a/src/flask/cli.py b/src/flask/cli.py
+index 40f1de5496..321794b69b 100644
+--- a/src/flask/cli.py
++++ b/src/flask/cli.py
+@@ -410,15 +410,25 @@ def load_app(self) -> Flask:
+ 
+ def with_appcontext(f):
+     """Wraps a callback so that it's guaranteed to be executed with the
+-    script's application context.  If callbacks are registered directly
+-    to the ``app.cli`` object then they are wrapped with this function
+-    by default unless it's disabled.
++    script's application context.
++
++    Custom commands (and their options) registered under ``app.cli`` or
++    ``blueprint.cli`` will always have an app context available, this
++    decorator is not required in that case.
++
++    .. versionchanged:: 2.2
++        The app context is active for subcommands as well as the
++        decorated callback. The app context is always available to
++        ``app.cli`` command and parameter callbacks.
+     """
+ 
+     @click.pass_context
+     def decorator(__ctx, *args, **kwargs):
+-        with __ctx.ensure_object(ScriptInfo).load_app().app_context():
+-            return __ctx.invoke(f, *args, **kwargs)
++        if not current_app:
++            app = __ctx.ensure_object(ScriptInfo).load_app()
++            __ctx.with_resource(app.app_context())
++
++        return __ctx.invoke(f, *args, **kwargs)
+ 
+     return update_wrapper(decorator, f)
+ 
+@@ -587,6 +597,10 @@ class FlaskGroup(AppGroup):
+         Added the ``-A/--app``, ``-E/--env``, ``--debug/--no-debug``,
+         and ``-e/--env-file`` options.
+ 
++    .. versionchanged:: 2.2
++        An app context is pushed when running ``app.cli`` commands, so
++        ``@with_appcontext`` is no longer required for those commands.
++
+     .. versionchanged:: 1.0
+         If installed, python-dotenv will be used to load environment variables
+         from :file:`.env` and :file:`.flaskenv` files.
+@@ -660,9 +674,18 @@ def get_command(self, ctx, name):
+         # Look up commands provided by the app, showing an error and
+         # continuing if the app couldn't be loaded.
+         try:
+-            return info.load_app().cli.get_command(ctx, name)
++            app = info.load_app()
+         except NoAppException as e:
+             click.secho(f"Error: {e.format_message()}\n", err=True, fg="red")
++            return None
++
++        # Push an app context for the loaded app unless it is already
++        # active somehow. This makes the context available to parameter
++        # and command callbacks without needing @with_appcontext.
++        if not current_app or current_app._get_current_object() is not app:
++            ctx.with_resource(app.app_context())
++
++        return app.cli.get_command(ctx, name)
+ 
+     def list_commands(self, ctx):
+         self._load_plugin_commands()

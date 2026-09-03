@@ -1,0 +1,47 @@
+id: rich-pr3470
+repo: Textualize/rich
+base_commit: 0ba607dc080c9f102b5ae5346bcdb70d6e9c969d
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Recorded content not expected for captured prints\n\n**Describe the\
+  \ bug**\r\n\r\nThe following code:\r\n```python\r\n    console = Console(record=True)\r\
+  \n    print(\"Before Capture started:\")\r\n    console.print(\"[blue underline]Print\
+  \ 0\")\r\n    with console.capture() as capture:\r\n        console.print(\"[blue\
+  \ underline]Print 1\")\r\n        console.print(\"[blue underline]Print 2\")\r\n\
+  \        console.print(\"[blue underline]Print 3\")\r\n        console.print(\"\
+  [blue underline]Print 4\")\r\n    print(\"\\nCaptured content:\")\r\n    print(capture.get())\r\
+  \n    print(\"\\nRecorded content:\")\r\n    print(console.export_text())\r\n```\r\
+  \nProduces following output:\r\n\r\n\r\n\r\nIt seems that every print to capture\
+  \ adds previously printed content + new content.\r\n\r\nI also wonder if the captured\
+  \ content should even go to the recording because it won't even go to console unless\
+  \ specifically printed there after capturing has been stopped.\r\n\r\nThough, as\
+  \ it seems that captured content cannot be printed with `console.print()` (control\
+  \ codes seems to becomes visible) so by using regular python print() would not put\
+  \ it in the recording either.\r\n(Line `print(capture.get())` replaced with `console.print(capture.get())`)\r\
+  \n\r\n\r\n\r\n\r\n\r\n**Platform**\r\n<details>\r\n<summary>Click to expand</summary>\r\
+  \n\r\nSame with Win/Linux platforms.\r\nWindows terminal: Cmd prompt, Windows Terminal.\r\
+  \nLinux Terminal: Putty\r\n\r\nUsing Rich version 12.6.0\r\n\r\n</details>\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_console.py::test_capture_and_record
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3470
+  issue: 2563
+  merged_at: '2024-08-26T14:56:49Z'
+  issue_url: https://github.com/Textualize/rich/issues/2563

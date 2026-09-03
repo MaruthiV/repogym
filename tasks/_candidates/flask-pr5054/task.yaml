@@ -1,0 +1,46 @@
+id: flask-pr5054
+repo: pallets/flask
+base_commit: fa0ceb62f26579c3c7d9e18926af3e6f3e6e425c
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "refactor session cookie domain handling\n\nIf `SESSION_COOKIE_DOMAIN` is\
+  \ not set, it currently falls back to `SERVER_NAME`. However, setting a domain is\
+  \ actually _less_ secure than not setting one. When not set, the browser will restrict\
+  \ the cookie to the exact domain. When set, it will allow exact as well as any subdomain.\r\
+  \n\r\nIf `SERVER_NAME` is not set, that's fine, but it's likely to be set for other\
+  \ reasons.\r\n\r\nWe should not fall back to `SERVER_NAME`. Either the session is\
+  \ specific to the domain that set it, or it's explicitly configured to be shared.\r\
+  \n\r\nWe currently add a leading dot `.` to the domain if the app is at the root\
+  \ path. This was an old way to signal subdomain support, but is not how things work\
+  \ anymore. Modern browsers ignore a leading dot, and only use exact matching if\
+  \ the domain is not set.\r\n\r\nAdditionally, if the domain does not contain a dot\
+  \ `.` (`localhost`) we currently don't set it and show a warning. We also show a\
+  \ warning for IP addresses. This  was apparently a limitation of browsers in 2017,\
+  \ but no longer appears to be an issue.\r\n\r\n#1784 discussed the `SERVER_NAME`\
+  \ fallback before, and #2282 was where I refactored this in 2017.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_basic.py::test_session_path
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5054
+  issue: 5051
+  merged_at: '2023-04-12T20:10:35Z'
+  issue_url: https://github.com/pallets/flask/issues/5051

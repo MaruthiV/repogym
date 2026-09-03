@@ -1,0 +1,12 @@
+run1: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_attr_disable -> pass
+run1: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_arg_disable -> pass
+run1: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_method_disable -> pass
+run1: f2p test not failing pre-fix: tests/test_blueprints.py::test_default_static_max_age -> pass
+run1: f2p test not failing pre-fix: tests/test_views.py::test_view_provide_automatic_options_attr_disable -> pass
+run1: f2p test not failing pre-fix: tests/test_views.py::test_provide_automatic_options_method_disable -> pass
+run2: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_attr_disable -> pass
+run2: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_arg_disable -> pass
+run2: f2p test not failing pre-fix: tests/test_basic.py::test_provide_automatic_options_method_disable -> pass
+run2: f2p test not failing pre-fix: tests/test_blueprints.py::test_default_static_max_age -> pass
+run2: f2p test not failing pre-fix: tests/test_views.py::test_view_provide_automatic_options_attr_disable -> pass
+run2: f2p test not failing pre-fix: tests/test_views.py::test_provide_automatic_options_method_disable -> pass

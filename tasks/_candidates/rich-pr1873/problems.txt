@@ -1,0 +1,10 @@
+run1: f2p test not failing pre-fix: tests/test_syntax.py::test_from_path -> pass
+run1: f2p test not failing pre-fix: tests/test_syntax.py::test_from_path_unknown_lexer -> pass
+run1: f2p test not failing pre-fix: tests/test_syntax.py::test_syntax_guess_lexer -> pass
+run1: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run1: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error
+run2: f2p test not failing pre-fix: tests/test_syntax.py::test_from_path -> pass
+run2: f2p test not failing pre-fix: tests/test_syntax.py::test_from_path_unknown_lexer -> pass
+run2: f2p test not failing pre-fix: tests/test_syntax.py::test_syntax_guess_lexer -> pass
+run2: p2p test not passing pre-fix: tests/test_cells.py::test_chop_cells -> error
+run2: p2p test not passing post-gold: tests/test_cells.py::test_chop_cells -> error

@@ -1,0 +1,40 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 7c5c243abf..91c1741a47 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,18 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ ### Added
+ 
+ - Added ProgressColumn `MofNCompleteColumn` to display raw `completed/total` column (similar to DownloadColumn,
+-  but displays values as ints, does not convert to floats or add bit/bytes units). 
++  but displays values as ints, does not convert to floats or add bit/bytes units).
+   https://github.com/Textualize/rich/pull/1941
+ 
+ ### Fixed
+ 
+-- In Jupyter mode make the link target be set to "_blank"
++- In Jupyter mode make the link target be set to "\_blank"
+ - Fix some issues with markup handling around "[" characters https://github.com/Textualize/rich/pull/1950
+ - Fix syntax lexer guessing.
++- Fixed Pretty measure not respecting expand_all https://github.com/Textualize/rich/issues/1998
+ 
+-### Added
++### Change
+ 
+-- Add support for enum.Flag in ReprHighlighter https://github.com/Textualize/rich/pull/1920
++- Improved support for enum.Flag in ReprHighlighter https://github.com/Textualize/rich/pull/1920
+ 
+ ## [11.2.0] - 2022-02-08
+ 
+diff --git a/rich/pretty.py b/rich/pretty.py
+index f42434ef5c..216075afdc 100644
+--- a/rich/pretty.py
++++ b/rich/pretty.py
+@@ -323,6 +323,7 @@ def __rich_measure__(
+             indent_size=self.indent_size,
+             max_length=self.max_length,
+             max_string=self.max_string,
++            expand_all=self.expand_all,
+         )
+         text_width = (
+             max(cell_len(line) for line in pretty_str.splitlines()) if pretty_str else 0

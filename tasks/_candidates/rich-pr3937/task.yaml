@@ -1,0 +1,56 @@
+id: rich-pr3937
+repo: Textualize/rich
+base_commit: 05a6b9b17a7c778756187f15d6d4bf693db6345f
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "[BUG] Trailing background color is trimmed when soft wrapping is enabled\n\
+  \n- [x] I've checked [docs](https://rich.readthedocs.io/en/latest/introduction.html)\
+  \ and [closed issues](https://github.com/Textualize/rich/issues?q=is%3Aissue+is%3Aclosed)\
+  \ for possible solutions.\n- [x] I can't find my issue in the [FAQ](https://github.com/Textualize/rich/blob/master/FAQ.md).\n\
+  \n**Describe the bug**\nI was using the Windows Terminal initially. There is another\
+  \ bug with background leaking in our software with soft wrapping enabled, reproducible\
+  \ on both stable v1.23 and canary v1.25, with the code example below on Rich v14.1.0.\
+  \ But that is specific to Windows Terminal and is not related to the main issue,\
+  \ and I have confirmed, that unlike the background leak, the trailing background\
+  \ trimming is a Rich-specific issue, as it is present in various Terminal applications\
+  \ from Debian 13.\n\n**Code Example**\n```python\nfrom rich.console import Console\n\
+  from rich.text import Text\n\n# Force soft_wrap by narrow width\nconsole = Console(soft_wrap=True,\
+  \ width=80)\n\ntext = Text()\ntext.append(\"x\" * 60, style=\"white\")\ntext.append(\"\
+  \ | \", style=\"white\")\ntext.append(\" test str \", style=\"green on black\")\n\
+  text.append(\" | \", style=\"white\")  \ntext.append(\" another str \", style=\"\
+  yellow on black\")\n\nconsole.print(text)\n```\n\n<img width=\"1117\" height=\"\
+  160\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/efa57ac1-ea1b-40c6-8f49-47313ae14450\"\
+  \ />\nIf you look closely, you can see that there is no trailing black space after\
+  \ the \"another str\" text.\n\n## **Offtopic** (Windows terminal leaking black background)\n\
+  <details>\n<summary>Click to expand</summary>\n\n<img width=\"715\" height=\"204\"\
+  \ alt=\"Image\" src=\"https://github.com/user-attachments/assets/7637abf0-ce84-4f61-bbfc-d972e2a807d1\"\
+  \ />\n\nIn most cases you can make it leak by resizing the window when it alters\
+  \ the text and it's background, and then resize it back again afterwards. Sometimes\
+  \ though, it gets leaked by itself when you align the terminal width in a specific\
+  \ size, probably related to #3838:\n\n<img width=\"1312\" height=\"154\" alt=\"\
+  Image\" src=\"https://github.com/user-attachments/assets/fa58e2b5-f157-4ac4-b8f0-a2f601d5f265\"\
+  \ />\n\n</details>\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_text.py::test_soft_wrap
+  pass_to_pass:
+  - tests/test_cells.py::test_chop_cells
+  - tests/test_text.py::test_split
+  - tests/test_text.py::test_fit
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: rich
+  image: repogym/rich:9d8f9a372cc5
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 3937
+  issue: 3841
+  merged_at: '2026-01-23T13:44:59Z'
+  issue_url: https://github.com/Textualize/rich/issues/3841

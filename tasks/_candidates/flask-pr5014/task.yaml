@@ -1,0 +1,35 @@
+id: flask-pr5014
+repo: pallets/flask
+base_commit: 7ee9ceb71e868944a46e1ff00b506772a53a4f1d
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Require a non-empty name for Blueprints\n\nThings do not work correctly if\
+  \ a Blueprint is given an empty name (e.g. #4944).\r\nIt would be helpful if a `ValueError`\
+  \ was raised when trying to do that.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_blueprints.py::test_empty_name_not_allowed
+  - tests/test_blueprints.py::test_dotted_names_from_app
+  pass_to_pass:
+  - tests/test_helpers.py::TestSendfile::test_static_file
+  - tests/test_instance_config.py::test_explicit_instance_paths
+  - tests/test_basic.py::test_static_files
+  - tests/test_templating.py::test_custom_template_loader
+  - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
+meta:
+  pr: 5014
+  issue: 5010
+  merged_at: '2023-03-11T16:34:56Z'
+  issue_url: https://github.com/pallets/flask/issues/5010

@@ -1,0 +1,65 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 596bd99779..c99f83a91f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ### Fixed
+ 
+-- Add missing `end` keyword argument to `Text.from_markup`
++- Add missing `end` keyword argument to `Text.from_markup` https://github.com/Textualize/rich/pull/2095
++- Fallback to text lexer when no lexer guessed https://github.com/Textualize/rich/pull/2133
+ - Fixed issue with decoding ANSI reset https://github.com/Textualize/rich/issues/2112
+ 
+ ## [12.0.1] - 2022-03-22
+diff --git a/poetry.lock b/poetry.lock
+index ffcad1b97e..457d10126c 100644
+--- a/poetry.lock
++++ b/poetry.lock
+@@ -1002,7 +1002,7 @@ python-versions = ">=3.6"
+ 
+ [[package]]
+ name = "virtualenv"
+-version = "20.13.4"
++version = "20.14.0"
+ description = "Virtual Python Environment builder"
+ category = "dev"
+ optional = false
+@@ -1786,8 +1786,8 @@ typing-extensions = [
+     {file = "typing_extensions-4.1.1.tar.gz", hash = "sha256:1a9462dcc3347a79b1f1c0271fbe79e844580bb598bafa1ed208b94da3cdcd42"},
+ ]
+ virtualenv = [
+-    {file = "virtualenv-20.13.4-py2.py3-none-any.whl", hash = "sha256:c3e01300fb8495bc00ed70741f5271fc95fed067eb7106297be73d30879af60c"},
+-    {file = "virtualenv-20.13.4.tar.gz", hash = "sha256:ce8901d3bbf3b90393498187f2d56797a8a452fb2d0d7efc6fd837554d6f679c"},
++    {file = "virtualenv-20.14.0-py2.py3-none-any.whl", hash = "sha256:1e8588f35e8b42c6ec6841a13c5e88239de1e6e4e4cedfd3916b306dc826ec66"},
++    {file = "virtualenv-20.14.0.tar.gz", hash = "sha256:8e5b402037287126e81ccde9432b95a8be5b19d36584f64957060a3488c11ca8"},
+ ]
+ wcwidth = [
+     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
+diff --git a/rich/traceback.py b/rich/traceback.py
+index 0d764b7cbd..8f092c661c 100644
+--- a/rich/traceback.py
++++ b/rich/traceback.py
+@@ -12,6 +12,7 @@
+ from pygments.token import Comment, Keyword, Name, Number, Operator, String
+ from pygments.token import Text as TextToken
+ from pygments.token import Token
++from pygments.util import ClassNotFound
+ 
+ from . import pretty
+ from ._loop import loop_last
+@@ -521,10 +522,10 @@ def _guess_lexer(cls, filename: str, code: str) -> str:
+             first_line = code[:new_line_index] if new_line_index != -1 else code
+             if first_line.startswith("#!") and "python" in first_line.lower():
+                 return "python"
+-        lexer_name = (
+-            cls.LEXERS.get(ext) or guess_lexer_for_filename(filename, code).name
+-        )
+-        return lexer_name
++        try:
++            return cls.LEXERS.get(ext) or guess_lexer_for_filename(filename, code).name
++        except ClassNotFound:
++            return "text"
+ 
+     @group()
+     def _render_stack(self, stack: Stack) -> RenderResult:
