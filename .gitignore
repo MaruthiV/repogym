@@ -1,0 +1,28 @@
+# planning, research notes, lit reviews, paper plans - never pushed
+docs/
+
+# secrets
+.env
+.env.*
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# node (dashboard)
+node_modules/
+dist/
+.next/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+
+# local run outputs (results/ tracking decided later, raw traces stay local)
+results/raw/
+*.log
