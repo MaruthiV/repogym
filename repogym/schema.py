@@ -23,8 +23,8 @@ class Oracle(BaseModel):
 
 class Runtime(BaseModel):
     profile: str
+    repo_key: str
     image: str
-    test_cmd: str = "pytest -q"
 
 
 class Timeouts(BaseModel):

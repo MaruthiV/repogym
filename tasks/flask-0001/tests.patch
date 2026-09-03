@@ -1,0 +1,41 @@
+diff --git a/tests/test_repogym_root_path.py b/tests/test_repogym_root_path.py
+new file mode 100644
+index 0000000..833ccfe
+--- /dev/null
++++ b/tests/test_repogym_root_path.py
+@@ -0,0 +1,35 @@
++import os
++import sys
++
++import flask
++import flask.helpers
++
++
++def test_get_root_path_unimported_module(tmp_path, monkeypatch):
++    (tmp_path / "rg_scratch_mod.py").write_text("value = 1\n")
++    monkeypatch.syspath_prepend(str(tmp_path))
++    sys.modules.pop("rg_scratch_mod", None)
++    rp = flask.helpers.get_root_path("rg_scratch_mod")
++    assert os.path.realpath(rp) == os.path.realpath(str(tmp_path))
++
++
++def test_get_root_path_unimported_package(tmp_path, monkeypatch):
++    pkg = tmp_path / "rg_scratch_pkg"
++    pkg.mkdir()
++    (pkg / "__init__.py").write_text("")
++    monkeypatch.syspath_prepend(str(tmp_path))
++    sys.modules.pop("rg_scratch_pkg", None)
++    rp = flask.helpers.get_root_path("rg_scratch_pkg")
++    assert os.path.realpath(rp) == os.path.realpath(str(pkg))
++
++
++def test_template_resolution_with_unimported_import_name(tmp_path, monkeypatch):
++    (tmp_path / "rg_scratch_app.py").write_text("import flask\n")
++    tpl = tmp_path / "templates"
++    tpl.mkdir()
++    (tpl / "rg_index.html").write_text("hello from template")
++    monkeypatch.syspath_prepend(str(tmp_path))
++    sys.modules.pop("rg_scratch_app", None)
++    app = flask.Flask("rg_scratch_app")
++    with app.app_context():
++        assert flask.render_template("rg_index.html") == "hello from template"

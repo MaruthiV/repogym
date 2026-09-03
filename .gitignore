@@ -23,6 +23,6 @@ dist/
 .idea/
 .vscode/
 
-# local run outputs (results/ tracking decided later, raw traces stay local)
-results/raw/
+# local run outputs; curated results published separately at M6
+results/
 *.log

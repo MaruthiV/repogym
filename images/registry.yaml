@@ -1,0 +1,27 @@
+flask:
+  url: https://github.com/pallets/flask
+  sha: d318b683471101618febed18996405ad26462110
+  language: python
+  install: "uv sync --group tests"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+
+click:
+  url: https://github.com/pallets/click
+  sha: 36baa15ff831b939a22bc527cd76ce653ef6f66d
+  language: python
+  install: "uv sync --group tests"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+
+httpx:
+  url: https://github.com/encode/httpx
+  sha: b5addb64f0161ff6bfe94c124ef76f6a1fba5254
+  language: python
+  install: "uv venv .venv && VIRTUAL_ENV=$PWD/.venv uv pip install -e . -r requirements.txt"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+
+rich:
+  url: https://github.com/Textualize/rich
+  sha: 9d8f9a372cc5916fd4781fec207ced7ddac2f08f
+  language: python
+  install: "uv venv .venv && VIRTUAL_ENV=$PWD/.venv uv pip install -e . pytest pytest-cov attrs"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"

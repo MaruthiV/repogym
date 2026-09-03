@@ -1,0 +1,42 @@
+id: flask-0001
+repo: pallets/flask
+base_commit: d318b683471101618febed18996405ad26462110
+language: python
+category: bug_fix
+level: L2
+source: mutated
+prompt: |
+  Setting up an app as `Flask("wsgiapp")` from a launcher script (where the module
+  `wsgiapp.py` has not been imported yet) breaks template and static file resolution.
+  `render_template("index.html")` raises TemplateNotFound even though a `templates/`
+  directory sits right next to `wsgiapp.py`, and static assets 404.
+
+  Printing `app.root_path` shows it points at the module FILE itself
+  (`.../wsgiapp.py`) instead of the containing directory. If I import `wsgiapp`
+  before constructing the Flask app, everything works fine.
+
+  Fix the root path resolution so unimported module names behave the same as
+  imported ones. Please fix the underlying bug in flask itself, not a workaround.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - tests/test_repogym_root_path.py::test_get_root_path_unimported_module
+    - tests/test_repogym_root_path.py::test_get_root_path_unimported_package
+    - tests/test_repogym_root_path.py::test_template_resolution_with_unimported_import_name
+  pass_to_pass:
+    - tests/test_helpers.py::TestSendfile::test_static_file
+    - tests/test_helpers.py::TestUrlFor::test_url_for_with_anchor
+    - tests/test_instance_config.py::test_explicit_instance_paths
+    - tests/test_basic.py::test_static_files
+    - tests/test_templating.py::test_custom_template_loader
+    - tests/test_templating.py::test_template_filter
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: flask
+  image: repogym/flask:d318b6834711
+timeouts:
+  agent_s: 900
+  eval_s: 300
