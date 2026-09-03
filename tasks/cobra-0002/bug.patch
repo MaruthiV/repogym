@@ -1,0 +1,13 @@
+diff --git a/command.go b/command.go
+index c05fed4..b46f8e9 100644
+--- a/command.go
++++ b/command.go
+@@ -1550,7 +1550,7 @@ func (c *Command) Name() string {
+ // HasAlias determines if a given string is an alias of the command.
+ func (c *Command) HasAlias(s string) bool {
+ 	for _, a := range c.Aliases {
+-		if commandNameMatches(a, s) {
++		if commandNameMatches(a, c.Name()) {
+ 			return true
+ 		}
+ 	}

@@ -1,0 +1,36 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 49d045667..eb262fb63 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -8,6 +8,8 @@ Unreleased
+ -   Python 3.12 compatibility. :issue:`2704`
+ -   Fix handling of invalid base64 values in ``Authorization.from_header``. :issue:`2717`
+ -   The debugger escapes the exception message in the page title. :pr:`2719`
++-   When binding ``routing.Map``, a long IDNA ``server_name`` with a port does not fail
++    encoding. :issue:`2700`
+ 
+ 
+ Version 2.3.4
+diff --git a/src/werkzeug/routing/map.py b/src/werkzeug/routing/map.py
+index 98aafdf20..0d02bb8b7 100644
+--- a/src/werkzeug/routing/map.py
++++ b/src/werkzeug/routing/map.py
+@@ -251,6 +251,9 @@ def bind(
+         if path_info is None:
+             path_info = "/"
+ 
++        # Port isn't part of IDNA, and might push a name over the 63 octet limit.
++        server_name, port_sep, port = server_name.partition(":")
++
+         try:
+             server_name = server_name.encode("idna").decode("ascii")
+         except UnicodeError as e:
+@@ -258,7 +261,7 @@ def bind(
+ 
+         return MapAdapter(
+             self,
+-            server_name,
++            f"{server_name}{port_sep}{port}",
+             script_name,
+             subdomain,
+             url_scheme,

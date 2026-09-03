@@ -1,0 +1,59 @@
+diff --git a/tests/sansio/test_multipart.py b/tests/sansio/test_multipart.py
+index cf36fefd6..2bcc77a0b 100644
+--- a/tests/sansio/test_multipart.py
++++ b/tests/sansio/test_multipart.py
+@@ -85,7 +85,16 @@ def test_decoder_data_start_with_different_newline_positions(
+     # We want to check up to data start event
+     while not isinstance(events[-1], Data):
+         events.append(decoder.next_event())
+-    expected = data_start if data_end == b"" else data_start + b"\r\nBCDE"
++
++    expected = data_start
++
++    if data_end == b"":
++        # a split \r\n is deferred to the next event
++        if expected[-1] == 0x0D:
++            expected = expected[:-1]
++    else:
++        expected += b"\r\nBCDE"
++
+     assert events == [
+         Preamble(data=b""),
+         File(
+diff --git a/tests/test_formparser.py b/tests/test_formparser.py
+index a17e29de5..7cd8f7b76 100644
+--- a/tests/test_formparser.py
++++ b/tests/test_formparser.py
+@@ -152,6 +152,32 @@ def test_missing_multipart_boundary(self):
+         )
+         assert req.form == {}
+ 
++    def test_chunk_split_on_line_break_before_epilogue(self):
++        data = b"".join(
++            (
++                # exactly 64 bytes of header
++                b"--thirteenbytes\r\n",
++                b"Content-Disposition: form-data; name=tx3065\r\n\r\n",
++                # payload that fills 65535 bytes together with the header
++                b"\n".join([b"\r" * 31] * 2045 + [b"y" * 31]),
++                # This newline is split by the first chunk
++                b"\r\n",
++                # extra payload that also has the final newline split exactly
++                # at the chunk size.
++                b"\n".join([b"\r" * 31] * 2047 + [b"x" * 30]),
++                b"\r\n--thirteenbytes--",
++            )
++        )
++        req = Request.from_values(
++            input_stream=io.BytesIO(data),
++            content_length=len(data),
++            content_type="multipart/form-data; boundary=thirteenbytes",
++            method="POST",
++        )
++        assert len(req.form["tx3065"]) == (131072 - 64 - 1)
++        assert req.form["tx3065"][-1] == "x"
++        assert req.form["tx3065"][65470:65473] == "y\r\n"
++
+     def test_parse_form_data_put_without_content(self):
+         # A PUT without a Content-Type header returns empty data
+ 

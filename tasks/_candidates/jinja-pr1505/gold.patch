@@ -1,0 +1,34 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index eb51581d5..90c5bdf3a 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -11,6 +11,9 @@ Version 3.0.2
+     ``StrictUndefined`` for the ``in`` operator. :issue:`1448`
+ -   Imported macros have access to the current template globals in async
+     environments. :issue:`1494`
++-   ``PackageLoader`` will not include a current directory (.) path
++    segment. This allows loading templates from the root of a zip
++    import. :issue:`1467`
+ 
+ 
+ Version 3.0.1
+diff --git a/src/jinja2/loaders.py b/src/jinja2/loaders.py
+index db04f0f68..513c858a8 100644
+--- a/src/jinja2/loaders.py
++++ b/src/jinja2/loaders.py
+@@ -270,12 +270,14 @@ def __init__(
+         package_path: "str" = "templates",
+         encoding: str = "utf-8",
+     ) -> None:
++        package_path = os.path.normpath(package_path).rstrip(os.path.sep)
++
++        # normpath preserves ".", which isn't valid in zip paths.
+         if package_path == os.path.curdir:
+             package_path = ""
+         elif package_path[:2] == os.path.curdir + os.path.sep:
+             package_path = package_path[2:]
+ 
+-        package_path = os.path.normpath(package_path).rstrip(os.path.sep)
+         self.package_path = package_path
+         self.package_name = package_name
+         self.encoding = encoding

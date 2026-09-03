@@ -1,0 +1,46 @@
+id: werkzeug-pr3243
+repo: pallets/werkzeug
+base_commit: ef518e429b67a91a307de37a1845c93110180371
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "`int` and `float` converter issues\n\nThis is a more conservative version\
+  \ of #3237 that only fixes bugs/unintended behavior and otherwise doesn't break\
+  \ existing URLs. I'll target this at 3.2 since it does change what's accept a bit\
+  \ still.\n\n- Non-ASCII digits are accepted.\n- `int(fixed_digits=4, signed=True)`\
+  \ counts the negative sign as a digit.\n- `float` overflow values (too large to\
+  \ fit in float) become `inf`, which is a special, unexpected value that can cause\
+  \ problems when used later on.\n  - Underflow values become `0.0`, which is a \"\
+  normal\" value.\n  - Binary float cannot represent all values, but that's a very\
+  \ abstract concept for users to understand and ensure in URLs.\n- #3147 prevented\
+  \ scientific notation by limiting to 6 decimal places, which excludes many legitimate\
+  \ values.\n\nA 1-to-1 mapping of URLs to parsed values is not a goal. This will\
+  \ be documented for these converters. However, `.4 and `4.` will remain disallowed,\
+  \ I want to keep the more obvious `left.right` syntax only. And `4.` would cause\
+  \ issues with Markdown URL detection.\n\nThe private `NumberConverter` base seems\
+  \ to be more trouble than the small amount of duplication it removes, especially\
+  \ if we also tried to extend it to `decimal` later, so I'll remove it.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_routing.py::test_converter
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 3243
+  issue: 3242
+  merged_at: '2026-08-19T19:49:42Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/3242

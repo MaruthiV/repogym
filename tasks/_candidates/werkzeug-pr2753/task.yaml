@@ -1,0 +1,36 @@
+id: werkzeug-pr2753
+repo: pallets/werkzeug
+base_commit: dd1f1371d092086095bc004dfbbdf3a29c4612f0
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "`parse_options_header` rejects q values \"0\" and \"1\"\n\nprovide an accept\
+  \ header such as `en;q=0` or `en;q=1` -> \r\n\r\nq values 0 or 1 are dropped.  The\
+  \ [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110#name-quality-values) indicates\
+  \ that the decimal is optional however we are rejecting q values that do not contain\
+  \ a decimal\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.11.4\r\n- Werkzeug version:\
+  \ 2.3.6\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_http.py::test_accept_valid_int_one_zero
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2753
+  issue: 2751
+  merged_at: '2023-08-13T20:02:22Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/2751

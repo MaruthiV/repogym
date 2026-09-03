@@ -1,0 +1,37 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index f47f8ceee..b938a4653 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -75,6 +75,7 @@ Version 3.2.0
+     and ``upgrade_insecure_requests`` CSP directives. :pr:`3114`
+ -   The development server does not send an extra ``100 Continue`` response, as
+     Python's base server already sends it. :issue:`3138`
++-   The float URL converter does not produce scientific notation. :issue:`3146`
+ 
+ 
+ Version 3.1.8
+diff --git a/src/werkzeug/routing/converters.py b/src/werkzeug/routing/converters.py
+index 6016a975e..348f88883 100644
+--- a/src/werkzeug/routing/converters.py
++++ b/src/werkzeug/routing/converters.py
+@@ -210,6 +210,9 @@ class FloatConverter(NumberConverter):
+     :param max: The maximal value.
+     :param signed: Allow signed (negative) values.
+ 
++    .. versionchanged:: 3.2
++        Does not produce scientific notation.
++
+     .. versionadded:: 0.15
+         The ``signed`` parameter.
+     """
+@@ -226,6 +229,10 @@ def __init__(
+     ) -> None:
+         super().__init__(map, min=min, max=max, signed=signed)  # type: ignore
+ 
++    def to_url(self, value: t.Any) -> str:
++        # f format ensures no scientific notation, but forces trailing zeroes
++        return f"{self.num_convert(value):f}".rstrip("0")
++
+ 
+ class UUIDConverter(BaseConverter):
+     """This converter only accepts UUID strings::

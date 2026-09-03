@@ -1,0 +1,39 @@
+id: zod-0002
+repo: colinhacks/zod
+base_commit: 7a00236683c79000dbab0d92f6faf0b7fba39f59
+language: typescript
+category: bug_fix
+level: L1
+source: mutated
+prompt: |
+  Enum and literal validation error messages changed format and it broke our
+  error-parsing layer. `z.enum(["draft", "published"]).safeParse("archived")`
+  used to produce:
+
+      Invalid option: expected one of "draft"|"published"
+
+  but now the options come out comma-separated ("draft", "published"). Our
+  tooling (and zod's documented output) expects the pipe separator. Restore the
+  original message format for all option-list error messages.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - "packages/zod/src/v4/classic/tests/repogym-enum-message.test.ts::invalid enum option message lists options pipe-separated"
+    - "packages/zod/src/v4/classic/tests/repogym-enum-message.test.ts::invalid literal message uses pipe separator"
+    - "packages/zod/src/v4/classic/tests/enum.test.ts::enum error message, invalid enum elementstring"
+    - "packages/zod/src/v4/classic/tests/enum.test.ts::nativeEnum default error message"
+  pass_to_pass:
+    - "packages/zod/src/v4/classic/tests/array.test.ts"
+    - "packages/zod/src/v4/classic/tests/catch.test.ts"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: typescript
+  repo_key: zod
+  image: repogym/zod:7a00236683c7
+timeouts:
+  agent_s: 1200
+  eval_s: 600
+security_probes:
+  - secret_canary

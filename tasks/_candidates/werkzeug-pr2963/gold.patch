@@ -1,0 +1,73 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 5804125ab..b387e7187 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -79,6 +79,7 @@ strict = true
+ module = [
+     "colorama.*",
+     "cryptography.*",
++    "ephemeral_port_reserve",
+     "watchdog.*",
+     "xprocess.*",
+ ]
+diff --git a/requirements/dev.txt b/requirements/dev.txt
+index 4f6a735d4..24eb34a53 100644
+--- a/requirements/dev.txt
++++ b/requirements/dev.txt
+@@ -104,10 +104,6 @@ pluggy==1.5.0
+     #   tox
+ pre-commit==4.0.1
+     # via -r dev.in
+-psutil==6.1.0
+-    # via
+-    #   -r tests.txt
+-    #   pytest-xprocess
+ pycparser==2.22
+     # via
+     #   -r tests.txt
+@@ -125,11 +121,8 @@ pytest==8.3.3
+     #   -r tests.txt
+     #   -r typing.txt
+     #   pytest-timeout
+-    #   pytest-xprocess
+ pytest-timeout==2.3.1
+     # via -r tests.txt
+-pytest-xprocess==0.23.0
+-    # via -r tests.txt
+ pyyaml==6.0.2
+     # via pre-commit
+ requests==2.32.3
+diff --git a/requirements/tests.in b/requirements/tests.in
+index 494b61022..c1b5bc313 100644
+--- a/requirements/tests.in
++++ b/requirements/tests.in
+@@ -1,6 +1,5 @@
+ pytest
+ pytest-timeout
+-pytest-xprocess<1
+ cryptography
+ watchdog
+ ephemeral-port-reserve
+diff --git a/requirements/tests.txt b/requirements/tests.txt
+index c4557c90f..d64cace9a 100644
+--- a/requirements/tests.txt
++++ b/requirements/tests.txt
+@@ -18,18 +18,13 @@ packaging==24.1
+     # via pytest
+ pluggy==1.5.0
+     # via pytest
+-psutil==6.1.0
+-    # via pytest-xprocess
+ pycparser==2.22
+     # via cffi
+ pytest==8.3.3
+     # via
+     #   -r tests.in
+     #   pytest-timeout
+-    #   pytest-xprocess
+ pytest-timeout==2.3.1
+     # via -r tests.in
+-pytest-xprocess==0.23.0
+-    # via -r tests.in
+ watchdog==5.0.3
+     # via -r tests.in

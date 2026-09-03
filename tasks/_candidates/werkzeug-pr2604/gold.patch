@@ -1,0 +1,71 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index c970422ab..84757d0c9 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -24,6 +24,8 @@ Unreleased
+ -   The reloader can pick up arguments to ``python`` like ``-X dev``, and does not
+     require heuristics to determine how to reload the command. Only available
+     on Python >= 3.10. :issue:`2589`
++-   The Watchdog reloader ignores file opened events. Bump the minimum version of
++    Watchdog to 2.3.0. :issue:`2603`
+ 
+ 
+ Version 2.2.3
+diff --git a/pyproject.toml b/pyproject.toml
+index 4b9b53278..260f8cdc3 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -32,7 +32,7 @@ Twitter = "https://twitter.com/PalletsTeam"
+ Chat = "https://discord.gg/pallets"
+ 
+ [project.optional-dependencies]
+-watchdog = ["watchdog"]
++watchdog = ["watchdog>=2.3"]
+ 
+ [build-system]
+ requires = ["setuptools"]
+diff --git a/requirements/tests.txt b/requirements/tests.txt
+index 9851ec142..76a06c838 100644
+--- a/requirements/tests.txt
++++ b/requirements/tests.txt
+@@ -40,5 +40,5 @@ pytest-xprocess==0.22.2
+     # via -r requirements/tests.in
+ tomli==2.0.1
+     # via pytest
+-watchdog==2.2.1
++watchdog==2.3.1
+     # via -r requirements/tests.in
+diff --git a/requirements/typing.txt b/requirements/typing.txt
+index 24f027bab..fd8374301 100644
+--- a/requirements/typing.txt
++++ b/requirements/typing.txt
+@@ -21,5 +21,5 @@ types-setuptools==67.3.0.1
+     # via -r requirements/typing.in
+ typing-extensions==4.5.0
+     # via mypy
+-watchdog==2.2.1
++watchdog==2.3.1
+     # via -r requirements/typing.in
+diff --git a/src/werkzeug/_reloader.py b/src/werkzeug/_reloader.py
+index aa855876d..258d352ba 100644
+--- a/src/werkzeug/_reloader.py
++++ b/src/werkzeug/_reloader.py
+@@ -310,12 +310,17 @@ class WatchdogReloaderLoop(ReloaderLoop):
+     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+         from watchdog.observers import Observer
+         from watchdog.events import PatternMatchingEventHandler
++        from watchdog.events import EVENT_TYPE_OPENED
++        from watchdog.events import FileModifiedEvent
+ 
+         super().__init__(*args, **kwargs)
+         trigger_reload = self.trigger_reload
+ 
+         class EventHandler(PatternMatchingEventHandler):
+-            def on_any_event(self, event):  # type: ignore
++            def on_any_event(self, event: FileModifiedEvent):  # type: ignore
++                if event.event_type == EVENT_TYPE_OPENED:
++                    return
++
+                 trigger_reload(event.src_path)
+ 
+         reloader_name = Observer.__name__.lower()

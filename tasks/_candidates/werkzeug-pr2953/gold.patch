@@ -1,0 +1,29 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index d603ed90e..c92fe2e63 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -6,6 +6,7 @@ Version 3.0.5
+ Unreleased
+ 
+ -   The Watchdog reloader ignores file closed no write events. :issue:`2945`
++-   Logging works with client addresses containing an IPv6 scope :issue:`2952`
+ 
+ 
+ Version 3.0.4
+diff --git a/src/werkzeug/serving.py b/src/werkzeug/serving.py
+index 4faf9262c..ef32b8811 100644
+--- a/src/werkzeug/serving.py
++++ b/src/werkzeug/serving.py
+@@ -473,9 +473,11 @@ def log_message(self, format: str, *args: t.Any) -> None:
+         self.log("info", format, *args)
+ 
+     def log(self, type: str, message: str, *args: t.Any) -> None:
++        # an IPv6 scoped address contains "%" which breaks logging
++        address_string = self.address_string().replace("%", "%%")
+         _log(
+             type,
+-            f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n",
++            f"{address_string} - - [{self.log_date_time_string()}] {message}\n",
+             *args,
+         )
+ 

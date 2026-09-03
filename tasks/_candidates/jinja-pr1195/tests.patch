@@ -1,0 +1,66 @@
+diff --git a/tests/test_filters.py b/tests/test_filters.py
+index 8087a2481..c3ff8f328 100644
+--- a/tests/test_filters.py
++++ b/tests/test_filters.py
+@@ -337,11 +337,23 @@ def test_upper(self, env):
+         assert tmpl.render() == "FOO"
+ 
+     def test_urlize(self, env):
++        tmpl = env.from_string('{{ "foo example.org bar"|urlize }}')
++        assert tmpl.render() == (
++            'foo <a href="https://example.org" rel="noopener">' "example.org</a> bar"
++        )
+         tmpl = env.from_string('{{ "foo http://www.example.com/ bar"|urlize }}')
+         assert tmpl.render() == (
+             'foo <a href="http://www.example.com/" rel="noopener">'
+             "http://www.example.com/</a> bar"
+         )
++        tmpl = env.from_string('{{ "foo mailto:email@example.com bar"|urlize }}')
++        assert tmpl.render() == (
++            'foo <a href="mailto:email@example.com">email@example.com</a> bar'
++        )
++        tmpl = env.from_string('{{ "foo email@example.com bar"|urlize }}')
++        assert tmpl.render() == (
++            'foo <a href="mailto:email@example.com">email@example.com</a> bar'
++        )
+ 
+     def test_urlize_rel_policy(self):
+         env = Environment()
+@@ -361,6 +373,17 @@ def test_urlize_target_parameter(self, env):
+             "http://www.example.com/</a> bar"
+         )
+ 
++    def test_urlize_extra_schemes_parameter(self, env):
++        tmpl = env.from_string(
++            '{{ "foo tel:+1-514-555-1234 ftp://localhost bar"|'
++            'urlize(extra_schemes=["tel:", "ftp:"]) }}'
++        )
++        assert tmpl.render() == (
++            'foo <a href="tel:+1-514-555-1234" rel="noopener">'
++            'tel:+1-514-555-1234</a> <a href="ftp://localhost" rel="noopener">'
++            "ftp://localhost</a> bar"
++        )
++
+     def test_wordcount(self, env):
+         tmpl = env.from_string('{{ "foo bar baz"|wordcount }}')
+         assert tmpl.render() == "3"
+diff --git a/tests/test_regression.py b/tests/test_regression.py
+index d052f43ec..21a6d922d 100644
+--- a/tests/test_regression.py
++++ b/tests/test_regression.py
+@@ -109,6 +109,15 @@ def test_urlize_filter_escaping(self, env):
+             "http://www.example.org/&lt;foo</a>"
+         )
+ 
++    def test_urlize_filter_closing_punctuation(self, env):
++        tmpl = env.from_string(
++            '{{ "(see http://www.example.org/?page=subj_<desc.h>)"|urlize }}'
++        )
++        assert tmpl.render() == (
++            '(see <a href="http://www.example.org/?page=subj_&lt;desc.h&gt;" '
++            'rel="noopener">http://www.example.org/?page=subj_&lt;desc.h&gt;</a>)'
++        )
++
+     def test_loop_call_loop(self, env):
+         tmpl = env.from_string(
+             """

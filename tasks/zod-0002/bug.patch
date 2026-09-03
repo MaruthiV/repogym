@@ -1,0 +1,13 @@
+diff --git a/packages/zod/src/v4/locales/en.ts b/packages/zod/src/v4/locales/en.ts
+index fcaf2697..3a4e53e6 100644
+--- a/packages/zod/src/v4/locales/en.ts
++++ b/packages/zod/src/v4/locales/en.ts
+@@ -77,7 +77,7 @@ const error: () => errors.$ZodErrorMap = () => {
+ 
+       case "invalid_value":
+         if (issue.values.length === 1) return `Invalid input: expected ${util.stringifyPrimitive(issue.values[0])}`;
+-        return `Invalid option: expected one of ${util.joinValues(issue.values, "|")}`;
++        return `Invalid option: expected one of ${util.joinValues(issue.values, ", ")}`;
+       case "too_big": {
+         const adj = issue.exact ? "exactly " : issue.inclusive ? "<=" : "<";
+         const sizing = getSizing(issue.origin);

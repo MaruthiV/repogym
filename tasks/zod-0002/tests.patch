@@ -1,0 +1,22 @@
+diff --git a/packages/zod/src/v4/classic/tests/repogym-enum-message.test.ts b/packages/zod/src/v4/classic/tests/repogym-enum-message.test.ts
+new file mode 100644
+index 00000000..f2fb986e
+--- /dev/null
++++ b/packages/zod/src/v4/classic/tests/repogym-enum-message.test.ts
+@@ -0,0 +1,16 @@
++import { expect, test } from "vitest";
++import * as z from "zod/v4";
++
++test("invalid enum option message lists options pipe-separated", () => {
++  const result = z.enum(["draft", "published"]).safeParse("archived");
++  expect(result.success).toBe(false);
++  expect(result.error!.issues[0].message).toBe(
++    `Invalid option: expected one of "draft"|"published"`
++  );
++});
++
++test("invalid literal message uses pipe separator", () => {
++  const result = z.literal(["on", "off"]).safeParse("maybe");
++  expect(result.success).toBe(false);
++  expect(result.error!.issues[0].message).toContain(`"on"|"off"`);
++});

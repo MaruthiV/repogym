@@ -1,0 +1,53 @@
+id: werkzeug-pr3071
+repo: pallets/werkzeug
+base_commit: c0e67e96384bb0aa4e3165e1efeed1e9835cf260
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "debugger fails if source code is unavailable\n\nUnder specific conditions\
+  \ the code at tbtools line 428 raises an error during traceback rendering. This\
+  \ causes the browser to show a fairly meaning less message\n\n`Internal Server Error\n\
+  \nThe server encountered an internal error and was unable to complete your request.\
+  \ Either the server is overloaded or there is an error in the application.`\nThis\
+  \ was with Flask==3.1.1.\n\nIn my particular case the original error as shown in\
+  \ the terminal was\n`  File \"<string>\", line 25\nlxml.etree.XMLSyntaxError: Opening\
+  \ and ending tag mismatch: p line 24 and story, line 25, column 10`\n\nfollow the\
+  \ tutorial at https://docs.reportlab.com/demos/flask_reportlab/flask_reportlab/\n\
+  but in the preppy template line 24 replace &lt;p&gt;{{ say }}&gt;/p&gt; with &lt;p&gt;{{\
+  \ say }}/&lt;p&gt;\nthis causes a parse error and the traceback render fails because\
+  \ line_idx is a bad index.\n\nThe terminal traceback continues \n`During handling\
+  \ of the above exception, another exception occurred:\n\nTraceback (most recent\
+  \ call last):\n  File \"/home/robin/tmp/rlflask/.py313/lib/python3.13/site-packages/werkzeug/serving.py\"\
+  , line 370, in run_wsgi\n    execute(self.server.app)\n ...........\n  File \"/home/robin/tmp/rlflask/.py313/lib/python3.13/site-packages/werkzeug/debug/tbtools.py\"\
+  , line 428, in render_html\n  File \"/home/robin/tmp/rlflask/.py313/lib/python3.13/site-packages/werkzeug/debug/tbtools.py\"\
+  , line 428, in render_html\n    render_line(lines[line_idx], \"current\")\n    \
+  \            ~~~~~^^^^^^^^^^\nIndexError: list index out of range`\n\n\nThe traceback\
+  \ should have been rendered as expected\n\nEnvironment: x86_64 linux 6.14.6\n\n\
+  - Python version: 3.13.3\n- Werkzeug version: 3.1.3\n\nIf I change the failing line\
+  \ in tbtools.py with `if 0<=line_idx<len(lines): render_line(lines[line_idx], \"\
+  current\")` then I do get a rendered traceback. The console cannot be entered at\
+  \ the lxml frame, but that is probably expected.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_debug.py::test_missing_source_lines
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 3071
+  issue: 3044
+  merged_at: '2025-11-27T06:35:29Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/3044

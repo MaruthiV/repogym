@@ -1,0 +1,646 @@
+diff --git a/tests/conftest.py b/tests/conftest.py
+index b73202cdb..f05fd84ed 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -1,55 +1,149 @@
++from __future__ import annotations
++
++import collections.abc as cabc
+ import http.client
+ import json
+ import os
+ import socket
+ import ssl
++import subprocess
+ import sys
++import time
++import typing as t
++from contextlib import closing
++from contextlib import ExitStack
+ from pathlib import Path
++from types import TracebackType
+ 
+ import ephemeral_port_reserve
+ import pytest
+-from xprocess import ProcessStarter
+-
+-from werkzeug.utils import cached_property
+ 
+-run_path = str(Path(__file__).parent / "live_apps" / "run.py")
++if t.TYPE_CHECKING:
++    import typing_extensions as te
+ 
+ 
+ class UnixSocketHTTPConnection(http.client.HTTPConnection):
+-    def connect(self):
++    def connect(self) -> None:
+         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
++        # Raises FileNotFoundError if the server hasn't started yet.
+         self.sock.connect(self.host)
+ 
+ 
++# Used to annotate the ``DevServerClient.request`` return value.
++class DataHTTPResponse(http.client.HTTPResponse):
++    data: bytes
++    json: t.Any
++
++
+ class DevServerClient:
+-    def __init__(self, kwargs):
+-        host = kwargs.get("hostname", "127.0.0.1")
++    """Manage a live dev server process and make requests to it. Must be used
++    as a context manager.
++
++    If ``hostname`` starts with ``unix://``, the server listens to a unix socket
++    file instead of a TCP socket.
++
++    If ``port`` is not given, a random port is reserved for use by the server,
++    to allow multiple servers to run simultaneously.
++
++    If ``ssl_context`` is given, the server listens with TLS enabled. It can be
++    the special value ``custom`` to generate and pass a context to
++    ``run_simple``, as opposed to ``adhoc`` which tells ``run_simple`` to
++    generate the context.
++
++    :param app_name: The name of the app from the ``live_apps`` folder to load.
++    :param tmp_path: The current test's temporary directory. The server process
++        sets the working dir here, it is added to the Python path, the log file
++        is written here, and for unix connections the socket is opened here.
++    :param server_kwargs: Arguments to pass to ``live_apps/run.py`` to control
++        how ``run_simple`` is called in the subprocess.
++    """
+ 
+-        if not host.startswith("unix"):
+-            port = kwargs.get("port")
++    scheme: str
++    """One of ``http``, ``https``, or ``unix``. Set based on ``ssl_context`` or
++    ``hostname``.
++    """
++    addr: str
++    """The host and port."""
++    url: str
++    """The scheme, host, and port."""
++
++    def __init__(
++        self, app_name: str = "standard", *, tmp_path: Path, **server_kwargs: t.Any
++    ) -> None:
++        host = server_kwargs.get("hostname", "127.0.0.1")
++
++        if not host.startswith("unix://"):
++            port = server_kwargs.get("port")
+ 
+             if port is None:
+-                kwargs["port"] = port = ephemeral_port_reserve.reserve(host)
++                server_kwargs["port"] = port = ephemeral_port_reserve.reserve(host)
+ 
+-            scheme = "https" if "ssl_context" in kwargs else "http"
++            self.scheme = "https" if "ssl_context" in server_kwargs else "http"
+             self.addr = f"{host}:{port}"
+-            self.url = f"{scheme}://{self.addr}"
++            self.url = f"{self.scheme}://{self.addr}"
+         else:
++            self.scheme = "unix"
+             self.addr = host[7:]  # strip "unix://"
+             self.url = host
+ 
+-        self.log = None
+-
+-    def tail_log(self, path):
+-        # surrogateescape allows for handling of file streams
+-        # containing junk binary values as normal text streams
+-        self.log = open(path, errors="surrogateescape")
+-        self.log.read()
+-
+-    def connect(self, **kwargs):
+-        protocol = self.url.partition(":")[0]
+-
+-        if protocol == "https":
++        self._app_name = app_name
++        self._server_kwargs = server_kwargs
++        self._tmp_path = tmp_path
++        self._log_write: t.IO[bytes] | None = None
++        self._log_read: t.IO[str] | None = None
++        self._proc: subprocess.Popen[bytes] | None = None
++
++    def __enter__(self) -> te.Self:
++        """Start the server process and wait for it to be ready."""
++        log_path = self._tmp_path / "log.txt"
++        self._log_write = open(log_path, "wb")
++        self._log_read = open(log_path, encoding="utf8", errors="surrogateescape")
++        tmp_dir = os.fspath(self._tmp_path)
++        self._proc = subprocess.Popen(
++            [
++                sys.executable,
++                os.fspath(Path(__file__).parent / "live_apps/run.py"),
++                self._app_name,
++                json.dumps(self._server_kwargs),
++            ],
++            env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONPATH": tmp_dir},
++            cwd=tmp_dir,
++            close_fds=True,
++            stdout=self._log_write,
++            stderr=subprocess.STDOUT,
++        )
++        self.wait_ready()
++        return self
++
++    def __exit__(
++        self,
++        exc_type: type[BaseException],
++        exc_val: BaseException,
++        exc_tb: TracebackType,
++    ) -> None:
++        """Clean up the server process."""
++        assert self._proc is not None
++        self._proc.terminate()
++        self._proc.wait()
++        self._proc = None
++        assert self._log_read is not None
++        self._log_read.close()
++        self._log_read = None
++        assert self._log_write is not None
++        self._log_write.close()
++        self._log_write = None
++
++    def connect(self, **kwargs: t.Any) -> http.client.HTTPConnection:
++        """Create a connection to the server, without sending a request.
++        Useful if a test requires lower level methods to try something that
++        ``HTTPClient.request`` will not do.
++
++        If the server's scheme is HTTPS and the TLS ``context`` argument is not
++        given, a default permissive context is used.
++
++        :param kwargs: Arguments to :class:`http.client.HTTPConnection`.
++        """
++        if self.scheme == "https":
+             if "context" not in kwargs:
+                 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                 context.check_hostname = False
+@@ -58,21 +152,31 @@ def connect(self, **kwargs):
+ 
+             return http.client.HTTPSConnection(self.addr, **kwargs)
+ 
+-        if protocol == "unix":
++        if self.scheme == "unix":
+             return UnixSocketHTTPConnection(self.addr, **kwargs)
+ 
+         return http.client.HTTPConnection(self.addr, **kwargs)
+ 
+-    def request(self, path="", **kwargs):
++    def request(self, url: str = "", **kwargs: t.Any) -> DataHTTPResponse:
++        """Open a connection and make a request to the server, returning the
++        response.
++
++        The response object ``data`` parameter has the result of
++        ``response.read()``. If the response has a ``application/json`` content
++         type, the ``json`` parameter is populated with ``json.loads(data)``.
++
++        :param url: URL to put in the request line.
++        :param kwargs: Arguments to :meth:`http.client.HTTPConnection.request`.
++        """
+         kwargs.setdefault("method", "GET")
+-        kwargs.setdefault("url", path)
+-        conn = self.connect()
+-        conn.request(**kwargs)
++        kwargs["url"] = url
++        response: DataHTTPResponse
+ 
+-        with conn.getresponse() as response:
+-            response.data = response.read()
++        with closing(self.connect()) as conn:
++            conn.request(**kwargs)
+ 
+-        conn.close()
++            with conn.getresponse() as response:  # type: ignore[assignment]
++                response.data = response.read()
+ 
+         if response.headers.get("Content-Type", "").startswith("application/json"):
+             response.json = json.loads(response.data)
+@@ -81,53 +185,66 @@ def request(self, path="", **kwargs):
+ 
+         return response
+ 
+-    def wait_for_log(self, start):
++    def wait_ready(self) -> None:
++        """Wait until a request to ``/ensure`` is successful, indicating the
++        server has started and is listening.
++        """
+         while True:
+-            for line in self.log:
+-                if line.startswith(start):
+-                    return
++            try:
++                self.request("/ensure")
++                return
++            # ConnectionRefusedError for http, FileNotFoundError for unix
++            except (ConnectionRefusedError, FileNotFoundError):
++                time.sleep(0.1)
+ 
+-    def wait_for_reload(self):
+-        self.wait_for_log(" * Restarting with ")
++    def read_log(self) -> str:
++        """Read from the current position to the current end of the log."""
++        assert self._log_read is not None
++        return self._log_read.read()
+ 
++    def wait_for_log(self, value: str) -> None:
++        """Wait until a line in the log contains the given string.
+ 
+-@pytest.fixture()
+-def dev_server(xprocess, request, tmp_path):
+-    """A function that will start a dev server in an external process
+-    and return a client for interacting with the server.
+-    """
++        :param value: The string to search for.
++        """
++        assert self._log_read is not None
+ 
+-    def start_dev_server(name="standard", **kwargs):
+-        client = DevServerClient(kwargs)
++        while True:
++            for line in self._log_read:
++                if value in line:
++                    return
++
++            time.sleep(0.1)
++
++    def wait_for_reload(self) -> None:
++        """Wait until the server logs that it is restarting, then wait for it to
++        be ready.
++        """
++        self.wait_for_log("Restarting with")
++        self.wait_ready()
+ 
+-        class Starter(ProcessStarter):
+-            args = [sys.executable, run_path, name, json.dumps(kwargs)]
+-            # Extend the existing env, otherwise Windows and CI fails.
+-            # Modules will be imported from tmp_path for the reloader.
+-            # Unbuffered output so the logs update immediately.
+-            env = {**os.environ, "PYTHONPATH": str(tmp_path), "PYTHONUNBUFFERED": "1"}
+ 
+-            @cached_property
+-            def pattern(self):
+-                client.request("/ensure")
+-                return "GET /ensure"
++class StartDevServer(t.Protocol):
++    def __call__(self, name: str = "standard", **kwargs: t.Any) -> DevServerClient: ...
+ 
+-        # Each test that uses the fixture will have a different log.
+-        xp_name = f"dev_server-{request.node.name}"
+-        _, log_path = xprocess.ensure(xp_name, Starter, restart=True)
+-        client.tail_log(log_path)
+ 
+-        @request.addfinalizer
+-        def close():
+-            xprocess.getinfo(xp_name).terminate()
+-            client.log.close()
++@pytest.fixture()
++def dev_server(tmp_path: Path) -> cabc.Iterator[StartDevServer]:
++    """A function that will start a dev server in a subprocess and return a
++    client for interacting with the server.
++    """
++    exit_stack = ExitStack()
+ 
++    def start_dev_server(name: str = "standard", **kwargs: t.Any) -> DevServerClient:
++        client = DevServerClient(name, tmp_path=tmp_path, **kwargs)
++        exit_stack.enter_context(client)  # type: ignore[arg-type]
+         return client
+ 
+-    return start_dev_server
++    with exit_stack:
++        yield start_dev_server
+ 
+ 
+ @pytest.fixture()
+-def standard_app(dev_server):
++def standard_app(dev_server: t.Callable[..., DevServerClient]) -> DevServerClient:
+     """Equivalent to ``dev_server("standard")``."""
+     return dev_server()
+diff --git a/tests/middleware/test_http_proxy.py b/tests/middleware/test_http_proxy.py
+index a1497c5cc..5e1f005b2 100644
+--- a/tests/middleware/test_http_proxy.py
++++ b/tests/middleware/test_http_proxy.py
+@@ -5,7 +5,6 @@
+ from werkzeug.wrappers import Response
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+ def test_http_proxy(standard_app):
+     app = ProxyMiddleware(
+diff --git a/tests/test_debug.py b/tests/test_debug.py
+index cf171d1a5..f51779cbc 100644
+--- a/tests/test_debug.py
++++ b/tests/test_debug.py
+@@ -245,7 +245,6 @@ def test_get_machine_id():
+     assert isinstance(rv, bytes)
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize("crash", (True, False))
+ @pytest.mark.dev_server
+ def test_basic(dev_server, crash):
+diff --git a/tests/test_serving.py b/tests/test_serving.py
+index 2de67dab0..6dd9d9dc3 100644
+--- a/tests/test_serving.py
++++ b/tests/test_serving.py
+@@ -1,3 +1,6 @@
++from __future__ import annotations
++
++import collections.abc as cabc
+ import http.client
+ import json
+ import os
+@@ -5,8 +8,10 @@
+ import socket
+ import ssl
+ import sys
++import typing as t
+ from io import BytesIO
+ from pathlib import Path
++from unittest.mock import Mock
+ from unittest.mock import patch
+ 
+ import pytest
+@@ -24,8 +29,11 @@
+ from werkzeug.serving import make_ssl_devcert
+ from werkzeug.test import stream_encode_multipart
+ 
++if t.TYPE_CHECKING:
++    from conftest import DevServerClient
++    from conftest import StartDevServer
++
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize(
+     "kwargs",
+     [
+@@ -42,7 +50,9 @@
+     ],
+ )
+ @pytest.mark.dev_server
+-def test_server(tmp_path, dev_server, kwargs: dict):
++def test_server(
++    tmp_path: Path, dev_server: StartDevServer, kwargs: dict[str, t.Any]
++) -> None:
+     if kwargs.get("hostname") == "unix":
+         kwargs["hostname"] = f"unix://{tmp_path / 'test.sock'}"
+ 
+@@ -52,9 +62,8 @@ def test_server(tmp_path, dev_server, kwargs: dict):
+     assert r.json["PATH_INFO"] == "/"
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_untrusted_host(standard_app):
++def test_untrusted_host(standard_app: DevServerClient) -> None:
+     r = standard_app.request(
+         "http://missing.test:1337/index.html#ignore",
+         headers={"x-base-url": standard_app.url},
+@@ -66,45 +75,42 @@ def test_untrusted_host(standard_app):
+     assert r.json["SERVER_PORT"] == port
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_double_slash_path(standard_app):
++def test_double_slash_path(standard_app: DevServerClient) -> None:
+     r = standard_app.request("//double-slash")
+     assert "double-slash" not in r.json["HTTP_HOST"]
+     assert r.json["PATH_INFO"] == "/double-slash"
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_500_error(standard_app):
++def test_500_error(standard_app: DevServerClient) -> None:
+     r = standard_app.request("/crash")
+     assert r.status == 500
+     assert b"Internal Server Error" in r.data
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_ssl_dev_cert(tmp_path, dev_server):
+-    client = dev_server(ssl_context=make_ssl_devcert(tmp_path))
++def test_ssl_dev_cert(tmp_path: Path, dev_server: StartDevServer) -> None:
++    client = dev_server(ssl_context=make_ssl_devcert(os.fspath(tmp_path)))
+     r = client.request()
+     assert r.json["wsgi.url_scheme"] == "https"
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_ssl_object(dev_server):
++def test_ssl_object(dev_server: StartDevServer) -> None:
+     client = dev_server(ssl_context="custom")
+     r = client.request()
+     assert r.json["wsgi.url_scheme"] == "https"
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize("reloader_type", ["stat", "watchdog"])
+ @pytest.mark.skipif(
+     os.name == "nt" and "CI" in os.environ, reason="unreliable on Windows during CI"
+ )
+ @pytest.mark.dev_server
+-def test_reloader_sys_path(tmp_path, dev_server, reloader_type):
++def test_reloader_sys_path(
++    tmp_path: Path, dev_server: StartDevServer, reloader_type: str
++) -> None:
+     """This tests the general behavior of the reloader. It also tests
+     that fixing an import error triggers a reload, not just Python
+     retrying the failed import.
+@@ -116,25 +122,24 @@ def test_reloader_sys_path(tmp_path, dev_server, reloader_type):
+     assert client.request().status == 500
+ 
+     shutil.copyfile(Path(__file__).parent / "live_apps" / "standard_app.py", real_path)
+-    client.wait_for_log(f" * Detected change in {str(real_path)!r}, reloading")
++    client.wait_for_log(f"Detected change in {str(real_path)!r}")
+     client.wait_for_reload()
+     assert client.request().status == 200
+ 
+ 
+ @patch.object(WatchdogReloaderLoop, "trigger_reload")
+-def test_watchdog_reloader_ignores_opened(mock_trigger_reload):
++def test_watchdog_reloader_ignores_opened(mock_trigger_reload: Mock) -> None:
+     reloader = WatchdogReloaderLoop()
+     modified_event = FileModifiedEvent("")
+     modified_event.event_type = EVENT_TYPE_MODIFIED
+     reloader.event_handler.on_any_event(modified_event)
+     mock_trigger_reload.assert_called_once()
+ 
+-    reloader.trigger_reload.reset_mock()
+-
++    mock_trigger_reload.reset_mock()
+     opened_event = FileModifiedEvent("")
+     opened_event.event_type = EVENT_TYPE_OPENED
+     reloader.event_handler.on_any_event(opened_event)
+-    reloader.trigger_reload.assert_not_called()
++    mock_trigger_reload.assert_not_called()
+ 
+ 
+ @pytest.mark.skipif(
+@@ -142,8 +147,8 @@ def test_watchdog_reloader_ignores_opened(mock_trigger_reload):
+     reason="'closed no write' event introduced in watchdog 5.0",
+ )
+ @patch.object(WatchdogReloaderLoop, "trigger_reload")
+-def test_watchdog_reloader_ignores_closed_no_write(mock_trigger_reload):
+-    from watchdog.events import EVENT_TYPE_CLOSED_NO_WRITE
++def test_watchdog_reloader_ignores_closed_no_write(mock_trigger_reload: Mock) -> None:
++    from watchdog.events import EVENT_TYPE_CLOSED_NO_WRITE  # type: ignore[attr-defined]
+ 
+     reloader = WatchdogReloaderLoop()
+     modified_event = FileModifiedEvent("")
+@@ -151,16 +156,17 @@ def test_watchdog_reloader_ignores_closed_no_write(mock_trigger_reload):
+     reloader.event_handler.on_any_event(modified_event)
+     mock_trigger_reload.assert_called_once()
+ 
+-    reloader.trigger_reload.reset_mock()
+-
++    mock_trigger_reload.reset_mock()
+     opened_event = FileModifiedEvent("")
+     opened_event.event_type = EVENT_TYPE_CLOSED_NO_WRITE
+     reloader.event_handler.on_any_event(opened_event)
+-    reloader.trigger_reload.assert_not_called()
++    mock_trigger_reload.assert_not_called()
+ 
+ 
+ @pytest.mark.skipif(sys.version_info >= (3, 10), reason="not needed on >= 3.10")
+-def test_windows_get_args_for_reloading(monkeypatch, tmp_path):
++def test_windows_get_args_for_reloading(
++    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
++) -> None:
+     argv = [str(tmp_path / "test.exe"), "run"]
+     monkeypatch.setattr("sys.executable", str(tmp_path / "python.exe"))
+     monkeypatch.setattr("sys.argv", argv)
+@@ -170,9 +176,10 @@ def test_windows_get_args_for_reloading(monkeypatch, tmp_path):
+     assert rv == argv
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize("find", [_find_stat_paths, _find_watchdog_paths])
+-def test_exclude_patterns(find):
++def test_exclude_patterns(
++    find: t.Callable[[set[str], set[str]], cabc.Iterable[str]],
++) -> None:
+     # Select a path to exclude from the unfiltered list, assert that it is present and
+     # then gets excluded.
+     paths = find(set(), set())
+@@ -184,9 +191,8 @@ def test_exclude_patterns(find):
+     assert not any(p.startswith(path_to_exclude) for p in paths)
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_wrong_protocol(standard_app):
++def test_wrong_protocol(standard_app: DevServerClient) -> None:
+     """An HTTPS request to an HTTP server doesn't show a traceback.
+     https://github.com/pallets/werkzeug/pull/838
+     """
+@@ -195,12 +201,11 @@ def test_wrong_protocol(standard_app):
+     with pytest.raises(ssl.SSLError):
+         conn.request("GET", f"https://{standard_app.addr}")
+ 
+-    assert "Traceback" not in standard_app.log.read()
++    assert "Traceback" not in standard_app.read_log()
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_content_type_and_length(standard_app):
++def test_content_type_and_length(standard_app: DevServerClient) -> None:
+     r = standard_app.request()
+     assert "CONTENT_TYPE" not in r.json
+     assert "CONTENT_LENGTH" not in r.json
+@@ -210,15 +215,16 @@ def test_content_type_and_length(standard_app):
+     assert r.json["CONTENT_LENGTH"] == "2"
+ 
+ 
+-def test_port_is_int():
++def test_port_is_int() -> None:
+     with pytest.raises(TypeError, match="port must be an integer"):
+-        run_simple("127.0.0.1", "5000", None)
++        run_simple("127.0.0.1", "5000", None)  # type: ignore[arg-type]
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize("send_length", [False, True])
+ @pytest.mark.dev_server
+-def test_chunked_request(monkeypatch, dev_server, send_length):
++def test_chunked_request(
++    monkeypatch: pytest.MonkeyPatch, dev_server: StartDevServer, send_length: bool
++) -> None:
+     stream, length, boundary = stream_encode_multipart(
+         {
+             "value": "this is text",
+@@ -258,9 +264,8 @@ def test_chunked_request(monkeypatch, dev_server, send_length):
+     assert environ["wsgi.input_terminated"]
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_multiple_headers_concatenated(standard_app):
++def test_multiple_headers_concatenated(standard_app: DevServerClient) -> None:
+     """A header key can be sent multiple times. The server will join all
+     the values with commas.
+ 
+@@ -283,9 +288,8 @@ def test_multiple_headers_concatenated(standard_app):
+     assert data["HTTP_XYZ"] == "a ,b,c ,d"
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_multiline_header_folding(standard_app):
++def test_multiline_header_folding(standard_app: DevServerClient) -> None:
+     """A header value can be split over multiple lines with a leading
+     tab. The server will remove the newlines and preserve the tabs.
+ 
+@@ -303,9 +307,8 @@ def test_multiline_header_folding(standard_app):
+ 
+ 
+ @pytest.mark.parametrize("endpoint", ["", "crash"])
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_streaming_close_response(dev_server, endpoint):
++def test_streaming_close_response(dev_server: StartDevServer, endpoint: str) -> None:
+     """When using HTTP/1.0, chunked encoding is not supported. Fall
+     back to Connection: close, but this allows no reliable way to
+     distinguish between complete and truncated responses.
+@@ -315,9 +318,8 @@ def test_streaming_close_response(dev_server, endpoint):
+     assert r.data == "".join(str(x) + "\n" for x in range(5)).encode()
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_streaming_chunked_response(dev_server):
++def test_streaming_chunked_response(dev_server: StartDevServer) -> None:
+     """When using HTTP/1.1, use Transfer-Encoding: chunked for streamed
+     responses, since it can distinguish the end of the response without
+     closing the connection.
+@@ -329,9 +331,8 @@ def test_streaming_chunked_response(dev_server):
+     assert r.data == "".join(str(x) + "\n" for x in range(5)).encode()
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_streaming_chunked_truncation(dev_server):
++def test_streaming_chunked_truncation(dev_server: StartDevServer) -> None:
+     """When using HTTP/1.1, chunked encoding allows the client to detect
+     content truncated by a prematurely closed connection.
+     """
+@@ -339,12 +340,11 @@ def test_streaming_chunked_truncation(dev_server):
+         dev_server("streaming", threaded=True).request("/crash")
+ 
+ 
+-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.dev_server
+-def test_host_with_ipv6_scope(dev_server):
++def test_host_with_ipv6_scope(dev_server: StartDevServer) -> None:
+     client = dev_server(override_client_addr="fe80::1ff:fe23:4567:890a%eth2")
+     r = client.request("/crash")
+ 
+     assert r.status == 500
+     assert b"Internal Server Error" in r.data
+-    assert "Logging error" not in client.log.read()
++    assert "Logging error" not in client.read_log()

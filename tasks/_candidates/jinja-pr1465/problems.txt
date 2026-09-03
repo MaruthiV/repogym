@@ -1,0 +1,8 @@
+run1: f2p test not failing pre-fix: tests/test_filters.py::test_groupby_case -> error
+run1: f2p test not failing pre-fix: tests/test_filters.py::test_filtertag -> error
+run1: f2p test not passing post-gold: tests/test_filters.py::test_groupby_case -> error
+run1: f2p test not passing post-gold: tests/test_filters.py::test_filtertag -> error
+run2: f2p test not failing pre-fix: tests/test_filters.py::test_groupby_case -> error
+run2: f2p test not failing pre-fix: tests/test_filters.py::test_filtertag -> error
+run2: f2p test not passing post-gold: tests/test_filters.py::test_groupby_case -> error
+run2: f2p test not passing post-gold: tests/test_filters.py::test_filtertag -> error

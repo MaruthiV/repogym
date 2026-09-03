@@ -1,0 +1,70 @@
+id: jinja-pr1449
+repo: pallets/jinja
+base_commit: d4e5112550abd8949b8e787bbd8fd9e56f1bd09b
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "AssertionError: Tried to resolve a name to a reference that was unknown to\
+  \ the frame\n\nHi folks! Thanks for shipping a new release with fantastic type annotations\
+  \ - very much looking forward to that. :) \r\nI've just tried upgrading, but I'm\
+  \ running in the following regression on the way:\r\n\r\n`repro.jinja2`\r\n```jinja\r\
+  \n{% set output %}\r\n    {% for x in [1,2,3] %}\r\n        hello\r\n    {% endfor\
+  \ %}\r\n{% endset %}\r\n{{ output }}\r\n```\r\n\r\nJinja 2.11.3\r\n\r\n```\r\n \
+  \       hello\r\n        hello\r\n        hello\r\n```\r\n\r\nJinja 3.0.0\r\n\r\n\
+  ```\r\nTraceback (most recent call last):\r\n  File \"/home/user/venv/bin/j2\",\
+  \ line 8, in <module>\r\n    sys.exit(main())\r\n  File \"/home/user/venv/lib/python3.9/site-packages/j2cli/cli.py\"\
+  , line 202, in main\r\n    output = render_command(\r\n  File \"/home/user/venv/lib/python3.9/site-packages/j2cli/cli.py\"\
+  , line 186, in render_command\r\n    result = renderer.render(args.template, context)\r\
+  \n  File \"/home/user/venv/lib/python3.9/site-packages/j2cli/cli.py\", line 85,\
+  \ in render\r\n    return self._env \\\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/environment.py\"\
+  , line 996, in get_template\r\n    return self._load_template(name, globals)\r\n\
+  \  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/environment.py\", line\
+  \ 957, in _load_template\r\n    template = self.loader.load(self, name, self.make_globals(globals))\r\
+  \n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/loaders.py\", line\
+  \ 137, in load\r\n    code = environment.compile(source, name, filename)\r\n  File\
+  \ \"/home/user/venv/lib/python3.9/site-packages/jinja2/environment.py\", line 749,\
+  \ in compile\r\n    source = self._generate(source, name, filename, defer_init=defer_init)\r\
+  \n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/environment.py\",\
+  \ line 677, in _generate\r\n    return generate(  # type: ignore\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/compiler.py\"\
+  , line 116, in generate\r\n    generator.visit(node)\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/visitor.py\"\
+  , line 40, in visit\r\n    return f(node, *args, **kwargs)\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/compiler.py\"\
+  , line 887, in visit_Template\r\n    self.blockvisit(node.body, frame)\r\n  File\
+  \ \"/home/user/venv/lib/python3.9/site-packages/jinja2/compiler.py\", line 448,\
+  \ in blockvisit\r\n    self.visit(node, frame)\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/visitor.py\"\
+  , line 40, in visit\r\n    return f(node, *args, **kwargs)\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/compiler.py\"\
+  , line 1581, in visit_AssignBlock\r\n    self.pop_assign_tracking(frame)\r\n  File\
+  \ \"/home/user/venv/lib/python3.9/site-packages/jinja2/compiler.py\", line 812,\
+  \ in pop_assign_tracking\r\n    ref = frame.symbols.ref(name)\r\n  File \"/home/user/venv/lib/python3.9/site-packages/jinja2/idtracking.py\"\
+  , line 80, in ref\r\n    raise AssertionError(\r\nAssertionError: Tried to resolve\
+  \ a name to a reference that was unknown to the frame ('x')\r\n```\r\n\r\nI've skimmed\
+  \ the Changelog, but couldn't identify anything that may point me in the right direction.\
+  \ The traceback is a bit above my head. Please let me know if I can help with anything\
+  \ else! \U0001F603 \r\n\r\n#### *Edit:* Workaround\r\n\r\nIt's possible to convince\
+  \ Jinja2 that everything is ok by first defining the inner loop variable:\r\n\r\n\
+  ```jinja\r\n{% set x = None %}\r\n{% set output %}\r\n    {% for x in [1,2,3] %}\r\
+  \n        hello\r\n    {% endfor %}\r\n{% endset %}\r\n{{ output }}\r\n```\r\n\r\
+  \nEnvironment:\r\n\r\n- Python version: Python 3.9.4\r\n- Jinja version: 3.0.0\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_regression.py::test_nested_loop_scoping
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1449
+  issue: 1427
+  merged_at: '2021-08-09T17:19:59Z'
+  issue_url: https://github.com/pallets/jinja/issues/1427

@@ -1,0 +1,99 @@
+diff --git a/tests/live_apps/run.py b/tests/live_apps/run.py
+index aacdcb664..5f8ff1711 100644
+--- a/tests/live_apps/run.py
++++ b/tests/live_apps/run.py
+@@ -4,9 +4,15 @@
+ 
+ from werkzeug.serving import generate_adhoc_ssl_context
+ from werkzeug.serving import run_simple
++from werkzeug.serving import WSGIRequestHandler
+ from werkzeug.wrappers import Request
+ from werkzeug.wrappers import Response
+ 
++
++class WSGI11RequestHandler(WSGIRequestHandler):
++    protocol_version = "HTTP/1.1"
++
++
+ name = sys.argv[1]
+ mod = import_module(f"{name}_app")
+ 
+@@ -24,6 +30,9 @@ def app(request):
+ kwargs.update(json.loads(sys.argv[2]))
+ ssl_context = kwargs.get("ssl_context")
+ 
++if kwargs.get("request_handler") == "HTTP/1.1":
++    kwargs["request_handler"] = WSGI11RequestHandler
++
+ if ssl_context == "custom":
+     kwargs["ssl_context"] = generate_adhoc_ssl_context()
+ elif isinstance(ssl_context, list):
+diff --git a/tests/live_apps/streaming_app.py b/tests/live_apps/streaming_app.py
+new file mode 100644
+index 000000000..c8aad46eb
+--- /dev/null
++++ b/tests/live_apps/streaming_app.py
+@@ -0,0 +1,14 @@
++from werkzeug.wrappers import Request
++from werkzeug.wrappers import Response
++
++
++@Request.application
++def app(request):
++    def gen():
++        for x in range(5):
++            yield f"{x}\n"
++
++        if request.path == "/crash":
++            raise Exception("crash requested")
++
++    return Response(gen())
+diff --git a/tests/test_serving.py b/tests/test_serving.py
+index 8d6ed9b23..2b46c8a02 100644
+--- a/tests/test_serving.py
++++ b/tests/test_serving.py
+@@ -159,7 +159,7 @@ def test_port_is_int():
+ 
+ @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+ @pytest.mark.parametrize("send_length", [False, True])
+-def test_chunked_encoding(monkeypatch, dev_server, send_length):
++def test_chunked_request(monkeypatch, dev_server, send_length):
+     stream, length, boundary = stream_encode_multipart(
+         {
+             "value": "this is text",
+@@ -239,3 +239,35 @@ def test_multiline_header_folding(standard_app):
+     data = json.load(r)
+     r.close()
+     assert data["HTTP_XYZ"] == "first\tsecond\tthird"
++
++
++@pytest.mark.parametrize("endpoint", ["", "crash"])
++def test_streaming_close_response(dev_server, endpoint):
++    """When using HTTP/1.0, chunked encoding is not supported. Fall
++    back to Connection: close, but this allows no reliable way to
++    distinguish between complete and truncated responses.
++    """
++    r = dev_server("streaming").request("/" + endpoint)
++    assert r.getheader("connection") == "close"
++    assert r.data == "".join(str(x) + "\n" for x in range(5)).encode()
++
++
++def test_streaming_chunked_response(dev_server):
++    """When using HTTP/1.1, use Transfer-Encoding: chunked for streamed
++    responses, since it can distinguish the end of the response without
++    closing the connection.
++
++    https://tools.ietf.org/html/rfc2616#section-3.6.1
++    """
++    r = dev_server("streaming", request_handler="HTTP/1.1").request("/")
++    assert r.getheader("transfer-encoding") == "chunked"
++    assert r.data == "".join(str(x) + "\n" for x in range(5)).encode()
++
++
++@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
++def test_streaming_chunked_truncation(dev_server):
++    """When using HTTP/1.1, chunked encoding allows the client to detect
++    content truncated by a prematurely closed connection.
++    """
++    with pytest.raises(http.client.IncompleteRead):
++        dev_server("streaming", request_handler="HTTP/1.1").request("/crash")

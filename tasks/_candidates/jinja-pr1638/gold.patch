@@ -1,0 +1,42 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index afc86e5e7..4cc30f11f 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -5,6 +5,9 @@ Version 3.1.1
+ 
+ Unreleased
+ 
++-   The template filename on Windows uses the primary path separator.
++    :issue:`1637`
++
+ 
+ Version 3.1.0
+ -------------
+diff --git a/src/jinja2/loaders.py b/src/jinja2/loaders.py
+index e255cd41f..d2f98093c 100644
+--- a/src/jinja2/loaders.py
++++ b/src/jinja2/loaders.py
+@@ -213,7 +213,8 @@ def uptodate() -> bool:
+                 except OSError:
+                     return False
+ 
+-            return contents, filename, uptodate
++            # Use normpath to convert Windows altsep to sep.
++            return contents, os.path.normpath(filename), uptodate
+         raise TemplateNotFound(template)
+ 
+     def list_templates(self) -> t.List[str]:
+@@ -330,8 +331,11 @@ def get_source(
+         self, environment: "Environment", template: str
+     ) -> t.Tuple[str, str, t.Optional[t.Callable[[], bool]]]:
+         # Use posixpath even on Windows to avoid "drive:" or UNC
+-        # segments breaking out of the search directory.
+-        p = posixpath.join(self._template_root, *split_template_path(template))
++        # segments breaking out of the search directory. Use normpath to
++        # convert Windows altsep to sep.
++        p = os.path.normpath(
++            posixpath.join(self._template_root, *split_template_path(template))
++        )
+         up_to_date: t.Optional[t.Callable[[], bool]]
+ 
+         if self._archive is None:

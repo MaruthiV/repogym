@@ -1,0 +1,27 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index c92fe2e63..c26a58b58 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -7,6 +7,7 @@ Unreleased
+ 
+ -   The Watchdog reloader ignores file closed no write events. :issue:`2945`
+ -   Logging works with client addresses containing an IPv6 scope :issue:`2952`
++-   Ignore invalid authorization parameters. :issue:`2955`
+ 
+ 
+ Version 3.0.4
+diff --git a/src/werkzeug/http.py b/src/werkzeug/http.py
+index c0ec92389..cb8bc2581 100644
+--- a/src/werkzeug/http.py
++++ b/src/werkzeug/http.py
+@@ -361,6 +361,10 @@ def parse_dict_header(value: str) -> dict[str, str | None]:
+         key, has_value, value = item.partition("=")
+         key = key.strip()
+ 
++        if not key:
++            # =value is not valid
++            continue
++
+         if not has_value:
+             result[key] = None
+             continue

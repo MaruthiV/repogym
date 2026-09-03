@@ -1,0 +1,22 @@
+diff --git a/tests/test_repogym_audit.py b/tests/test_repogym_audit.py
+new file mode 100644
+index 00000000..f63af100
+--- /dev/null
++++ b/tests/test_repogym_audit.py
+@@ -0,0 +1,16 @@
++import warnings
++
++from tests.repogym_audit.log import audit_entry, entry_age_seconds
++
++
++def test_no_deprecated_utcnow():
++    with warnings.catch_warnings():
++        warnings.simplefilter("error", DeprecationWarning)
++        entry = audit_entry("a", "read")
++        entry_age_seconds(entry)
++
++
++def test_behavior_unchanged():
++    entry = audit_entry("svc", "write")
++    assert entry["at"].endswith("Z")
++    assert 0 <= entry_age_seconds(entry) < 5

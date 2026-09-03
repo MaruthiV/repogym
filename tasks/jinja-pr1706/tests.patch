@@ -1,0 +1,13 @@
+diff --git a/tests/test_loader.py b/tests/test_loader.py
+index 5a4e1a9da..377290b71 100644
+--- a/tests/test_loader.py
++++ b/tests/test_loader.py
+@@ -429,3 +429,8 @@ def exec_module(self, module):
+         assert "test.html" in package_loader.list_templates()
+     finally:
+         sys.meta_path[:] = before
++
++
++def test_package_loader_no_dir() -> None:
++    with pytest.raises(ValueError, match="could not find a 'templates' directory"):
++        PackageLoader("jinja2")

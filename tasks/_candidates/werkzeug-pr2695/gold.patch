@@ -1,0 +1,99 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 86e9d1131..d924a231f 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -10,6 +10,8 @@ Unreleased
+ -   Remove usage of ``warnings.catch_warnings``. :issue:`2690`
+ -   Remove ``max_form_parts`` restriction from standard form data parsing and only use
+     if for multipart content. :pr:`2694`
++-   ``Response`` will avoid converting the ``Location`` header in some cases to preserve
++    invalid URL schemes like ``itms-services``. :issue:`2691`
+ 
+ 
+ Version 2.3.3
+diff --git a/src/werkzeug/urls.py b/src/werkzeug/urls.py
+index ea60690ba..9297fe3a3 100644
+--- a/src/werkzeug/urls.py
++++ b/src/werkzeug/urls.py
+@@ -1053,6 +1053,27 @@ def iri_to_uri(
+     return urlunsplit((parts.scheme, netloc, path, query, fragment))
+ 
+ 
++def _invalid_iri_to_uri(iri: str) -> str:
++    """The URL scheme ``itms-services://`` must contain the ``//`` even though it does
++    not have a host component. There may be other invalid schemes as well. Currently,
++    responses will always call ``iri_to_uri`` on the redirect ``Location`` header, which
++    removes the ``//``. For now, if the IRI only contains ASCII and does not contain
++    spaces, pass it on as-is. In Werkzeug 2.4, this should become a
++    ``response.process_location`` flag.
++
++    :meta private:
++    """
++    try:
++        iri.encode("ascii")
++    except UnicodeError:
++        pass
++    else:
++        if len(iri.split(None, 1)) == 1:
++            return iri
++
++    return iri_to_uri(iri)
++
++
+ def url_decode(
+     s: t.AnyStr,
+     charset: str = "utf-8",
+diff --git a/src/werkzeug/utils.py b/src/werkzeug/utils.py
+index d0841d842..785ac28b9 100644
+--- a/src/werkzeug/utils.py
++++ b/src/werkzeug/utils.py
+@@ -260,21 +260,17 @@ def redirect(
+         response. The default is :class:`werkzeug.wrappers.Response` if
+         unspecified.
+     """
+-    from .urls import iri_to_uri
+-
+     if Response is None:
+         from .wrappers import Response
+ 
+-    display_location = escape(location)
+-    location = iri_to_uri(location)
++    html_location = escape(location)
+     response = Response(  # type: ignore[misc]
+         "<!doctype html>\n"
+         "<html lang=en>\n"
+         "<title>Redirecting...</title>\n"
+         "<h1>Redirecting...</h1>\n"
+         "<p>You should be redirected automatically to the target URL: "
+-        f'<a href="{escape(location)}">{display_location}</a>. If'
+-        " not, click the link.\n",
++        f'<a href="{html_location}">{html_location}</a>. If not, click the link.\n',
+         code,
+         mimetype="text/html",
+     )
+diff --git a/src/werkzeug/wrappers/response.py b/src/werkzeug/wrappers/response.py
+index d2f200914..c8488094e 100644
+--- a/src/werkzeug/wrappers/response.py
++++ b/src/werkzeug/wrappers/response.py
+@@ -8,6 +8,7 @@
+ from ..datastructures import Headers
+ from ..http import remove_entity_headers
+ from ..sansio.response import Response as _SansIOResponse
++from ..urls import _invalid_iri_to_uri
+ from ..urls import iri_to_uri
+ from ..utils import cached_property
+ from ..wsgi import ClosingIterator
+@@ -478,11 +479,11 @@ def get_wsgi_headers(self, environ: WSGIEnvironment) -> Headers:
+             elif ikey == "content-length":
+                 content_length = value
+ 
+-        # make sure the location header is an absolute URL
+         if location is not None:
+-            location = iri_to_uri(location)
++            location = _invalid_iri_to_uri(location)
+ 
+             if self.autocorrect_location_header:
++                # Make the location header an absolute URL.
+                 current_url = get_current_url(environ, strip_querystring=True)
+                 current_url = iri_to_uri(current_url)
+                 location = urljoin(current_url, location)

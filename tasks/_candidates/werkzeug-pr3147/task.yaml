@@ -1,0 +1,54 @@
+id: werkzeug-pr3147
+repo: pallets/werkzeug
+base_commit: b97e13cc74d8a45dca260d4037edd7d1f5094042
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "FloatConverter breaks for values smaller than 0.0001\n\n`FloatConverter`\
+  \ uses scientific notation (`1e-05`) when building URLs with values smaller than\
+  \ 0.0001. This leads to URLs, that can not be resolved, as `FloatConverter` does\
+  \ not handle values containing letters (regex: `\\d+\\.\\d+`).\n\nThe following\
+  \ listing illustrates the issue:\n\n```python\nfrom werkzeug.routing import Map,\
+  \ Rule\nfrom werkzeug.routing.converters import FloatConverter\nimport typing as\
+  \ t\n\nmap = Map([\n    Rule('/<float:x>', endpoint='foo'),\n])\nmapAdapter = map.bind('bar')\n\
+  \nprint(url := mapAdapter.build('foo', values={'x': 1}), mapAdapter.test(url))\n\
+  print(url := mapAdapter.build('foo', values={'x': 0.00001}), mapAdapter.test(url))\n\
+  print(url := '/0.00001', mapAdapter.test(url))\n```\n\nThis leads to the following\
+  \ output:\n\n```\n/1.0 True\n/1e-05 False\n/0.00001 True\n```\n\nIn the second row,\
+  \ the generated URL can not be resolved. \n\nThere are multiple ways to fix this\
+  \ issue.  One could for example adjust the regex to handle these cases (`\\d+\\\
+  .\\d+(e[+-]/d+)?` instead of `\\d+\\.\\d+`). Another option would be to suppress\
+  \ scientific notation when building URLs:\n\n```python\nclass FixedFloatConverter(FloatConverter):\n\
+  \    def to_url(self, value: t.Any) -> str:\n        return f'{self.num_convert(value):f}'\n\
+  \    \nmap = Map([\n    Rule('/<ffloat:x>', endpoint='foo'),\n], converters={'ffloat':\
+  \ FixedFloatConverter})\nmapAdapter = map.bind('bar')\n\nprint(url := mapAdapter.build('foo',\
+  \ values={'x': 1}), mapAdapter.test(url))\nprint(url := mapAdapter.build('foo',\
+  \ values={'x': 0.00001}), mapAdapter.test(url))\nprint(url := '/0.00001', mapAdapter.test(url))\n\
+  ```\n\nThis produces the desired result:\n\n```\n/1.000000 True\n/0.000010 True\n\
+  /0.00001 True\n```\n\nEnvironment:\n\n- Python version: not relevant\n- Werkzeug\
+  \ version: 3.1.7\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_routing.py::test_float_no_scientific
+  - tests/test_routing.py::test_greedy
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 3147
+  issue: 3146
+  merged_at: '2026-04-18T21:49:50Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/3146

@@ -1,0 +1,5 @@
+run1: hidden tests patch failed to apply: error: patch failed: tests/sansio/test_multipart.py:1
+error: tests/sansio/test_multipart.py: patch does not apply
+
+run2: hidden tests patch failed to apply: error: patch failed: tests/sansio/test_multipart.py:1
+error: tests/sansio/test_multipart.py: patch does not apply

@@ -1,0 +1,43 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 298cf0ab8..6f4649fd3 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -14,6 +14,9 @@ Unreleased
+ -   Fix a bug that caused imported macros to not have access to the
+     current template's globals. :issue:`688`
+ -   Add ability to ignore ``trim_blocks`` using ``+%}``. :issue:`1036`
++-   Fix a bug that caused custom async-only filters to fail with
++    constant input. :issue:`1279`
++
+ 
+ Version 2.11.2
+ --------------
+diff --git a/src/jinja2/nodes.py b/src/jinja2/nodes.py
+index 95e7b7306..3d4b6fded 100644
+--- a/src/jinja2/nodes.py
++++ b/src/jinja2/nodes.py
+@@ -2,6 +2,7 @@
+ some node tree helper functions used by the parser and compiler in order
+ to normalize nodes.
+ """
++import inspect
+ import operator
+ from collections import deque
+ from typing import Any
+@@ -649,10 +650,12 @@ def as_const(self, eval_ctx=None):
+         if filter_ is None or getattr(filter_, "contextfilter", False) is True:
+             raise Impossible()
+ 
+-        # We cannot constant handle async filters, so we need to make sure
+-        # to not go down this path.
+-        if eval_ctx.environment.is_async and getattr(
+-            filter_, "asyncfiltervariant", False
++        # We cannot constant handle async filters, so we need to make
++        # sure to not go down this path. Account for both sync/async and
++        # pure-async filters.
++        if eval_ctx.environment.is_async and (
++            getattr(filter_, "asyncfiltervariant", False)
++            or inspect.iscoroutinefunction(filter_)
+         ):
+             raise Impossible()
+ 

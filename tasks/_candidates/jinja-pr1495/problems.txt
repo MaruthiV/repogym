@@ -1,0 +1,12 @@
+run1: f2p test not failing pre-fix: tests/test_async.py::test_import_with_globals -> error
+run1: f2p test not failing pre-fix: tests/test_async.py::test_import_with_globals_override -> error
+run1: f2p test not failing pre-fix: tests/test_async.py::test_from_import_with_globals -> error
+run1: f2p test not passing post-gold: tests/test_async.py::test_import_with_globals -> error
+run1: f2p test not passing post-gold: tests/test_async.py::test_import_with_globals_override -> error
+run1: f2p test not passing post-gold: tests/test_async.py::test_from_import_with_globals -> error
+run2: f2p test not failing pre-fix: tests/test_async.py::test_import_with_globals -> error
+run2: f2p test not failing pre-fix: tests/test_async.py::test_import_with_globals_override -> error
+run2: f2p test not failing pre-fix: tests/test_async.py::test_from_import_with_globals -> error
+run2: f2p test not passing post-gold: tests/test_async.py::test_import_with_globals -> error
+run2: f2p test not passing post-gold: tests/test_async.py::test_import_with_globals_override -> error
+run2: f2p test not passing post-gold: tests/test_async.py::test_from_import_with_globals -> error

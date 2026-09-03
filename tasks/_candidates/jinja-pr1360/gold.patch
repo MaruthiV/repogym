@@ -1,0 +1,68 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index dd3739fb5..c94894ac6 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -58,6 +58,8 @@ Unreleased
+ -   ``NativeEnvironment`` supports async mode. :issue:`1362`
+ -   Template rendering only treats ``\n``, ``\r\n`` and ``\r`` as line
+     breaks. Other characters are left unchanged. :issue:`769, 952, 1313`
++-   ``|groupby`` filter takes an optional ``default`` argument.
++    :issue:`1359`
+ 
+ 
+ Version 2.11.3
+diff --git a/src/jinja2/asyncfilters.py b/src/jinja2/asyncfilters.py
+index 11b031a35..dfd8cba05 100644
+--- a/src/jinja2/asyncfilters.py
++++ b/src/jinja2/asyncfilters.py
+@@ -107,8 +107,9 @@ async def do_groupby(
+     environment: "Environment",
+     value: "t.Union[t.AsyncIterable[V], t.Iterable[V]]",
+     attribute: t.Union[str, int],
++    default: t.Optional[t.Any] = None,
+ ) -> "t.List[t.Tuple[t.Any, t.List[V]]]":
+-    expr = filters.make_attrgetter(environment, attribute)
++    expr = filters.make_attrgetter(environment, attribute, default=default)
+     return [
+         filters._GroupTuple(key, await auto_to_seq(values))
+         for key, values in groupby(sorted(await auto_to_seq(value), key=expr), expr)
+diff --git a/src/jinja2/filters.py b/src/jinja2/filters.py
+index 33353e5c4..c925f837a 100644
+--- a/src/jinja2/filters.py
++++ b/src/jinja2/filters.py
+@@ -1116,7 +1116,10 @@ def __str__(self):
+ 
+ @environmentfilter
+ def do_groupby(
+-    environment: "Environment", value: "t.Iterable[V]", attribute: t.Union[str, int]
++    environment: "Environment",
++    value: "t.Iterable[V]",
++    attribute: t.Union[str, int],
++    default: t.Optional[t.Any] = None,
+ ) -> "t.List[t.Tuple[t.Any, t.List[V]]]":
+     """Group a sequence of objects by an attribute using Python's
+     :func:`itertools.groupby`. The attribute can use dot notation for
+@@ -1148,10 +1151,22 @@ def do_groupby(
+           <li>{{ group.grouper }}: {{ group.list|join(", ") }}
+         {% endfor %}</ul>
+ 
++    You can specify a ``default`` value to use if an object in the list
++    does not have the given attribute.
++
++    .. sourcecode:: jinja
++
++        <ul>{% for city, items in users|groupby("city", default="NY") %}
++          <li>{{ city }}: {{ items|map(attribute="name")|join(", ") }}</li>
++        {% endfor %}</ul>
++
++    .. versionchanged:: 3.0
++        Added the ``default`` parameter.
++
+     .. versionchanged:: 2.6
+         The attribute supports dot notation for nested access.
+     """
+-    expr = make_attrgetter(environment, attribute)
++    expr = make_attrgetter(environment, attribute, default=default)
+     return [
+         _GroupTuple(key, list(values))
+         for key, values in groupby(sorted(value, key=expr), expr)

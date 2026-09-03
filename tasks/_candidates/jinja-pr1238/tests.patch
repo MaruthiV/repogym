@@ -1,0 +1,18 @@
+diff --git a/tests/test_security.py b/tests/test_security.py
+index 44ac47ab5..1b64cd37c 100644
+--- a/tests/test_security.py
++++ b/tests/test_security.py
+@@ -146,6 +146,13 @@ def test_safe_format_all_okay(self):
+         t = env.from_string('{{ ("a{0.foo}b{1}"|safe).format({"foo": 42}, "<foo>") }}')
+         assert t.render() == "a42b&lt;foo&gt;"
+ 
++    def test_empty_braces_format(self):
++        env = SandboxedEnvironment()
++        t1 = env.from_string('{{ ("a{}b{}").format("foo", "42")}}')
++        t2 = env.from_string('{{ ("a{}b{}"|safe).format(42, "<foo>") }}')
++        assert t1.render() == "afoob42"
++        assert t2.render() == "a42b&lt;foo&gt;"
++
+ 
+ class TestStringFormatMap:
+     def test_basic_format_safety(self):

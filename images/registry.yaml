@@ -65,7 +65,7 @@ chi:
   test_base: "go test -count=1"
   default_p2p:
     - "::TestMuxBasic"
-    - "middleware::TestGetReqID"
+    - "middleware::TestRequestID"
 
 cobra:
   url: https://github.com/spf13/cobra
@@ -77,3 +77,23 @@ cobra:
   default_p2p:
     - "::TestSingleCommand"
     - "::TestChildCommand"
+
+jinja:
+  url: https://github.com/pallets/jinja
+  sha: 5ef70112a1ff19c05324ff889dd30405b1002044
+  language: python
+  install: "uv sync --group tests"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_api.py::TestExtendedAPI::test_item_and_attribute"
+    - "tests/test_lexnparse.py::TestLexer::test_raw1"
+
+werkzeug:
+  url: https://github.com/pallets/werkzeug
+  sha: 0005c79e09bae5f4cc2bd8ccd468d7dafe24a455
+  language: python
+  install: "uv sync --group tests"
+  test_base: ".venv/bin/python -m pytest -q -p no:cacheprovider"
+  default_p2p:
+    - "tests/test_urls.py::test_iri_support"
+    - "tests/test_http.py::test_parse_options_header"

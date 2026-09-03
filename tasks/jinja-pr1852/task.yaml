@@ -1,0 +1,42 @@
+id: jinja-pr1852
+repo: pallets/jinja
+base_commit: 48b0687e05a5466a91cd5812d604fa37ad0943b4
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "f-string sytax error when importing macro in a template which filename is\
+  \ also a template\n\nWith this template structure:\r\n```\r\n/templates/\r\n+- {%\
+  \ jinja expr %}.jinja\r\n+- macro_file.jina\r\n```\r\nWhen `{% jinja expr %}.jinja`\
+  \ imports a macro using 'from \"macro_file.jinja\" import my_macro' syntax, Environment.render\
+  \ fails with `SyntaxError: f-string: invalid syntax` error message.\r\n\r\nInternally\
+  \ jinja concatenates the importing template filename into an f-string, which results\
+  \ with invalid f-string:\r\n```python\r\nif l_0_print_helo is missing:\r\n     \
+  \   l_0_print_helo = undefined(f\"the template {included_template.__name__!r} (imported\
+  \ on line 1 in '{% if True %}a{%endif%}.txt.jinja') does not export the requested\
+  \ name 'print_helo'\", name='print_helo')\r\n```\r\n\r\nCouldn't reproduce the error\
+  \ using `import \"macro_file.jinja\" as m` syntax.\r\n\r\nEnvironment:\r\n\r\n-\
+  \ Python 3.10.7\r\n- Jinja 3.1.2\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_compile.py::test_undefined_import_curly_name
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1852
+  issue: 1792
+  merged_at: '2024-12-20T02:10:29Z'
+  issue_url: https://github.com/pallets/jinja/issues/1792

@@ -1,0 +1,55 @@
+id: jinja-pr1665
+repo: pallets/jinja
+base_commit: fbc3a696c729d177340cc089531de7e2e5b6f065
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "What's wrong with this Jinja template when using {% elif %}\n\nI have the\
+  \ following **Jinja** template:\r\n\r\n```jinja\r\n{% if new_data_set_created is\
+  \ defined %}\r\n    {% if new_data_set_created == True %}\r\n        The new image\
+  \ data set <strong>{{ form_data[\"data_set_name\"] }}</strong> has been created.\r\
+  \n        {% set form_data = {\"data_set_name\": \"\", \"client\": \"\", \"project\"\
+  : \"\"} %}\r\n    {% else %}\r\n        The new image data set <strong>{{ form_data[\"\
+  data_set_name\"] }}</strong> could not be created.<br />\r\n    {% endif %}\r\n\
+  {% elif deleted_data_set is defined %}\r\n    The image data set <strong>{{ deleted_data_set\
+  \ }}</strong> has been deleted from DB and from disk.\r\n    {% set form_data =\
+  \ {\"data_set_name\": \"\", \"client\": \"\", \"project\": \"\"} %}\r\n{% else %}\r\
+  \n    {% set form_data = {\"data_set_name\": \"\", \"client\": \"\", \"project\"\
+  : \"\"} %}\r\n{% endif %}\r\n```\r\n\r\nHowever, when rendering this template via\
+  \ **Flask** I get the error message that `form_data` in line 3 of this code section\
+  \ is undefined (which is not the case, I double-checked that):\r\n\r\n    jinja2.exceptions.UndefinedError:\
+  \ 'form_data' is undefined\r\n\r\nNow when I remove the `elif` block from that code\
+  \ section above (i.e. lines 8-10) then the very same template does work again and\
+  \ line 3 does not lead to an error any more.\r\n\r\nI am calling this template like\
+  \ so:\r\n\r\n```python\r\nreturn render_template(\r\n    \"image-data-sets.html\"\
+  ,\r\n    new_data_set_created=True,\r\n    form_data=request.form,\r\n    data_sets=ImageDataSet.query.all(),\r\
+  \n    clients=clients,\r\n)\r\n```\r\n\r\nI double-checked that `request.form` (and\
+  \ thus `form_data` within the template) is not `None`. And as said, I don't make\
+  \ any changes to this call, I just remove those lines from the template and then\
+  \ it's working.\r\n\r\nSo my question: Why does removing the `elif` block fix this\
+  \ issue, and why is this error raised in the first place? What's wrong with my `if-elif-else-endif`\
+  \ block? Is this a bug or am I missing something?\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_regression.py::test_load_parameter_when_set_in_all_if_branches
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1665
+  issue: 1253
+  merged_at: '2024-12-21T17:46:55Z'
+  issue_url: https://github.com/pallets/jinja/issues/1253

@@ -1,0 +1,142 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 9b83a5d85..075ca2bc8 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -5,6 +5,9 @@ Version 2.3.3
+ 
+ Unreleased
+ 
++-   The cookie ``Path`` attribute is set to ``/`` by default again, to prevent clients
++    from falling back to RFC 6265's ``default-path`` behavior. :issue:`2672, 2679`
++
+ 
+ Version 2.3.2
+ -------------
+@@ -14,8 +17,6 @@ Released 2023-04-28
+ -   Parse the cookie ``Expires`` attribute correctly in the test client. :issue:`2669`
+ -   ``max_content_length`` can only be enforced on streaming requests if the server
+     sets ``wsgi.input_terminated``. :issue:`2668`
+--   The cookie ``Path`` attribute is set to ``/`` by default again, to prevent clients
+-    from falling back to RFC 6265's ``default-path`` behavior. :issue:`2672`
+ 
+ 
+ Version 2.3.1
+diff --git a/src/werkzeug/http.py b/src/werkzeug/http.py
+index 7edd1d3b1..d38ca9a5a 100644
+--- a/src/werkzeug/http.py
++++ b/src/werkzeug/http.py
+@@ -1388,7 +1388,7 @@ def dump_cookie(
+ 
+     .. _`cookie`: http://browsercookielimits.squawky.net/
+ 
+-    .. versionchanged:: 2.3.2
++    .. versionchanged:: 2.3.3
+         The ``path`` parameter is ``/`` by default.
+ 
+     .. versionchanged:: 2.3.1
+diff --git a/src/werkzeug/sansio/response.py b/src/werkzeug/sansio/response.py
+index fcbc03ea1..387a4ae74 100644
+--- a/src/werkzeug/sansio/response.py
++++ b/src/werkzeug/sansio/response.py
+@@ -225,7 +225,7 @@ def set_cookie(
+         value: str = "",
+         max_age: timedelta | int | None = None,
+         expires: str | datetime | int | float | None = None,
+-        path: str | None = None,
++        path: str | None = "/",
+         domain: str | None = None,
+         secure: bool = False,
+         httponly: bool = False,
+@@ -276,7 +276,7 @@ def set_cookie(
+     def delete_cookie(
+         self,
+         key: str,
+-        path: str | None = None,
++        path: str | None = "/",
+         domain: str | None = None,
+         secure: bool = False,
+         httponly: bool = False,
+diff --git a/src/werkzeug/test.py b/src/werkzeug/test.py
+index 0f61d0ca8..012ec30b7 100644
+--- a/src/werkzeug/test.py
++++ b/src/werkzeug/test.py
+@@ -948,7 +948,7 @@ def set_cookie(
+             value = args[0]
+ 
+         cookie = Cookie._from_response_header(
+-            domain, dump_cookie(key, value, domain=domain, path=path, **kwargs)
++            domain, "/", dump_cookie(key, value, domain=domain, path=path, **kwargs)
+         )
+         cookie.origin_only = origin_only
+ 
+@@ -1037,7 +1037,7 @@ def _add_cookies_to_wsgi(self, environ: WSGIEnvironment) -> None:
+             environ.pop("HTTP_COOKIE", None)
+ 
+     def _update_cookies_from_response(
+-        self, server_name: str, headers: list[str]
++        self, server_name: str, path: str, headers: list[str]
+     ) -> None:
+         """If cookies are enabled, update the stored cookies from any ``Set-Cookie``
+         headers in the response.
+@@ -1050,7 +1050,7 @@ def _update_cookies_from_response(
+             return
+ 
+         for header in headers:
+-            cookie = Cookie._from_response_header(server_name, header)
++            cookie = Cookie._from_response_header(server_name, path, header)
+ 
+             if cookie._should_delete:
+                 self._cookies.pop(cookie._storage_key, None)
+@@ -1066,8 +1066,10 @@ def run_wsgi_app(
+         """
+         self._add_cookies_to_wsgi(environ)
+         rv = run_wsgi_app(self.application, environ, buffered=buffered)
+-        server_name = urlsplit(get_current_url(environ)).hostname or "localhost"
+-        self._update_cookies_from_response(server_name, rv[2].getlist("Set-Cookie"))
++        url = urlsplit(get_current_url(environ))
++        self._update_cookies_from_response(
++            url.hostname or "localhost", url.path, rv[2].getlist("Set-Cookie")
++        )
+         return rv
+ 
+     def resolve_redirect(
+@@ -1506,7 +1508,7 @@ def _to_request_header(self) -> str:
+         return f"{self.key}={self.value}"
+ 
+     @classmethod
+-    def _from_response_header(cls, server_name: str, header: str) -> te.Self:
++    def _from_response_header(cls, server_name: str, path: str, header: str) -> te.Self:
+         header, _, parameters_str = header.partition(";")
+         key, _, value = header.partition("=")
+         decoded_key, decoded_value = next(parse_cookie(header).items())
+@@ -1514,21 +1516,21 @@ def _from_response_header(cls, server_name: str, header: str) -> te.Self:
+ 
+         for item in parameters_str.split(";"):
+             k, sep, v = item.partition("=")
+-            params[k.strip()] = v.strip() if sep else None
++            params[k.strip().lower()] = v.strip() if sep else None
+ 
+         return cls(
+             key=key.strip(),
+             value=value.strip(),
+             decoded_key=decoded_key,
+             decoded_value=decoded_value,
+-            expires=parse_date(params.get("Expires")),
+-            max_age=int(params["Max-Age"] or 0) if "Max-Age" in params else None,
+-            domain=params.get("Domain", server_name) or server_name,
+-            origin_only="Domain" not in params,
+-            path=params.get("Path", "/") or "/",
+-            secure="Secure" in params,
+-            http_only="HttpOnly" in params,
+-            same_site=params.get("SameSite"),
++            expires=parse_date(params.get("expires")),
++            max_age=int(params["max-age"] or 0) if "max-age" in params else None,
++            domain=params.get("domain") or server_name,
++            origin_only="domain" not in params,
++            path=params.get("path") or path.rpartition("/")[0] or "/",
++            secure="secure" in params,
++            http_only="httponly" in params,
++            same_site=params.get("samesite"),
+         )
+ 
+     @property

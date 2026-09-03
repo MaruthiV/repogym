@@ -1,0 +1,136 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 43e4ad6ac..03c162a41 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -19,6 +19,8 @@ Unreleased
+ -   Fix UndefinedError incorrectly being thrown on an undefined variable
+     instead of ``Undefined`` being returned on
+     ``NativeEnvironment`` on Python 3.10. :issue:`1335`
++-   Add ``required`` attribute to blocks that must be overridden at some
++    point, but not necessarily by the direct child :issue:`1147`
+ 
+ 
+ Version 2.11.2
+diff --git a/docs/templates.rst b/docs/templates.rst
+index 14de875e3..58ed870ef 100644
+--- a/docs/templates.rst
++++ b/docs/templates.rst
+@@ -540,6 +540,40 @@ modifier to a block declaration::
+ When overriding a block, the `scoped` modifier does not have to be provided.
+ 
+ 
++Required Blocks
++~~~~~~~~~~~~~~~~~~~~~~~
++
++Blocks can be marked as required. They must be overridden at some point,
++but not necessarily by the direct child template. Required blocks can
++only contain whitespace or comments, and they cannot be rendered directly.
++
++For example::
++
++    # parent.tmpl
++    body: {% block body required %}{% endblock %}
++
++    # child.tmpl
++    {% extends "parent.tmpl" %}
++
++    # grandchild.tmpl
++    {% extends "child.tmpl" %}
++    {% block body %}Hi from grandchild.{% endblock %}
++
++
++Rendering ``child.tmpl`` will give
++``TemplateRuntimeError``
++
++Rendering ``grandchild.tmpl`` will give
++``Hi from grandchild.``
++
++When combined with ``scoped``, the ``required`` modifier must be placed `after`
++the scoped modifier.  Here are some valid examples::
++
++    {% block body scoped %}{% endblock %}
++    {% block body required %}{% endblock %}
++    {% block body scoped required %}{% endblock %}
++
++
+ Template Objects
+ ~~~~~~~~~~~~~~~~
+ 
+diff --git a/src/jinja2/compiler.py b/src/jinja2/compiler.py
+index 251aec6e4..3098e3b1c 100644
+--- a/src/jinja2/compiler.py
++++ b/src/jinja2/compiler.py
+@@ -797,6 +797,15 @@ def visit_Block(self, node, frame):
+         else:
+             context = self.get_context_ref()
+ 
++        if node.required:
++            self.writeline(f"if len(context.blocks[{node.name!r}]) <= 1:", node)
++            self.indent()
++            self.writeline(
++                f'raise TemplateRuntimeError("Required block {node.name!r} not found")',
++                node,
++            )
++            self.outdent()
++
+         if not self.environment.is_async and frame.buffer is None:
+             self.writeline(
+                 f"yield from context.blocks[{node.name!r}][0]({context})", node
+diff --git a/src/jinja2/nodes.py b/src/jinja2/nodes.py
+index 3d4b6fded..a0d719dee 100644
+--- a/src/jinja2/nodes.py
++++ b/src/jinja2/nodes.py
+@@ -340,9 +340,13 @@ class With(Stmt):
+ 
+ 
+ class Block(Stmt):
+-    """A node that represents a block."""
++    """A node that represents a block.
+ 
+-    fields = ("name", "body", "scoped")
++    .. versionchanged:: 3.0.0
++        the `required` field was added.
++    """
++
++    fields = ("name", "body", "scoped", "required")
+ 
+ 
+ class Include(Stmt):
+diff --git a/src/jinja2/parser.py b/src/jinja2/parser.py
+index eedea7a03..589cca274 100644
+--- a/src/jinja2/parser.py
++++ b/src/jinja2/parser.py
+@@ -255,6 +255,7 @@ def parse_block(self):
+         node = nodes.Block(lineno=next(self.stream).lineno)
+         node.name = self.stream.expect("name").value
+         node.scoped = self.stream.skip_if("name:scoped")
++        node.required = self.stream.skip_if("name:required")
+ 
+         # common problem people encounter when switching from django
+         # to jinja.  we do not support hyphens in block names, so let's
+@@ -266,6 +267,17 @@ def parse_block(self):
+             )
+ 
+         node.body = self.parse_statements(("name:endblock",), drop_needle=True)
++
++        # enforce that required blocks only contain whitespace or comments
++        # by asserting that the body, if not empty, is just TemplateData nodes
++        # with whitespace data
++        if node.required and not all(
++            isinstance(child, nodes.TemplateData) and child.data.isspace()
++            for body in node.body
++            for child in body.nodes
++        ):
++            self.fail("Required blocks can only contain comments or whitespace")
++
+         self.stream.skip_if("name:" + node.name)
+         return node
+ 
+@@ -924,7 +936,6 @@ def flush_data():
+         finally:
+             if end_tokens is not None:
+                 self._end_token_stack.pop()
+-
+         return body
+ 
+     def parse(self):

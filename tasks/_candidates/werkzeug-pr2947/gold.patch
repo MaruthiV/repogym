@@ -1,0 +1,46 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 58b744f0e..d603ed90e 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -5,6 +5,8 @@ Version 3.0.5
+ 
+ Unreleased
+ 
++-   The Watchdog reloader ignores file closed no write events. :issue:`2945`
++
+ 
+ Version 3.0.4
+ -------------
+diff --git a/src/werkzeug/_reloader.py b/src/werkzeug/_reloader.py
+index d3507f5a2..8fd50b963 100644
+--- a/src/werkzeug/_reloader.py
++++ b/src/werkzeug/_reloader.py
+@@ -312,7 +312,11 @@ def run_step(self) -> None:
+ 
+ class WatchdogReloaderLoop(ReloaderLoop):
+     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+-        from watchdog.events import EVENT_TYPE_OPENED
++        from watchdog.events import EVENT_TYPE_CLOSED
++        from watchdog.events import EVENT_TYPE_CREATED
++        from watchdog.events import EVENT_TYPE_DELETED
++        from watchdog.events import EVENT_TYPE_MODIFIED
++        from watchdog.events import EVENT_TYPE_MOVED
+         from watchdog.events import FileModifiedEvent
+         from watchdog.events import PatternMatchingEventHandler
+         from watchdog.observers import Observer
+@@ -322,7 +326,14 @@ def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+ 
+         class EventHandler(PatternMatchingEventHandler):
+             def on_any_event(self, event: FileModifiedEvent):  # type: ignore
+-                if event.event_type == EVENT_TYPE_OPENED:
++                if event.event_type not in {
++                    EVENT_TYPE_CLOSED,
++                    EVENT_TYPE_CREATED,
++                    EVENT_TYPE_DELETED,
++                    EVENT_TYPE_MODIFIED,
++                    EVENT_TYPE_MOVED,
++                }:
++                    # skip events that don't involve changes to the file
+                     return
+ 
+                 trigger_reload(event.src_path)

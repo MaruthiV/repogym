@@ -1,0 +1,48 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 037dfaa49..f5f2e7cf1 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -85,6 +85,9 @@ Unreleased
+     and source for Python >= 3.7. :issue:`1104`
+ -   Tracebacks for template syntax errors in Python 3 no longer show
+     internal compiler frames. :issue:`763`
++-   Add a ``DerivedContextReference`` node that can be used by
++    extensions to get the current context and local variables such as
++    ``loop``. :issue:`860`
+ 
+ 
+ Version 2.10.3
+diff --git a/jinja2/compiler.py b/jinja2/compiler.py
+index 3c69df88b..addf71ea2 100644
+--- a/jinja2/compiler.py
++++ b/jinja2/compiler.py
+@@ -1720,6 +1720,9 @@ def visit_InternalName(self, node, frame):
+     def visit_ContextReference(self, node, frame):
+         self.write('context')
+ 
++    def visit_DerivedContextReference(self, node, frame):
++        self.write(self.derive_context(frame))
++
+     def visit_Continue(self, node, frame):
+         self.writeline('continue', node)
+ 
+diff --git a/jinja2/nodes.py b/jinja2/nodes.py
+index e46aa9167..00e03295c 100644
+--- a/jinja2/nodes.py
++++ b/jinja2/nodes.py
+@@ -952,6 +952,15 @@ class ContextReference(Expr):
+     """
+ 
+ 
++class DerivedContextReference(Expr):
++    """Return the current template context including locals. Behaves
++    exactly like :class:`ContextReference`, but includes local
++    variables, such as from a ``for`` loop.
++
++    .. versionadded:: 2.11
++    """
++
++
+ class Continue(Stmt):
+     """Continue a loop."""
+ 

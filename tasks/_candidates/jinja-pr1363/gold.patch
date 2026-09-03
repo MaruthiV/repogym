@@ -1,0 +1,36 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 45ff14443..dad0d0efc 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -55,6 +55,7 @@ Unreleased
+ -   ``Undefined.__contains__`` (``in``) raises an ``UndefinedError``
+     instead of a ``TypeError``. :issue:`1198`
+ -   ``Undefined`` is iterable in an async environment. :issue:`1294`
++-   ``NativeEnvironment`` supports async mode. :issue:`1362`
+ 
+ 
+ Version 2.11.3
+diff --git a/src/jinja2/nativetypes.py b/src/jinja2/nativetypes.py
+index 3ac70cf71..8867a3165 100644
+--- a/src/jinja2/nativetypes.py
++++ b/src/jinja2/nativetypes.py
+@@ -93,5 +93,19 @@ def render(self, *args, **kwargs):
+         except Exception:
+             return self.environment.handle_exception()
+ 
++    async def render_async(self, *args, **kwargs):
++        if not self.environment.is_async:
++            raise RuntimeError(
++                "The environment was not created with async mode enabled."
++            )
++
++        vars = dict(*args, **kwargs)
++        ctx = self.new_context(vars)
++
++        try:
++            return native_concat([n async for n in self.root_render_func(ctx)])
++        except Exception:
++            return self.environment.handle_exception()
++
+ 
+ NativeEnvironment.template_class = NativeTemplate

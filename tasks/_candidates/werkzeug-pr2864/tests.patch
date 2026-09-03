@@ -1,0 +1,14 @@
+diff --git a/tests/test_routing.py b/tests/test_routing.py
+index 5291348c0..02db898d6 100644
+--- a/tests/test_routing.py
++++ b/tests/test_routing.py
+@@ -1076,6 +1076,9 @@ def test_converter_parser():
+     args, kwargs = r.parse_converter_args('"foo", "bar"')
+     assert args == ("foo", "bar")
+ 
++    with pytest.raises(ValueError):
++        r.parse_converter_args("min=0;max=500")
++
+ 
+ def test_alias_redirects():
+     m = r.Map(

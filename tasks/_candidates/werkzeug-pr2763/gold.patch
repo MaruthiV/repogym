@@ -1,0 +1,35 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index f3784c230..28a2b1921 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -6,6 +6,8 @@ Version 2.3.7
+ Unreleased
+ 
+ -   Use ``flit_core`` instead of ``setuptools`` as build backend.
++-   Fix parsing of multipart bodies.
++    Adjust index of last newline in data start. :issue:`2761`
+ 
+ 
+ Version 2.3.6
+diff --git a/src/werkzeug/sansio/multipart.py b/src/werkzeug/sansio/multipart.py
+index 11e65ed03..380993af7 100644
+--- a/src/werkzeug/sansio/multipart.py
++++ b/src/werkzeug/sansio/multipart.py
+@@ -256,7 +256,7 @@ def _parse_data(self, data: bytes, *, start: bool) -> tuple[bytes, int, bool]:
+             # a partial boundary at the end. As the boundary
+             # starts with either a nl or cr find the earliest and
+             # return up to that as data.
+-            data_end = del_index = self.last_newline(data[data_start:])
++            data_end = del_index = self.last_newline(data[data_start:]) + data_start
+             more_data = True
+         else:
+             match = self.boundary_re.search(data)
+@@ -268,7 +268,7 @@ def _parse_data(self, data: bytes, *, start: bool) -> tuple[bytes, int, bool]:
+                 data_end = match.start()
+                 del_index = match.end()
+             else:
+-                data_end = del_index = self.last_newline(data[data_start:])
++                data_end = del_index = self.last_newline(data[data_start:]) + data_start
+             more_data = match is None
+ 
+         return bytes(data[data_start:data_end]), del_index, more_data

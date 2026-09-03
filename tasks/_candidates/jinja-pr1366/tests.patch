@@ -1,0 +1,15 @@
+diff --git a/tests/test_regression.py b/tests/test_regression.py
+index a49356b3e..29caee52e 100644
+--- a/tests/test_regression.py
++++ b/tests/test_regression.py
+@@ -745,3 +745,10 @@ def test_cached_extends(self, op):
+ 
+         tmpl = env.get_template("base")
+         assert tmpl.render() == "42 y"
++
++
++@pytest.mark.parametrize("unicode_char", ["\N{FORM FEED}", "\x85"])
++def test_unicode_whitespace(env, unicode_char):
++    content = "Lorem ipsum\n" + unicode_char + "\nMore text"
++    tmpl = env.from_string(content)
++    assert tmpl.render() == content

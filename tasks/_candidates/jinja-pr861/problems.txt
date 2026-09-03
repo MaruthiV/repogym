@@ -1,0 +1,16 @@
+run1: f2p test not failing pre-fix: tests/test_ext.py::test_contextreference_node_passes_context -> error
+run1: f2p test not failing pre-fix: tests/test_ext.py::test_contextreference_node_can_pass_locals -> error
+run1: p2p test not passing pre-fix: tests/test_api.py::TestExtendedAPI::test_item_and_attribute -> error
+run1: p2p test not passing pre-fix: tests/test_lexnparse.py::TestLexer::test_raw1 -> error
+run1: f2p test not passing post-gold: tests/test_ext.py::test_contextreference_node_passes_context -> error
+run1: f2p test not passing post-gold: tests/test_ext.py::test_contextreference_node_can_pass_locals -> error
+run1: p2p test not passing post-gold: tests/test_api.py::TestExtendedAPI::test_item_and_attribute -> error
+run1: p2p test not passing post-gold: tests/test_lexnparse.py::TestLexer::test_raw1 -> error
+run2: f2p test not failing pre-fix: tests/test_ext.py::test_contextreference_node_passes_context -> error
+run2: f2p test not failing pre-fix: tests/test_ext.py::test_contextreference_node_can_pass_locals -> error
+run2: p2p test not passing pre-fix: tests/test_api.py::TestExtendedAPI::test_item_and_attribute -> error
+run2: p2p test not passing pre-fix: tests/test_lexnparse.py::TestLexer::test_raw1 -> error
+run2: f2p test not passing post-gold: tests/test_ext.py::test_contextreference_node_passes_context -> error
+run2: f2p test not passing post-gold: tests/test_ext.py::test_contextreference_node_can_pass_locals -> error
+run2: p2p test not passing post-gold: tests/test_api.py::TestExtendedAPI::test_item_and_attribute -> error
+run2: p2p test not passing post-gold: tests/test_lexnparse.py::TestLexer::test_raw1 -> error

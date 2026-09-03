@@ -1,0 +1,28 @@
+diff --git a/middleware/repogym_content_type_test.go b/middleware/repogym_content_type_test.go
+new file mode 100644
+index 0000000..e0606ca
+--- /dev/null
++++ b/middleware/repogym_content_type_test.go
+@@ -0,0 +1,22 @@
++package middleware
++
++import (
++	"net/http"
++	"net/http/httptest"
++	"strings"
++	"testing"
++)
++
++func TestRepogymAllowContentTypeWithCharset(t *testing.T) {
++	handler := AllowContentType("application/json")(http.HandlerFunc(
++		func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }))
++
++	req := httptest.NewRequest("POST", "/", strings.NewReader("{}"))
++	req.Header.Set("Content-Type", "application/json; charset=utf-8")
++	w := httptest.NewRecorder()
++	handler.ServeHTTP(w, req)
++
++	if w.Code != 200 {
++		t.Fatalf("expected 200 for json with charset param, got %d", w.Code)
++	}
++}

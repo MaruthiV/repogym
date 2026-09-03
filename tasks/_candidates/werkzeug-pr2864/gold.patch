@@ -1,0 +1,48 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index c7f5aeba5..b2f2a08f6 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -12,6 +12,8 @@ Unreleased
+ -   Fix response_wrapper type check in test client. :issue:`2831`
+ -   Make the return type of ``MultiPartParser.parse`` more
+     precise. :issue:`2840`
++-   Raise an error if converter arguments cannot be
++    parsed. :issue:`2822`
+ 
+ Version 3.0.1
+ -------------
+diff --git a/src/werkzeug/routing/rules.py b/src/werkzeug/routing/rules.py
+index ea32d1dca..7029d8bc0 100644
+--- a/src/werkzeug/routing/rules.py
++++ b/src/werkzeug/routing/rules.py
+@@ -67,6 +67,7 @@ class RulePart:
+ _simple_rule_re = re.compile(r"<([^>]+)>")
+ _converter_args_re = re.compile(
+     r"""
++    \s*
+     ((?P<name>\w+)\s*=\s*)?
+     (?P<value>
+         True|False|
+@@ -112,8 +113,14 @@ def parse_converter_args(argstr: str) -> tuple[tuple[t.Any, ...], dict[str, t.An
+     argstr += ","
+     args = []
+     kwargs = {}
++    position = 0
+ 
+     for item in _converter_args_re.finditer(argstr):
++        if item.start() != position:
++            raise ValueError(
++                f"Cannot parse converter argument '{argstr[position:item.start()]}'"
++            )
++
+         value = item.group("stringval")
+         if value is None:
+             value = item.group("value")
+@@ -123,6 +130,7 @@ def parse_converter_args(argstr: str) -> tuple[tuple[t.Any, ...], dict[str, t.An
+         else:
+             name = item.group("name")
+             kwargs[name] = value
++        position = item.end()
+ 
+     return tuple(args), kwargs
+ 

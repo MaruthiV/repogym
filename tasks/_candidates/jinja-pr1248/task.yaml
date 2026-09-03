@@ -1,0 +1,70 @@
+id: jinja-pr1248
+repo: pallets/jinja
+base_commit: 1c863d0447efb7e68e2593e7de3fec87670521cb
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "optionally use a filter based on its existence\n\nI propose a feature, where\
+  \ within a template, you can test for the existence of a filter so that you can\
+  \ then use that filter if it exists, and not if it doesn't.\r\n\r\nFor example,\r\
+  \n```jinja\r\n{% if filter is callable %}\r\n  {{ var|filter }}\r\n{% else %}\r\n\
+  \  {{ var }} {# no use of 'filter' #}\r\n{% endif %}\r\n```\r\n\r\nCurrently, if\
+  \ the filter does not exist, Jinja would throw a `jinja2.exceptions.TemplateAssertionError:\
+  \ no filter named 'filter'` because of the line `{{ var|filter }}`. The desired\
+  \ output is what is rendered in the `else`. You can test if the filter is callable,\
+  \ but you cannot then optionally use it. At a high level this is similar to how\
+  \ one might commonly use a var, if it exists.\r\n\r\n```jinja\r\n{% if myvar is\
+  \ defined %}\r\n  {{ myvar }}\r\n{% else %}\r\n  No myvar {# no use of 'myvar' #}\r\
+  \n{% endif %}\r\n```\r\n\r\n**Example Use Case:**\r\n\r\nI would like to be able\
+  \ to write Lektor themes such that they can take advantage of filters provided by\
+  \ various Lektor plugins if they are installed. I do not want to require those plugins,\
+  \ and thus also their provided filters. I'd want a Lektor theme to flexibly handle\
+  \ either situation, as per the users' desire.\r\n\r\nMore generally, Jinja templates\
+  \ in any Flask or Django project could be written more flexibly to handle the optional\
+  \ presence filters. Adding custom or 3rd party filters is a common thing to do.\
+  \ Passing templates around between projects would be easier if they didn't force\
+  \ implementation of custom filters.\r\n\r\n**Implementation:**\r\n\r\nThe desired\
+  \ effect could be achieved more than one way. For example, at least\r\n\r\n1. not\
+  \ raising an exception when evaluating `{{ var|filter }}` and instead returning\
+  \ (basically anything) would allow the above snippet to be rendered. \r\n\r\n2.\
+  \ change the way the entire `if` is evaluated, such that the expressions contained\
+  \ in the contents of the \"true\" section are evaluated only if the test passes.\
+  \ Evaluation would resume upon reaching an `else` or `endif`.\r\n\r\nMy intuition\
+  \ was that the second option was already happening, but it is not. Though the contents\
+  \ of the passing section of the `if` never get to the final rendered product, the\
+  \ expressions are still evaluated anyway. Otherwise no exception would be rendered.\
+  \ If 2. happened, that could mean much nonsense could be included in between the\
+  \ `if` and the `else`, and not trip exceptions. That sounds like a change that's\
+  \ worth some careful thought, but I can't immediately think of a problem with it.\
+  \ I am not intimately familiar with Jinja's internals. Exceptions would still be\
+  \ raised if the test ever actually passes. \r\nSkipping that section may also mean\
+  \ performance improvements, which is a nice side effect.\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_filters.py::test_filter_undefined
+  - tests/test_filters.py::test_filter_undefined_in_if
+  - tests/test_filters.py::test_filter_undefined_in_elif
+  - tests/test_filters.py::test_filter_undefined_in_else
+  - tests/test_filters.py::test_filter_undefined_in_nested_if
+  - tests/test_filters.py::test_filter_undefined_in_condexpr
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1248
+  issue: 842
+  merged_at: '2021-04-04T17:20:49Z'
+  issue_url: https://github.com/pallets/jinja/issues/842

@@ -1,0 +1,8 @@
+run1: f2p test not failing pre-fix: tests/test_core_tags.py::test_namespace_set_tuple -> error
+run1: f2p test not failing pre-fix: tests/test_core_tags.py::test_block_escaping_filtered -> error
+run1: f2p test not passing post-gold: tests/test_core_tags.py::test_namespace_set_tuple -> error
+run1: f2p test not passing post-gold: tests/test_core_tags.py::test_block_escaping_filtered -> error
+run2: f2p test not failing pre-fix: tests/test_core_tags.py::test_namespace_set_tuple -> error
+run2: f2p test not failing pre-fix: tests/test_core_tags.py::test_block_escaping_filtered -> error
+run2: f2p test not passing post-gold: tests/test_core_tags.py::test_namespace_set_tuple -> error
+run2: f2p test not passing post-gold: tests/test_core_tags.py::test_block_escaping_filtered -> error

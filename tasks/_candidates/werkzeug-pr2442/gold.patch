@@ -1,0 +1,38 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 749f6563f..c5247876d 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -9,7 +9,9 @@ Version 2.2.0
+ -   Fix compatibility with Python 3.11 by ensuring that ``end_lineno``
+     and ``end_col_offset`` are present on AST nodes. :issue:`2425`
+ -   Add a new faster matching router based on a state
+-    machine. :pr:`2433`.
++    machine. :pr:`2433`
++-   Names within options headers are always converted to lowercase. This
++    matches :rfc:`6266` that the case is not relevant. :issue:`2442`
+ 
+ 
+ Version 2.1.2
+diff --git a/src/werkzeug/http.py b/src/werkzeug/http.py
+index 936990013..3d0fba905 100644
+--- a/src/werkzeug/http.py
++++ b/src/werkzeug/http.py
+@@ -390,6 +390,9 @@ def parse_options_header(
+ 
+     :param value: The header value to parse.
+ 
++    .. versionchanged:: 2.2
++        Option names are always converted to lowercase.
++
+     .. versionchanged:: 2.1
+         The ``multiple`` parameter is deprecated and will be removed in
+         Werkzeug 2.2.
+@@ -440,7 +443,7 @@ def parse_options_header(
+                 if not encoding:
+                     encoding = continued_encoding
+                 continued_encoding = encoding
+-            option = unquote_header_value(option)
++            option = unquote_header_value(option).lower()
+ 
+             if option_value is not None:
+                 option_value = unquote_header_value(option_value, option == "filename")

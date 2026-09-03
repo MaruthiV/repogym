@@ -1,0 +1,63 @@
+id: werkzeug-pr2639
+repo: pallets/werkzeug
+base_commit: 6425dbfd0d33a9ed198391838438a0659cfb3368
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Parsing of some post form data fails on empty fields\n\nSome post form data\
+  \ containing empty field values fail to be parsed correctly, even though they are\
+  \ parsed successfully with other frameworks like python cgi or multiport. The problem\
+  \ is with such data (multiline for legibility):\r\n\r\n```\r\n--foo\\r\\n\r\nContent-Type:\
+  \ text/plain; charset=\"UTF-8\"\\r\\n\r\nContent-Disposition: form-data; name=empty\\\
+  r\\n\r\n\\r\\n\r\n--foo\\r\\n\r\nContent-Type: text/plain; charset=\"UTF-8\"\\r\\\
+  n\r\nContent-Disposition: form-data; name=text\\r\\n\r\n\\r\\n\r\nSome Text\\r\\\
+  n\r\n--foo--\r\n```\r\n\r\nThe field \"empty\" is indeed left empty. It's unclear\
+  \ from the RFC if it should be followed by 1 or 2 CRLF before the next field. Browsers\
+  \ usually use 2 CRLF, but the Google App Engine uses only 1 for data posted internally.\
+  \ The code below shows the difference between cgi, multipart and werkzeug in this\
+  \ case.\r\n\r\n```\r\nfrom io import BytesIO\r\nfrom werkzeug.formparser import\
+  \ parse_form_data\r\nimport cgi\r\nimport multipart\r\n\r\ndata = b'--foo\\r\\nContent-Type:\
+  \ text/plain; charset=\"UTF-8\"\\r\\nContent-Disposition: form-data; name=empty\\\
+  r\\n\\r\\n--foo\\r\\nContent-Type: text/plain; charset=\"UTF-8\"\\r\\nContent-Disposition:\
+  \ form-data; name=text\\r\\n\\r\\nSome Text\\r\\n--foo--'\r\n\r\nenviron = {'CONTENT_LENGTH':\
+  \ str(len(data)), \r\n        'CONTENT_TYPE': 'multipart/form-data; boundary=\"\
+  foo\"',\r\n        'REQUEST_METHOD': 'POST',\r\n        'boundary': b'foo'}\r\n\r\
+  \nprint('### werkzeug')\r\nenviron['wsgi.input'] = BytesIO(data)\r\nstream, form,\
+  \ files = parse_form_data(environ)\r\nfor k, v in form.items():\r\n    print({'field':\
+  \ k, 'value': v})\r\nprint('###')\r\n    \r\nprint('### cgi: ')\r\nstream = BytesIO(data)\r\
+  \nprint(cgi.parse_multipart(stream, environ))\r\nprint('###')\r\n\r\nprint('###\
+  \ multipart')\r\nenviron['wsgi.input'] = BytesIO(data)\r\n(form, files) = multipart.parse_form_data(environ)\r\
+  \nfor k, v in form.items():\r\n    print({'field': k, 'value': v})\r\nprint('###')\r\
+  \n```\r\n\r\nOutput:\r\n```\r\n### werkzeug\r\n{'field': 'empty', 'value': '--foo\\\
+  r\\nContent-Type: text/plain; charset=\"UTF-8\"\\r\\nContent-Disposition: form-data;\
+  \ name=text\\r\\n\\r\\nSome Text'}\r\n###\r\n### cgi: \r\n{'text': ['Some Text'],\
+  \ 'empty': ['']}\r\n###\r\n### multipart\r\n{'field': 'empty', 'value': ''}\r\n\
+  {'field': 'text', 'value': 'Some Text'}\r\n###\r\n```\r\n\r\nAs you can see, werkzeug\
+  \ thinks that the value of the empty field is the boundary and what follows as it\
+  \ apparently expects 2 CRLF. Other frameworks correctly return both values, empty\
+  \ and not empty.\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.11\r\n- Werkzeug\
+  \ version: 2.2.3\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/sansio/test_multipart.py::test_empty_field
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2639
+  issue: 2632
+  merged_at: '2023-04-10T20:11:56Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/2632

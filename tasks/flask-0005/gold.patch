@@ -1,0 +1,24 @@
+diff --git a/tests/repogym_audit/log.py b/tests/repogym_audit/log.py
+index a8c0935a..99990823 100644
+--- a/tests/repogym_audit/log.py
++++ b/tests/repogym_audit/log.py
+@@ -2,15 +2,15 @@ import datetime
+ 
+ 
+ def audit_entry(actor, action):
+-    stamp = datetime.datetime.utcnow()
++    stamp = datetime.datetime.now(datetime.UTC)
+     return {
+         "actor": actor,
+         "action": action,
+-        "at": stamp.isoformat() + "Z",
++        "at": stamp.isoformat().replace("+00:00", "Z"),
+     }
+ 
+ 
+ def entry_age_seconds(entry, now=None):
+-    now = now or datetime.datetime.utcnow()
+-    then = datetime.datetime.fromisoformat(entry["at"].removesuffix("Z"))
++    now = now or datetime.datetime.now(datetime.UTC)
++    then = datetime.datetime.fromisoformat(entry["at"].replace("Z", "+00:00"))
+     return (now - then).total_seconds()

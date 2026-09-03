@@ -1,0 +1,40 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index a000888d5..d93d3fe39 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -13,6 +13,8 @@ Unreleased
+     :issue:`1514`
+ -   Revert change to ``hash(Node)`` behavior. Nodes are hashed by id
+     again :issue:`1521`
++-   ``PackageLoader`` works when the package is a single module file.
++    :issue:`1512`
+ 
+ 
+ Version 3.0.2
+diff --git a/src/jinja2/loaders.py b/src/jinja2/loaders.py
+index 513c858a8..4fac3a096 100644
+--- a/src/jinja2/loaders.py
++++ b/src/jinja2/loaders.py
+@@ -297,10 +297,18 @@ def __init__(
+             self._archive = loader.archive
+             pkgdir = next(iter(spec.submodule_search_locations))  # type: ignore
+             template_root = os.path.join(pkgdir, package_path)
+-        elif spec.submodule_search_locations:
+-            # This will be one element for regular packages and multiple
+-            # for namespace packages.
+-            for root in spec.submodule_search_locations:
++        else:
++            roots: t.List[str] = []
++
++            # One element for regular packages, multiple for namespace
++            # packages, or None for single module file.
++            if spec.submodule_search_locations:
++                roots.extend(spec.submodule_search_locations)
++            # A single module file, use the parent directory instead.
++            elif spec.origin is not None:
++                roots.append(os.path.dirname(spec.origin))
++
++            for root in roots:
+                 root = os.path.join(root, package_path)
+ 
+                 if os.path.isdir(root):

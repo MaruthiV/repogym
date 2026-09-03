@@ -1,0 +1,43 @@
+diff --git a/tests/test_test.py b/tests/test_test.py
+index e3a0fff8a..a73900086 100644
+--- a/tests/test_test.py
++++ b/tests/test_test.py
+@@ -117,6 +117,25 @@ def test_cookie_for_different_path():
+     assert response.text == "test=test"
+ 
+ 
++def test_cookie_default_path() -> None:
++    """When no path is set for a cookie, the default uses everything up to but not
++    including the first slash.
++    """
++
++    @Request.application
++    def app(request: Request) -> Response:
++        r = Response()
++        r.set_cookie("k", "v", path=None)
++        return r
++
++    c = Client(app)
++    c.get("/nested/leaf")
++    assert c.get_cookie("k") is None
++    assert c.get_cookie("k", path="/nested") is not None
++    c.get("/nested/dir/")
++    assert c.get_cookie("k", path="/nested/dir") is not None
++
++
+ def test_environ_builder_basics():
+     b = EnvironBuilder()
+     assert b.content_type is None
+diff --git a/tests/test_wrappers.py b/tests/test_wrappers.py
+index 2e257cea7..8a91aefc1 100644
+--- a/tests/test_wrappers.py
++++ b/tests/test_wrappers.py
+@@ -271,7 +271,7 @@ def test_base_response():
+         ("Content-Type", "text/plain; charset=utf-8"),
+         (
+             "Set-Cookie",
+-            "foo=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0",
++            "foo=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/",
+         ),
+     ]
+ 

@@ -1,0 +1,14 @@
+diff --git a/middleware/content_type.go b/middleware/content_type.go
+index cdfc21e..2eb5875 100644
+--- a/middleware/content_type.go
++++ b/middleware/content_type.go
+@@ -31,8 +31,7 @@ func AllowContentType(contentTypes ...string) func(http.Handler) http.Handler {
+ 				return
+ 			}
+ 
+-			s, _, _ := strings.Cut(r.Header.Get("Content-Type"), ";")
+-			s = strings.ToLower(strings.TrimSpace(s))
++			s := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+ 
+ 			if _, ok := allowedContentTypes[s]; ok {
+ 				next.ServeHTTP(w, r)

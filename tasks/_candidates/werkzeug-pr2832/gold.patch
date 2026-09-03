@@ -1,0 +1,19 @@
+diff --git a/src/werkzeug/test.py b/src/werkzeug/test.py
+index 7b5899a97..694e5d8e5 100644
+--- a/src/werkzeug/test.py
++++ b/src/werkzeug/test.py
+@@ -809,10 +809,12 @@ def __init__(
+ 
+         if response_wrapper in {None, Response}:
+             response_wrapper = TestResponse
+-        elif not isinstance(response_wrapper, TestResponse):
++        elif response_wrapper is not None and not issubclass(
++            response_wrapper, TestResponse
++        ):
+             response_wrapper = type(
+                 "WrapperTestResponse",
+-                (TestResponse, response_wrapper),  # type: ignore
++                (TestResponse, response_wrapper),
+                 {},
+             )
+ 

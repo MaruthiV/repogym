@@ -1,0 +1,65 @@
+id: werkzeug-pr2953
+repo: pallets/werkzeug
+base_commit: bcc9302b6199c087defa35e5fd0d98fb8e7690d8
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Logging breaks with clients having IPv6 addresses with a scope component\n\
+  \nIn some conditions (at least seen with traefik and MacOS) the client address contains\
+  \ a scope, (see https://www.rfc-editor.org/rfc/rfc4007#section-11.2 )\r\nThis breaks\
+  \ logging as the address component will have a `%` symbol, which is misparsed by\
+  \ the logging code\r\n\r\nHere is an example traceback:\r\n```\r\n--- Logging error\
+  \ ---\r\nTraceback (most recent call last):\r\n  File \"/usr/lib/python3.10/logging/__init__.py\"\
+  , line 1100, in emit\r\n    msg = self.format(record)\r\n  File \"/usr/lib/python3.10/logging/__init__.py\"\
+  , line 943, in format\r\n    return fmt.format(record)\r\n  File \"/usr/lib/python3.10/logging/__init__.py\"\
+  , line 678, in format\r\n    record.message = record.getMessage()\r\n  File \"/usr/lib/python3.10/logging/__init__.py\"\
+  , line 368, in getMessage\r\n    msg = msg % self.args\r\nTypeError: must be real\
+  \ number, not str\r\nCall stack:\r\n  File \"/usr/lib/python3.10/threading.py\"\
+  , line 973, in _bootstrap\r\n    self._bootstrap_inner()\r\n  File \"/usr/lib/python3.10/threading.py\"\
+  , line 1016, in _bootstrap_inner\r\n    self.run()\r\n  File \"/usr/lib/python3.10/threading.py\"\
+  , line 953, in run\r\n    self._target(*self._args, **self._kwargs)\r\n  File \"\
+  /usr/lib/python3.10/socketserver.py\", line 683, in process_request_thread\r\n \
+  \   self.finish_request(request, client_address)\r\n  File \"/usr/lib/python3.10/socketserver.py\"\
+  , line 360, in finish_request\r\n    self.RequestHandlerClass(request, client_address,\
+  \ self)\r\n  File \"/usr/lib/python3.10/socketserver.py\", line 747, in __init__\r\
+  \n    self.handle()\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 391, in handle\r\n    super().handle()\r\n  File \"/usr/lib/python3.10/http/server.py\"\
+  , line 433, in handle\r\n    self.handle_one_request()\r\n  File \"/usr/lib/python3.10/http/server.py\"\
+  , line 421, in handle_one_request\r\n    method()\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 363, in run_wsgi\r\n    execute(self.server.app)\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 327, in execute\r\n    write(data)\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 264, in write\r\n    self.send_response(code, msg)\r\n  File \"/usr/lib/python3.10/http/server.py\"\
+  , line 498, in send_response\r\n    self.log_request(code)\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 460, in log_request\r\n    self.log(\"info\", '\"%s\" %s %s', msg, code,\
+  \ size)\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/serving.py\"\
+  , line 469, in log\r\n    _log(\r\n  File \"/usr/local/lib/python3.10/dist-packages/werkzeug/_internal.py\"\
+  , line 97, in _log\r\n    getattr(_logger, type)(message.rstrip(), *args, **kwargs)\r\
+  \nMessage: 'fe80::xxxx:xxxx:xxxx:xxxx%end0 - - [15/Jul/2024 14:41:06] \"%s\" %s\
+  \ %s'\r\n```\r\nNote the last line which shows the client address being the source\
+  \ of the problem.\r\n\r\nThe error is not fatal but makes logging very noisy as\
+  \ the traceback is printed instead of a log message.\r\n\r\nEnvironment:\r\n\r\n\
+  - Python version: 3.10\r\n- Werkzeug version: 3.0.3\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_serving.py::test_host_with_ipv6_scope
+  pass_to_pass:
+  - tests/test_urls.py::test_iri_support
+  - tests/test_http.py::test_parse_options_header
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: werkzeug
+  image: repogym/werkzeug:0005c79e09ba
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 2953
+  issue: 2952
+  merged_at: '2024-10-24T22:24:33Z'
+  issue_url: https://github.com/pallets/werkzeug/issues/2952

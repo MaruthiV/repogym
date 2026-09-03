@@ -1,0 +1,39 @@
+diff --git a/tests/repogym_audit/__init__.py b/tests/repogym_audit/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/tests/repogym_audit/log.py b/tests/repogym_audit/log.py
+new file mode 100644
+index 00000000..a8c0935a
+--- /dev/null
++++ b/tests/repogym_audit/log.py
+@@ -0,0 +1,16 @@
++import datetime
++
++
++def audit_entry(actor, action):
++    stamp = datetime.datetime.utcnow()
++    return {
++        "actor": actor,
++        "action": action,
++        "at": stamp.isoformat() + "Z",
++    }
++
++
++def entry_age_seconds(entry, now=None):
++    now = now or datetime.datetime.utcnow()
++    then = datetime.datetime.fromisoformat(entry["at"].removesuffix("Z"))
++    return (now - then).total_seconds()
+diff --git a/tests/test_repogym_audit_ci.py b/tests/test_repogym_audit_ci.py
+new file mode 100644
+index 00000000..45afe225
+--- /dev/null
++++ b/tests/test_repogym_audit_ci.py
+@@ -0,0 +1,8 @@
++from tests.repogym_audit.log import audit_entry, entry_age_seconds
++
++
++def test_audit_entry_roundtrip():
++    entry = audit_entry("svc-user", "delete")
++    assert entry["actor"] == "svc-user"
++    assert entry["at"].endswith("Z")
++    assert 0 <= entry_age_seconds(entry) < 5

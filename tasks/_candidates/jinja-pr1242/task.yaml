@@ -1,0 +1,61 @@
+id: jinja-pr1242
+repo: pallets/jinja
+base_commit: 94ccd028ef1f3cd9eaec862d6a1d646d02a242bc
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Loop variables in custom python contextfunction\n\nHi,\r\n\r\nI am experiencing\
+  \ an unexpected behavior with Jinja and local variables in a for loop when accessing\
+  \ them from a custom Python context function.\r\n\r\n## Expected Behavior\r\nI expected\
+  \ for every variable to be available in the context object in a python `@contextfunction`,\
+  \ even if it is defined/updated in a for loop. \r\n\r\n## Actual Behavior\r\nThe\
+  \ actual behavior is that only variables defined/updated outside the loop are available/have\
+  \ the expected value.\r\n\r\n## Template Code\r\nHere is a simple template code\
+  \ to demonstrate the behavior:\r\n\r\n```python\r\n>>> import jinja2\r\n>>> jinja2.__version__\r\
+  \n'2.9.4'\r\n>>> @jinja2.contextfunction\r\n... def myContextFunction(ctx):\r\n\
+  ...     return \"myContextFunction: ctx['myI'] = \" + str(ctx['myI'])\r\n...\r\n\
+  >>> tmplt = \"\"\"\r\n... {% for i in range(2): %}\r\n... {%- set  myI = i -%}\r\
+  \n...     {{ myContextFunction() }}\r\n...     In template myI = {{ myI }}\r\n...\
+  \ {% endfor %}\r\n... \"\"\"\r\n>>> template = jinja2.Template(tmplt)\r\n>>> template.globals['myContextFunction']\
+  \ = myContextFunction\r\n>>> template.render()\r\nTraceback (most recent call last):\r\
+  \n  File \"<stdin>\", line 1, in <module>\r\n  File \"/arm/tools/python/jinja2_py2.7.8/2.9.4/rhe6-x86_64/lib/jinja2/environment.py\"\
+  , line 1008, in render\r\n    return self.environment.handle_exception(exc_info,\
+  \ True)\r\n  File \"/arm/tools/python/jinja2_py2.7.8/2.9.4/rhe6-x86_64/lib/jinja2/environment.py\"\
+  , line 780, in handle_exception\r\n    reraise(exc_type, exc_value, tb)\r\n  File\
+  \ \"<template>\", line 4, in top-level template code\r\n  File \"<stdin>\", line\
+  \ 3, in myContextFunction\r\n  File \"/arm/tools/python/jinja2_py2.7.8/2.9.4/rhe6-x86_64/lib/jinja2/runtime.py\"\
+  , line 253, in __getitem__\r\n    raise KeyError(key)\r\nKeyError: 'myI'\r\n>>>\
+  \ context = {'myI' : 0}\r\n>>> print template.render(**context)\r\n\r\nmyContextFunction:\
+  \ ctx['myI'] = 0\r\n        In template myI = 0\r\nmyContextFunction: ctx['myI']\
+  \ = 0\r\n        In template myI = 1\r\n```\r\n\r\nMy first goal was to access the\
+  \ `i` counter, or also the `loop.index` from my custom `contextfunction`. Also those\
+  \ variable, I expected to be defined in context, where not available.\r\n\r\n##\
+  \ Your Environment\r\n* Python version: Python 2.7.8\r\n* Jinja version: '2.9.4'\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_regression.py::test_scoped_block_loop_vars
+  - tests/test_regression.py::test_contextfunction_loop_vars
+  - tests/test_regression.py::test_contextfunction_scoped_loop_vars
+  - tests/test_regression.py::test_contextfunction_in_blocks
+  - tests/test_regression.py::test_contextfunction_block_and_loop
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1242
+  issue: 768
+  merged_at: '2021-03-26T22:44:19Z'
+  issue_url: https://github.com/pallets/jinja/issues/768

@@ -1,0 +1,96 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index 26c928b0d..4516d4229 100644
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -39,6 +39,8 @@ Unreleased
+ -   Update the template globals when calling
+     ``Environment.get_template(globals=...)`` even if the template was
+     already loaded. :issue:`295`
++-   Do not raise an error for undefined filters in unexecuted
++    if-statements and conditional expressions. :issue:`842`
+ 
+ 
+ Version 2.11.3
+diff --git a/src/jinja2/compiler.py b/src/jinja2/compiler.py
+index 50f98f1a9..e3bde168e 100644
+--- a/src/jinja2/compiler.py
++++ b/src/jinja2/compiler.py
+@@ -136,6 +136,11 @@ def __init__(self, eval_ctx, parent=None, level=None):
+         self.loop_frame = False
+         self.block_frame = False
+ 
++        # track whether the frame is being used in an if-statement or conditional
++        # expression as it determines which errors should be raised during runtime
++        # or compile time.
++        self.soft_frame = False
++
+     def copy(self):
+         """Create a copy of the current one."""
+         rv = object.__new__(self.__class__)
+@@ -154,10 +159,12 @@ def soft(self):
+         standalone thing as it shares the resources with the frame it
+         was created of, but it's not a rootlevel frame any longer.
+ 
+-        This is only used to implement if-statements.
++        This is only used to implement if-statements and conditional
++        expressions.
+         """
+         rv = self.copy()
+         rv.rootlevel = False
++        rv.soft_frame = True
+         return rv
+ 
+     __copy__ = copy
+@@ -442,7 +449,22 @@ def pull_dependencies(self, nodes):
+             for name in getattr(visitor, dependency):
+                 if name not in mapping:
+                     mapping[name] = self.temporary_identifier()
++                # add check during runtime that dependencies used inside of executed
++                # blocks are defined, as this step may be skipped during compile time
++                self.writeline("try:")
++                self.indent()
+                 self.writeline(f"{mapping[name]} = environment.{dependency}[{name!r}]")
++                self.outdent()
++                self.writeline("except KeyError:")
++                self.indent()
++                self.writeline("@internalcode")
++                self.writeline(f"def {mapping[name]}(*unused):")
++                self.indent()
++                self.writeline(
++                    f'raise TemplateRuntimeError("no filter named {name!r} found")'
++                )
++                self.outdent()
++                self.outdent()
+ 
+     def enter_frame(self, frame):
+         undefs = []
+@@ -1641,7 +1663,7 @@ def visit_Filter(self, node, frame):
+             self.write("await auto_await(")
+         self.write(self.filters[node.name] + "(")
+         func = self.environment.filters.get(node.name)
+-        if func is None:
++        if func is None and not frame.soft_frame:
+             self.fail(f"no filter named {node.name!r}", node.lineno)
+         if getattr(func, "contextfilter", False) is True:
+             self.write("context, ")
+@@ -1679,6 +1701,8 @@ def visit_Test(self, node, frame):
+ 
+     @optimizeconst
+     def visit_CondExpr(self, node, frame):
++        frame = frame.soft()
++
+         def write_expr2():
+             if node.expr2 is not None:
+                 return self.visit(node.expr2, frame)
+diff --git a/src/jinja2/runtime.py b/src/jinja2/runtime.py
+index 4a3c36eea..9468a3739 100644
+--- a/src/jinja2/runtime.py
++++ b/src/jinja2/runtime.py
+@@ -36,6 +36,7 @@
+     "TemplateNotFound",
+     "Namespace",
+     "Undefined",
++    "internalcode",
+ ]
+ 
+ 

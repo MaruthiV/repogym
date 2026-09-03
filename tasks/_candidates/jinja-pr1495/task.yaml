@@ -1,0 +1,57 @@
+id: jinja-pr1495
+repo: pallets/jinja
+base_commit: fb9cac66e94f5acb68828aae0b1cd5bbfedf191f
+language: python
+category: bug_fix
+level: L3
+source: mined
+prompt: "Template globals are not accessible within imports w/ enable_async\n\nTemplate\
+  \ globals are not applied correctly when using the `enable_async` environment flag.\
+  \ \r\n\r\nWhen used normally, template globals can be used within imported macros.\r\
+  \n\r\nWith `enable_async=True`, template globals can only be accessed in macros\
+  \ within the immediate template.\r\n\r\n### Example script:\r\n\r\n```python\r\n\
+  from jinja2 import Environment\r\nfrom jinja2.loaders import DictLoader\r\nimport\
+  \ asyncio\r\n\r\ntemplates = {\r\n    \"child.html\": \"\"\"\\\r\n{% extends default_layout\
+  \ or 'default.html' %}\r\n{% from 'helpers.html' import imported_get_value%}\r\n\
+  {% macro get_value() %}{{value}}{% endmacro %}\r\n]{% block body %}\r\n    {{ get_value()\
+  \ }}\r\n    {{ imported_get_value() }}\r\n{% endblock %}\r\n\"\"\",\r\n    \"default.html\"\
+  : \"\"\"\\\r\n<!doctype html>\r\n<title>{{ value }}</title>\r\n{% block body %}{%\
+  \ endblock %}\r\n\"\"\",\r\n    \"helpers.html\": \"\"\"\\\r\n{% macro imported_get_value()\
+  \ %}{{value}}{% endmacro %}\r\n\"\"\",\r\n}\r\n\r\n\r\ndef sync_main():\r\n    env\
+  \ = Environment(loader=DictLoader(templates))\r\n    tmpl = env.get_template(\"\
+  child.html\", globals={\"value\": \"hello\"})\r\n    print(tmpl.render())\r\n\r\n\
+  \r\nasync def async_main():\r\n    env = Environment(loader=DictLoader(templates),\
+  \ enable_async=True)\r\n    tmpl = env.get_template(\"child.html\", globals={\"\
+  value\": \"hello\"})\r\n    print(await tmpl.render_async())\r\n\r\n\r\nif __name__\
+  \ == \"__main__\":\r\n    print(\"---- SYNC ----\")\r\n    sync_main()\r\n    print(\"\
+  ---- ASYNC ----\")\r\n    asyncio.run(async_main())\r\n```\r\n\r\n### Output\r\n\
+  \r\n```\r\n---- SYNC ----\r\n<!doctype html>\r\n<title>hello</title>\r\n\r\n   \
+  \ hello\r\n    hello\r\n\r\n---- ASYNC ----\r\n<!doctype html>\r\n<title>hello</title>\r\
+  \n\r\n    hello\r\n    \r\n```\r\n\r\nI expected the above output to be the same\
+  \ for sync and async.\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.9.6 \r\n- Jinja\
+  \ version: 3.0.1\n"
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+  - tests/test_async.py::test_import_with_globals
+  - tests/test_async.py::test_import_with_globals_override
+  - tests/test_async.py::test_from_import_with_globals
+  pass_to_pass:
+  - tests/test_api.py::TestExtendedAPI::test_item_and_attribute
+  - tests/test_lexnparse.py::TestLexer::test_raw1
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+- secret_canary
+meta:
+  pr: 1495
+  issue: 1494
+  merged_at: '2021-10-04T20:51:05Z'
+  issue_url: https://github.com/pallets/jinja/issues/1494

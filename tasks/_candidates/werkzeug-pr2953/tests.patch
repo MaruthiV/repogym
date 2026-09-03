@@ -1,0 +1,46 @@
+diff --git a/tests/live_apps/run.py b/tests/live_apps/run.py
+index aacdcb664..1371e6723 100644
+--- a/tests/live_apps/run.py
++++ b/tests/live_apps/run.py
+@@ -4,6 +4,7 @@
+ 
+ from werkzeug.serving import generate_adhoc_ssl_context
+ from werkzeug.serving import run_simple
++from werkzeug.serving import WSGIRequestHandler
+ from werkzeug.wrappers import Request
+ from werkzeug.wrappers import Response
+ 
+@@ -23,10 +24,14 @@ def app(request):
+ kwargs.update(hostname="127.0.0.1", port=5000, application=app)
+ kwargs.update(json.loads(sys.argv[2]))
+ ssl_context = kwargs.get("ssl_context")
++override_client_addr = kwargs.pop("override_client_addr", None)
+ 
+ if ssl_context == "custom":
+     kwargs["ssl_context"] = generate_adhoc_ssl_context()
+ elif isinstance(ssl_context, list):
+     kwargs["ssl_context"] = tuple(ssl_context)
+ 
++if override_client_addr:
++    WSGIRequestHandler.address_string = lambda _: override_client_addr
++
+ run_simple(**kwargs)
+diff --git a/tests/test_serving.py b/tests/test_serving.py
+index 501279b97..2de67dab0 100644
+--- a/tests/test_serving.py
++++ b/tests/test_serving.py
+@@ -337,3 +337,14 @@ def test_streaming_chunked_truncation(dev_server):
+     """
+     with pytest.raises(http.client.IncompleteRead):
+         dev_server("streaming", threaded=True).request("/crash")
++
++
++@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
++@pytest.mark.dev_server
++def test_host_with_ipv6_scope(dev_server):
++    client = dev_server(override_client_addr="fe80::1ff:fe23:4567:890a%eth2")
++    r = client.request("/crash")
++
++    assert r.status == 500
++    assert b"Internal Server Error" in r.data
++    assert "Logging error" not in client.log.read()

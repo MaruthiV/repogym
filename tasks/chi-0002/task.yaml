@@ -1,0 +1,37 @@
+id: chi-0002
+repo: go-chi/chi
+base_commit: ae6be7469132cf471ca099d8c7bda4010c4ff7b2
+language: go
+category: bug_fix
+level: L1
+source: mutated
+prompt: |
+  Every JSON POST from our web clients started getting 415 Unsupported Media
+  Type. Clients send `Content-Type: application/json; charset=utf-8` (browsers
+  add the charset automatically) and our routes use the AllowContentType
+  middleware with "application/json". Requests with a bare
+  `Content-Type: application/json` still work fine.
+
+  Media type parameters like charset should not affect the whitelist match.
+  Fix the middleware.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - "middleware::TestContentType"
+    - "middleware::TestRepogymAllowContentTypeWithCharset"
+  pass_to_pass:
+    - "middleware::TestRequestID"
+    - "middleware::TestXRealIP"
+    - "::TestMuxBasic"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: go
+  repo_key: chi
+  image: repogym/chi:ae6be7469132
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

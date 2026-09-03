@@ -1,0 +1,105 @@
+diff --git a/tests/test_api.py b/tests/test_api.py
+index ff3fcb138..ee11a8d69 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -323,8 +323,6 @@ def test_default_undefined(self):
+         assert und1 == und2
+         assert und1 != 42
+         assert hash(und1) == hash(und2) == hash(Undefined())
+-        with pytest.raises(AttributeError):
+-            getattr(Undefined, "__slots__")  # noqa: B009
+ 
+     def test_chainable_undefined(self):
+         env = Environment(undefined=ChainableUndefined)
+@@ -335,8 +333,6 @@ def test_chainable_undefined(self):
+         assert env.from_string("{{ foo.missing }}").render(foo=42) == ""
+         assert env.from_string("{{ not missing }}").render() == "True"
+         pytest.raises(UndefinedError, env.from_string("{{ missing - 1}}").render)
+-        with pytest.raises(AttributeError):
+-            getattr(ChainableUndefined, "__slots__")  # noqa: B009
+ 
+         # The following tests ensure subclass functionality works as expected
+         assert env.from_string('{{ missing.bar["baz"] }}').render() == ""
+@@ -368,8 +364,6 @@ def test_debug_undefined(self):
+             str(DebugUndefined(hint=undefined_hint))
+             == f"{{{{ undefined value printed: {undefined_hint} }}}}"
+         )
+-        with pytest.raises(AttributeError):
+-            getattr(DebugUndefined, "__slots__")  # noqa: B009
+ 
+     def test_strict_undefined(self):
+         env = Environment(undefined=StrictUndefined)
+@@ -386,8 +380,6 @@ def test_strict_undefined(self):
+             env.from_string('{{ missing|default("default", true) }}').render()
+             == "default"
+         )
+-        with pytest.raises(AttributeError):
+-            getattr(StrictUndefined, "__slots__")  # noqa: B009
+         assert env.from_string('{{ "foo" if false }}').render() == ""
+ 
+     def test_indexing_gives_undefined(self):
+diff --git a/tests/test_runtime.py b/tests/test_runtime.py
+index 1978c6410..3cd3be15f 100644
+--- a/tests/test_runtime.py
++++ b/tests/test_runtime.py
+@@ -1,6 +1,15 @@
++import copy
+ import itertools
++import pickle
+ 
++import pytest
++
++from jinja2 import ChainableUndefined
++from jinja2 import DebugUndefined
++from jinja2 import StrictUndefined
+ from jinja2 import Template
++from jinja2 import TemplateRuntimeError
++from jinja2 import Undefined
+ from jinja2.runtime import LoopContext
+ 
+ TEST_IDX_TEMPLATE_STR_1 = (
+@@ -73,3 +82,44 @@ def __call__(self, *args, **kwargs):
+     out = t.render(calc=Calc())
+     # Would be "1" if context argument was passed.
+     assert out == "0"
++
++
++_undefined_types = (Undefined, ChainableUndefined, DebugUndefined, StrictUndefined)
++
++
++@pytest.mark.parametrize("undefined_type", _undefined_types)
++def test_undefined_copy(undefined_type):
++    undef = undefined_type("a hint", ["foo"], "a name", TemplateRuntimeError)
++    copied = copy.copy(undef)
++
++    assert copied is not undef
++    assert copied._undefined_hint is undef._undefined_hint
++    assert copied._undefined_obj is undef._undefined_obj
++    assert copied._undefined_name is undef._undefined_name
++    assert copied._undefined_exception is undef._undefined_exception
++
++
++@pytest.mark.parametrize("undefined_type", _undefined_types)
++def test_undefined_deepcopy(undefined_type):
++    undef = undefined_type("a hint", ["foo"], "a name", TemplateRuntimeError)
++    copied = copy.deepcopy(undef)
++
++    assert copied._undefined_hint is undef._undefined_hint
++    assert copied._undefined_obj is not undef._undefined_obj
++    assert copied._undefined_obj == undef._undefined_obj
++    assert copied._undefined_name is undef._undefined_name
++    assert copied._undefined_exception is undef._undefined_exception
++
++
++@pytest.mark.parametrize("undefined_type", _undefined_types)
++def test_undefined_pickle(undefined_type):
++    undef = undefined_type("a hint", ["foo"], "a name", TemplateRuntimeError)
++    copied = pickle.loads(pickle.dumps(undef))
++
++    assert copied._undefined_hint is not undef._undefined_hint
++    assert copied._undefined_hint == undef._undefined_hint
++    assert copied._undefined_obj is not undef._undefined_obj
++    assert copied._undefined_obj == undef._undefined_obj
++    assert copied._undefined_name is not undef._undefined_name
++    assert copied._undefined_name == undef._undefined_name
++    assert copied._undefined_exception is undef._undefined_exception

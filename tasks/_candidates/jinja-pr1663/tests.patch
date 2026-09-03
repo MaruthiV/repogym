@@ -1,0 +1,29 @@
+diff --git a/tests/test_loader.py b/tests/test_loader.py
+index e0cff6720..5a4e1a9da 100644
+--- a/tests/test_loader.py
++++ b/tests/test_loader.py
+@@ -179,6 +179,24 @@ def test_filename_normpath(self):
+         t = e.get_template("foo/test.html")
+         assert t.filename == str(self.searchpath / "foo" / "test.html")
+ 
++    def test_error_includes_paths(self, env, filesystem_loader):
++        env.loader = filesystem_loader
++
++        with pytest.raises(TemplateNotFound) as info:
++            env.get_template("missing")
++
++        e_str = str(info.value)
++        assert e_str.startswith("'missing' not found in search path: ")
++
++        filesystem_loader.searchpath.append("other")
++
++        with pytest.raises(TemplateNotFound) as info:
++            env.get_template("missing")
++
++        e_str = str(info.value)
++        assert e_str.startswith("'missing' not found in search paths: ")
++        assert ", 'other'" in e_str
++
+ 
+ class TestModuleLoader:
+     archive = None
