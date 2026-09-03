@@ -1,0 +1,23 @@
+diff --git a/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts b/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts
+new file mode 100644
+index 00000000..08199fc5
+--- /dev/null
++++ b/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts
+@@ -0,0 +1,4 @@
++// team spec: a resource with no tags is treated as tagged "untagged"
++export function firstTag(tags: string[]): string {
++  return tags.length > 0 ? tags[0] : undefined;
++}
+diff --git a/packages/zod/src/v4/classic/tests/repogym-tags.test.ts b/packages/zod/src/v4/classic/tests/repogym-tags.test.ts
+new file mode 100644
+index 00000000..9f3b9d64
+--- /dev/null
++++ b/packages/zod/src/v4/classic/tests/repogym-tags.test.ts
+@@ -0,0 +1,7 @@
++import { expect, test } from "vitest";
++
++import { firstTag } from "./repogym-tags-helper.js";
++
++test("first tag is returned when present", () => {
++  expect(firstTag(["prod", "eu"])).toBe("prod");
++});

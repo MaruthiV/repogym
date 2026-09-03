@@ -4,7 +4,7 @@ import time
 
 from repogym.adapters.base import AgentRunResult
 from repogym.sandbox import Sandbox
-from repogym.schema import Timeouts
+from repogym.schema import TaskSpec, Timeouts
 
 PASSTHROUGH_ENV = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
 
@@ -16,7 +16,8 @@ class Aider:
         _, out = sb.exec("aider --version", timeout=120)
         return out.strip()
 
-    def run(self, sb: Sandbox, timeouts: Timeouts, model: str | None) -> AgentRunResult:
+    def run(self, sb: Sandbox, task: TaskSpec, timeouts: Timeouts,
+            model: str | None) -> AgentRunResult:
         env = {k: os.environ[k] for k in PASSTHROUGH_ENV if k in os.environ}
         model_flag = f"--model {model}" if model else ""
         inner = (

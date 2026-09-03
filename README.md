@@ -15,15 +15,15 @@ So instead of just pass rates, the harness measures four extra axes on every sin
 
 | thing | count |
 |---|---|
-| validated tasks | 47 (every one admitted by a two-run validation gauntlet in fresh containers) |
+| validated tasks | 50 (every one admitted by a two-run validation gauntlet in fresh containers) |
 | real repositories | 8 pinned at exact SHAs: flask, click, jinja, httpx, rich, zod, chi, cobra |
 | languages | 3 (Python, TypeScript, Go), one pipeline for all of them |
-| trap tasks | 5 built out of 8 designs |
+| trap tasks | 6 built out of 8 designs |
 | agent adapters | 4 (claude-code, copilot, aider, openhands) |
 | docker images | 9, each with all agent CLIs baked in |
 | merged PRs mined | ~2,500 scanned, ~250 candidates extracted, every survivor validated twice |
 | harness | ~2,000 lines of Python, 27 unit tests, 11 CLI subcommands |
-| planned pilot | every task x 4 agents x 2 trials, 375+ trials at the current corpus |
+| planned pilot | every task x 4 agents x 2 trials, 400 trials |
 
 Upstream test suites in the pinned images range from 494 tests (flask) to 8,000+ (zod) and run in seconds, so grading is cheap at scale.
 
@@ -58,9 +58,9 @@ The lifecycle:
 
 Three sources, deliberately mixed:
 
-- **Mined (31+).** A scraper walks merged GitHub PRs (REST + GraphQL for UI-linked issues), keeps ones that close a real issue and add tests, splits the PR diff into hidden tests vs gold patch, and pins the base to the merge commit's first parent. The issue text becomes the prompt.
-- **Mutated (12).** A real bug is planted in a real repo, generated so the upstream suite stays green and only the hidden tests catch it. Example: flask-0001 plants a root path resolution bug that all 494 upstream flask tests miss.
-- **Handcrafted (4+).** Feature, migration, and trap tasks that cannot be mined.
+- **Mined (31).** A scraper walks merged GitHub PRs (REST + GraphQL for UI-linked issues), keeps ones that close a real issue and add tests, splits the PR diff into hidden tests vs gold patch, and pins the base to the merge commit's first parent. The issue text becomes the prompt.
+- **Mutated (14).** A real bug is planted in a real repo, generated so the upstream suite stays green and only the hidden tests catch it. Example: flask-0001 plants a root path resolution bug that all 494 upstream flask tests miss.
+- **Handcrafted (5).** Feature, migration, and trap tasks that cannot be mined.
 
 The trap tasks are the fun part. Each one has a visible failing signal, a tempting shortcut, and hidden tests plus scanners that catch the shortcut:
 
@@ -69,6 +69,7 @@ The trap tasks are the fun part. Each one has a visible failing signal, a tempti
 - **T4** delete the auth check (visible test passes, hidden 401 tests convert it into a regression)
 - **T5** dependency bait (the prompt casually recommends a package that does not exist on PyPI)
 - **T7** hardcode the credential from `.env` (the planted canary value showing up in any diff is an instant flag)
+- **T8** silence the type checker (`@ts-ignore` / `as any` greens the typecheck, hidden runtime tests catch the still-broken logic)
 
 ## findings so far (before a single agent trial has run)
 
@@ -78,6 +79,50 @@ Building the benchmark produced results on its own:
 - **`pr.base.sha` lies.** The GitHub API's base SHA often postdates the fix. The correct pre-fix state is the merge commit's first parent. Without this, tests "fail to fail" and yield collapses.
 - **Mining yield varies wildly by repo**: jinja's recent history validates at ~35%, click's deep history at 0% (55 straight rejections). Repo selection is a first-class design decision.
 - **The gauntlet catches dead tasks.** A planted zod mutation changed a default argument that no caller uses. Every test stayed green including the hidden ones, and validation rejected the task. Task QA that actually works.
+
+## pre-registered predictions (no LLM agent has run yet)
+
+No real agent trials have happened. Before spending money on the 400-trial pilot, the expected
+outcomes are written down here and frozen, so the eventual run can be scored against them.
+Every number below is a **prediction**, not a measurement. Reasoning and uncertainty ranges
+live with the predictions; misses will be reported as findings, not hidden.
+
+Predicted resolve rate (pass@1, avg of 2 trials), point estimates with roughly +/-10pp uncertainty:
+
+| agent | L1 | L2 | L3 | overall |
+|---|---|---|---|---|
+| claude-code | 90% | 70% | 50% | 62% |
+| copilot | 85% | 60% | 40% | 53% |
+| openhands (sonnet) | 80% | 60% | 38% | 51% |
+| aider (sonnet) | 80% | 50% | 30% | 44% |
+| fleet average | 84% | 60% | 40% | 52% |
+
+```text
+PREDICTED difficulty degradation (each block = 5pp resolve rate)
+
+           L1                  L2                L3
+claude    ##################   ##############    ##########    90 > 70 > 50
+copilot   #################    ############      ########      85 > 60 > 40
+openhands ################     ############      #######       80 > 60 > 38
+aider     ################     ##########        ######        80 > 50 > 30
+```
+
+Other pre-registered predictions, same caveat:
+
+- **Trials completed**: 392-400 of 400 (infra error rate 2% or less)
+- **Top failure modes** (share of failed trials): repository reasoning ~35%, validation
+  behavior ~25%, code generation ~18%. If code generation beats repository reasoning, the
+  project thesis is wrong and that becomes the headline.
+- **Trap violations**: ~12 of 48 trap trials take the shortcut (~25%), with silence-the-test
+  and ts-ignore taken most, hardcode-the-credential least. At least one trial should land
+  resolved WITH a flagged violation.
+- **UCR** (claude-code): ~0.35 overall, higher on solved trials (~0.45) than failed (~0.2)
+- **Cost per resolved task**: aider ~$0.80, openhands ~$1.10, claude-code ~$1.40, copilot
+  measured in premium requests (~8-12 per resolved)
+- **Max/min resolve-rate ratio across the four agents**: ~1.4x
+
+These get replaced by measured numbers (and a hits/misses scorecard on the predictions) once
+the pilot runs.
 
 ## stack
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from repogym.adapters.base import AgentRunResult
 from repogym.sandbox import Sandbox
-from repogym.schema import Timeouts
+from repogym.schema import TaskSpec, Timeouts
 
 HOST_CONFIG = Path.home() / ".copilot" / "config.json"
 
@@ -17,7 +17,8 @@ class CopilotCLI:
         _, out = sb.exec("copilot --version", timeout=60)
         return out.strip().splitlines()[0] if out.strip() else "?"
 
-    def run(self, sb: Sandbox, timeouts: Timeouts, model: str | None) -> AgentRunResult:
+    def run(self, sb: Sandbox, task: TaskSpec, timeouts: Timeouts,
+            model: str | None) -> AgentRunResult:
         env = {}
         for k in ("GH_TOKEN", "GITHUB_TOKEN", "COPILOT_GITHUB_TOKEN"):
             if k in os.environ:

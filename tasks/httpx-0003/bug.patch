@@ -1,0 +1,16 @@
+diff --git a/httpx/_utils.py b/httpx/_utils.py
+index 7fe827d..5d7bbc1 100644
+--- a/httpx/_utils.py
++++ b/httpx/_utils.py
+@@ -19,9 +19,9 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
+     Note that we prefer JSON-style 'true'/'false' for boolean values here.
+     """
+     if value is True:
+-        return "true"
++        return "True"
+     elif value is False:
+-        return "false"
++        return "False"
+     elif value is None:
+         return ""
+     return str(value)

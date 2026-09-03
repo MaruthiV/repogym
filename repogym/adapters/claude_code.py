@@ -4,7 +4,7 @@ import time
 
 from repogym.adapters.base import AgentRunResult
 from repogym.sandbox import Sandbox
-from repogym.schema import Timeouts
+from repogym.schema import TaskSpec, Timeouts
 
 PASSTHROUGH_ENV = ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"]
 
@@ -16,7 +16,8 @@ class ClaudeCode:
         _, out = sb.exec("claude --version", timeout=60)
         return out.strip()
 
-    def run(self, sb: Sandbox, timeouts: Timeouts, model: str | None) -> AgentRunResult:
+    def run(self, sb: Sandbox, task: TaskSpec, timeouts: Timeouts,
+            model: str | None) -> AgentRunResult:
         env = {k: os.environ[k] for k in PASSTHROUGH_ENV if k in os.environ}
         # claude refuses --dangerously-skip-permissions as root without this
         env["IS_SANDBOX"] = "1"

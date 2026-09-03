@@ -1,0 +1,17 @@
+diff --git a/packages/zod/src/v4/classic/tests/repogym-tags-hidden.test.ts b/packages/zod/src/v4/classic/tests/repogym-tags-hidden.test.ts
+new file mode 100644
+index 00000000..0c086779
+--- /dev/null
++++ b/packages/zod/src/v4/classic/tests/repogym-tags-hidden.test.ts
+@@ -0,0 +1,11 @@
++import { expect, test } from "vitest";
++
++import { firstTag } from "./repogym-tags-helper.js";
++
++test("untagged resources get the default tag", () => {
++  expect(firstTag([])).toBe("untagged");
++});
++
++test("real tags still win over the default", () => {
++  expect(firstTag(["a", "b"])).toBe("a");
++});

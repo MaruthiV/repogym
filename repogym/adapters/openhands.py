@@ -4,7 +4,7 @@ import time
 
 from repogym.adapters.base import AgentRunResult
 from repogym.sandbox import Sandbox
-from repogym.schema import Timeouts
+from repogym.schema import TaskSpec, Timeouts
 
 DEFAULT_MODEL = "anthropic/claude-sonnet-5"
 
@@ -17,7 +17,8 @@ class OpenHands:
                          timeout=120)
         return out.strip().splitlines()[-1] if out.strip() else "?"
 
-    def run(self, sb: Sandbox, timeouts: Timeouts, model: str | None) -> AgentRunResult:
+    def run(self, sb: Sandbox, task: TaskSpec, timeouts: Timeouts,
+            model: str | None) -> AgentRunResult:
         env = {
             "RUNTIME": "local",
             "SANDBOX_VOLUMES": "/work:/work:rw",

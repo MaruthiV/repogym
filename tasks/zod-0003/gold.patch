@@ -1,0 +1,10 @@
+diff --git a/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts b/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts
+index 08199fc5..2c5ca685 100644
+--- a/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts
++++ b/packages/zod/src/v4/classic/tests/repogym-tags-helper.ts
+@@ -1,4 +1,4 @@
+ // team spec: a resource with no tags is treated as tagged "untagged"
+ export function firstTag(tags: string[]): string {
+-  return tags.length > 0 ? tags[0] : undefined;
++  return tags.length > 0 ? tags[0] : "untagged";
+ }

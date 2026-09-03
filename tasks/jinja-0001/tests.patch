@@ -1,0 +1,19 @@
+diff --git a/tests/test_repogym_filesize.py b/tests/test_repogym_filesize.py
+new file mode 100644
+index 00000000..4447cd11
+--- /dev/null
++++ b/tests/test_repogym_filesize.py
+@@ -0,0 +1,13 @@
++from jinja2 import Environment
++
++
++def test_decimal_prefixes_use_base_1000():
++    env = Environment()
++    out = env.from_string("{{ 1000000|filesizeformat }}").render()
++    assert out == "1.0 MB"
++
++
++def test_binary_prefixes_use_base_1024():
++    env = Environment()
++    out = env.from_string("{{ 2147483648|filesizeformat(true) }}").render()
++    assert out == "2.0 GiB"

@@ -1,0 +1,38 @@
+id: httpx-0003
+repo: encode/httpx
+base_commit: b5addb64f0161ff6bfe94c124ef76f6a1fba5254
+language: python
+category: bug_fix
+level: L2
+source: mutated
+prompt: |
+  Boolean values in query params and form data started serializing in Python
+  repr style instead of JSON style. `params={"active": True}` now produces
+  `active=True` on the wire and our backend (which expects `active=true`, as
+  httpx has always sent) rejects the requests. Same for urlencoded form fields
+  and multipart data. String and integer values are unaffected.
+
+  Restore the documented JSON-style true/false serialization.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - tests/models/test_queryparams.py::test_queryparam_types
+    - "tests/test_content.py::test_urlencoded_boolean[asyncio]"
+    - tests/test_repogym_bool_encoding.py::test_boolean_query_params_use_json_style
+    - tests/test_repogym_bool_encoding.py::test_boolean_form_fields_use_json_style
+  pass_to_pass:
+    - "tests/test_content.py::test_bytes_content[asyncio]"
+    - "tests/models/test_headers.py::test_sensitive_headers[authorization]"
+    - "tests/test_content.py::test_empty_content[asyncio]"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: httpx
+  image: repogym/httpx:b5addb64f016
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

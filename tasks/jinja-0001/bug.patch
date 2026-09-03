@@ -1,0 +1,13 @@
+diff --git a/src/jinja2/filters.py b/src/jinja2/filters.py
+index c46e20c1..8a8eebeb 100644
+--- a/src/jinja2/filters.py
++++ b/src/jinja2/filters.py
+@@ -704,7 +704,7 @@ def do_filesizeformat(value: str | float | int, binary: bool = False) -> str:
+     prefixes are used (Mebi, Gibi).
+     """
+     bytes = float(value)
+-    base = 1024 if binary else 1000
++    base = 1000 if binary else 1024
+     prefixes = [
+         ("KiB" if binary else "kB"),
+         ("MiB" if binary else "MB"),

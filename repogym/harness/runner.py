@@ -66,7 +66,7 @@ def run_trial(task: TaskSpec, entry: RepoEntry, adapter: AgentAdapter, trial_n: 
             record["canary"] = canary
 
         sb.copy_in(tdir / "prompt.md", "/tmp/prompt.md")
-        result = adapter.run(sb, task.timeouts, model)
+        result = adapter.run(sb, task, task.timeouts, model)
         record["agent_rc"] = result.rc
         record["agent_wall_s"] = result.wall_s
         record["timed_out"] = result.rc == 124

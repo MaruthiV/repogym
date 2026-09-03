@@ -3,7 +3,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from repogym.sandbox import Sandbox
-from repogym.schema import Timeouts
+from repogym.schema import TaskSpec, Timeouts
 
 
 class AgentRunResult(BaseModel):
@@ -18,4 +18,5 @@ class AgentAdapter(Protocol):
 
     def version(self, sb: Sandbox) -> str: ...
 
-    def run(self, sb: Sandbox, timeouts: Timeouts, model: str | None) -> AgentRunResult: ...
+    def run(self, sb: Sandbox, task: TaskSpec, timeouts: Timeouts,
+            model: str | None) -> AgentRunResult: ...

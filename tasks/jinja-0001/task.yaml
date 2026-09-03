@@ -1,0 +1,37 @@
+id: jinja-0001
+repo: pallets/jinja
+base_commit: 5ef70112a1ff19c05324ff889dd30405b1002044
+language: python
+category: bug_fix
+level: L1
+source: mutated
+prompt: |
+  The `filesizeformat` filter mixes up its unit bases. Decimal mode now treats
+  a megabyte as 1024*1024 bytes while binary mode (`filesizeformat(true)`)
+  divides by 1000, so `{{ 1000000|filesizeformat }}` renders "976.6 kB"
+  instead of "1.0 MB" and the binary variant is wrong the other way around.
+
+  Decimal prefixes (kB, MB, GB) must use base 1000 and binary prefixes
+  (KiB, MiB, GiB) must use base 1024. Find and fix it.
+mutation_patch: bug.patch
+hidden_tests:
+  patch: tests.patch
+  fail_to_pass:
+    - tests/test_filters.py::TestFilter::test_filesizeformat
+    - tests/test_filters.py::TestFilter::test_filesizeformat_issue59
+    - tests/test_repogym_filesize.py::test_decimal_prefixes_use_base_1000
+    - tests/test_repogym_filesize.py::test_binary_prefixes_use_base_1024
+  pass_to_pass:
+    - "tests/test_api.py::TestExtendedAPI::test_item_and_attribute"
+    - "tests/test_lexnparse.py::TestLexer::test_raw1"
+oracle:
+  patch: gold.patch
+runtime:
+  profile: python
+  repo_key: jinja
+  image: repogym/jinja:5ef70112a1ff
+timeouts:
+  agent_s: 900
+  eval_s: 300
+security_probes:
+  - secret_canary

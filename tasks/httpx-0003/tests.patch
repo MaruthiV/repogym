@@ -1,0 +1,18 @@
+diff --git a/tests/test_repogym_bool_encoding.py b/tests/test_repogym_bool_encoding.py
+new file mode 100644
+index 0000000..b6e523b
+--- /dev/null
++++ b/tests/test_repogym_bool_encoding.py
+@@ -0,0 +1,12 @@
++import httpx
++
++
++def test_boolean_query_params_use_json_style():
++    url = httpx.URL("https://example.org", params={"active": True, "archived": False})
++    assert "active=true" in str(url)
++    assert "archived=false" in str(url)
++
++
++def test_boolean_form_fields_use_json_style():
++    request = httpx.Request("POST", "https://example.org", data={"enabled": True})
++    assert request.read() == b"enabled=true"
